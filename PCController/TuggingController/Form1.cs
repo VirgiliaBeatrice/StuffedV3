@@ -136,6 +136,49 @@ namespace TuggingController
             this.Points.Add(new SKPoint(point.X, point.Y));
         }
 
+        public List<Axes> Axes;
+        public void DrawAxes(SKCanvas canvas)
+        {
+            if (this.Axes.Count > 0) {
+                foreach(var axis in this.Axes) {
+                    var paint = new SKPaint {
+                        IsAntialias = true,
+                        Color = SKColors.BlueViolet,
+                        Style = SKPaintStyle.Stroke
+                    };
+                    //canvas.DrawLine();
+                }
+
+            }
+        }
+
+
         #endregion
+    }
+
+    public enum AxesPostions
+    {
+        Top = 0,
+        Bottom,
+        Left,
+        Right
+    }
+
+    public class Axes
+    {
+        public string Type;
+        public AxesPostions Position;
+
+        private int left;
+        private int right;
+        private int top;
+        private int bottom;
+        
+        public Axes() {
+            this.Type = "default";
+            this.Position = AxesPostions.Top;
+
+            //this.left
+        }
     }
 }
