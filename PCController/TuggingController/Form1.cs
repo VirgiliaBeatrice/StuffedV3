@@ -117,34 +117,7 @@ namespace TuggingController
 
         #region Methods
 
-        //protected void DrawArrow(SKPoint p0, SKPoint p1) {
-        //    var shader = SKShader.CreateLinearGradient(
-        //        p0,
-        //        p1,
-        //        new[] { SKColors.Red, SKColors.DarkGreen },
-        //        null,
-        //        SKShaderTileMode.Clamp
-        //        );
-        //    var paint = new SKPaint {
-        //        IsAntialias = true,
-        //        Shader = shader
-        //    };
-
-        //    var dir = SKPoint.Normalize(p1 - p0);
-        //    var dir = Vector2()
-        //    var lRotMat = SKMatrix.MakeRotationDegrees(30.0f);
-        //    var rRotMat = SKMatrix.MakeRotationDegrees(-30.0f);
-        //    var tranMat = SKMatrix.MakeTranslation((p1-p0).X, (p1-p0).Y);
-
-        //    this.Canvas.DrawLine(p0, p1, paint);
-        //    this.Canvas.DrawLine(p1, tranMat.MapPoint(lRotMat.MapPoint(dir * 20)), paint);
-        //    this.Canvas.DrawLine(p1, tranMat.MapPoint(rRotMat.MapPoint(dir * 20)), paint);
-        //}
-
         private double DegreeToRadian(double degree) {
-            return Math.PI * degree / 180.0;
-        }
-        private double DegreeToRadian(int degree) {
             return Math.PI * degree / 180.0;
         }
         private enum ArrowDirections {
@@ -154,28 +127,22 @@ namespace TuggingController
             Right = 0
         }
         private void DrawArrow(SKPoint start, SKPoint end) {
-            var mat = SKMatrix.MakeIdentity();
-            var dir = end - start;
-            var dist = SKPoint.Distance(start, end);
-            var rotMat = SKMatrix.MakeRotation((float)Math.Atan2(dir.Y, dir.X));
-            Logger.Debug("{0} {1}", dir.Y, dir.X);
-
+            var dirVector = end - start;
+            var dirAngle = Math.Atan2(dirVector.Y, dirVector.X);
+            var rotMat = SKMatrix.MakeRotation((float)dirAngle, end.X, end.Y);
+            //Logger.Debug("{0} {1}", dir.Y, dir.X);
             //SKMatrix.PostConcat(ref mat, rotMat);
 
-            var path = new SKPath();
-            var s = new SKPoint(0, 0);
-            var e = new SKPoint(100, 0);
+            var linePath = new SKPath();
+            var arrowPath = new SKPath();
+            //var s = new SKPoint(0, 0);
+            //var e = new SKPoint(100, 0);
             double arrowSize = 16.0;
             double arrowAngle = 15.0;
             double d = Math.Tan(DegreeToRadian(arrowAngle)) * arrowSize;
 
-            var lArrow = SKPoint.Add(e, new SKPoint(-(float)arrowSize, (float)d));
-            var rArrow = SKPoint.Add(e, new SKPoint(-(float)arrowSize, -(float)d));
-            path.MoveTo(s);
-            path.LineTo(e);
-            path.LineTo(lArrow);
-            path.MoveTo(e);
-            path.LineTo(rArrow);
+            var lArrow = SKPoint.Add(end, new SKPoint(-(float)arrowSize, +(float)d));
+            var rArrow = SKPoint.Add(end, new SKPoint(-(float)arrowSize, -(float)d));
 
             var paint = new SKPaint {
                 IsAntialias = true,
@@ -184,67 +151,29 @@ namespace TuggingController
                 //Shader = shader
             };
 
-            this.Canvas.Concat(ref rotMat);
-            this.Canvas.DrawPath(path, paint);
-        }
-        private void DrawIdentityArrow() {
-            var p0 = new SKPoint(0, 0);
-            var p1 = new SKPoint(200, 0);
-            var p2 = new SKPoint(90, 0);
-            var l = 10.0f;
+            // Line Path
+            linePath.MoveTo(start);
+            linePath.LineTo(end);
+            this.Canvas.DrawPath(linePath, paint);
 
-            var path = new SKPath();
+            // Arrow Path
+            arrowPath.MoveTo(end);
+            arrowPath.LineTo(lArrow);
+            arrowPath.MoveTo(end);
+            arrowPath.LineTo(rArrow);
+            arrowPath.Transform(rotMat);
+            this.Canvas.DrawPath(arrowPath, paint);
 
-            //Logger.Info((float)Math.Sin(DegreeToRadian(30.0))* l);
-            //Logger.Info((float)Math.Cos(DegreeToRadian(30.0))* l);
-
-            path.MoveTo(0.0f, 0.0f);
-            path.LineTo(200.0f, 0.0f);
-            path.LineTo(200.0f - (float)Math.Cos(DegreeToRadian(15.0)) * l, +(float)Math.Sin(DegreeToRadian(15.0)) * l);
-            path.MoveTo(200.0f, 0.0f);
-            path.LineTo(200.0f - (float)Math.Cos(DegreeToRadian(15.0)) * l, -(float)Math.Sin(DegreeToRadian(15.0)) * l);
-
-            // Create a paint for SKLine
-            //var shader = SKShader.CreateLinearGradient(
-            //    p0,
-            //    p1,
-            //    new[] { SKColors.Red, SKColors.DarkGreen },
-            //    null,
-            //    SKShaderTileMode.Clamp
-            //    );
-            var paint = new SKPaint {
-                IsAntialias = true,
-                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.4f)),
-                Style = SKPaintStyle.Stroke
-                //Shader = shader
-            };
-
-            // Transformation Matrix
-            var lRotMat = SKMatrix.MakeRotationDegrees(60.0f);
-            var rRotMat = SKMatrix.MakeRotationDegrees(-60.0f);
-
-            //var translationMat = SKMatrix.MakeTranslation(p1.X, p1.Y);
-            var lMat = SKMatrix.MakeTranslation(p1.X, p1.Y);
-            var rMat = SKMatrix.MakeTranslation(p1.X, p1.Y);
-            SKMatrix.PostConcat(ref lMat, lRotMat);
-            SKMatrix.PostConcat(ref rMat, rRotMat);
-
-            // Draw ax axis line
-            //this.Canvas.DrawLine(p0, p1, paint);
-            //this.Canvas.DrawLine(p1, lMat.MapPoint(p2), paint);
-            //this.Canvas.DrawLine(p1, rMat.MapPoint(p2), paint);
-            this.Canvas.DrawPath(path, paint);
+            //this.Canvas.Concat(ref rotMat);
         }
         public override void DrawArea(object ctx) {
-
-
             // Before drawing, do the coordinates transformation.
             var matTra = SKMatrix.MakeIdentity();
             SKMatrix.Concat(ref matTra, SKMatrix.MakeScale(1, -1), SKMatrix.MakeTranslation(this.Margin, -(this.height - this.Margin)));
             //var p0 = matTra.MapPoint(new SKPoint(0, 200));
             //var p1 = matTra.MapPoint(new SKPoint(200, 200));
             var p0 = new SKPoint(0, 0);
-            var p1 = new SKPoint(100, 0);
+            var p1 = new SKPoint(200, 50);
 
             var shader = SKShader.CreateLinearGradient(
                 p0,
@@ -257,10 +186,24 @@ namespace TuggingController
                 IsAntialias = true,
                 Shader = shader
             };
+            var originPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Red,
+                Style = SKPaintStyle.Fill
+            };
+            var textPaint = new SKPaint {
+                IsAntialias = true,
+                TextSize = 20.0f,
+                Color = SKColors.Black,
+                IsStroke = false
+            };
 
             this.Canvas.Concat(ref matTra);
             this.Logger.Debug("Transformed points: p0 - ({0}), p1 - ({1})", p0, p1);
+            this.Canvas.DrawCircle(new SKPoint(0, 0), 4, originPaint);
             this.DrawArrow(p0, p1);
+            this.Canvas.ResetMatrix();
+            this.Canvas.DrawText(string.Format("{0} {1}", p0, p1), new SKPoint(0, 20), textPaint);
             //this.Canvas.ResetMatrix();
             //this.DrawIdentityArrow();
             //this.Canvas.DrawLine(p0, p1, paint);
@@ -346,6 +289,47 @@ namespace TuggingController
             this.Position = AxesPostions.Top;
 
             //this.left
+        }
+    }
+
+    public class SkiaHelper {
+
+        public static double DegreeToRadian(double degree) {
+            return Math.PI * degree / 180.0;
+        }
+        public static void DrawArrow(SKCanvas canvas, SKPoint start, SKPoint end) {
+            SKPoint dirVector = end - start;
+            double dirAngle = Math.Atan2(dirVector.Y, dirVector.X);
+            SKMatrix rotMat = SKMatrix.MakeRotation((float)dirAngle, end.X, end.Y);
+
+            double arrowSize = 16.0;
+            double arrowAngle = 15.0;
+            double d = Math.Tan(DegreeToRadian(arrowAngle)) * arrowSize;
+
+            SKPoint lArrow = SKPoint.Add(end, new SKPoint(-(float)arrowSize, +(float)d));
+            SKPoint rArrow = SKPoint.Add(end, new SKPoint(-(float)arrowSize, -(float)d));
+
+            // Path Paint
+            SKPaint paint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.4f)),
+                Style = SKPaintStyle.Stroke
+            };
+
+            // Line Path
+            SKPath linePath = new SKPath();
+            linePath.MoveTo(start);
+            linePath.LineTo(end);
+            canvas.DrawPath(linePath, paint);
+
+            // Arrow Path
+            SKPath arrowPath = new SKPath();
+            arrowPath.MoveTo(end);
+            arrowPath.LineTo(lArrow);
+            arrowPath.MoveTo(end);
+            arrowPath.LineTo(rArrow);
+            arrowPath.Transform(rotMat);
+            canvas.DrawPath(arrowPath, paint);
         }
     }
 }
