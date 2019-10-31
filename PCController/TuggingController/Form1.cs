@@ -34,7 +34,7 @@ namespace TuggingController
             Logger.Debug("Hello World");
             //RobotController ctrl = new RobotController();
             skControl1.Location = new Point(0, 0);
-            skControl1.Size = this.Size;
+            skControl1.Size = this.ClientSize;
             skControl1.PaintSurface += SkControl1_PaintSurface;
             this.SizeChanged += Form1_SizeChanged;
             this.chart = new PointChart();
@@ -42,12 +42,12 @@ namespace TuggingController
 
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
-            skControl1.Size = this.Size;
+            skControl1.Size = this.ClientSize;
         }
 
         private void SkControl1_PaintSurface(object sender, SKPaintSurfaceEventArgs e)
         {
-            this.chart.Draw(e.Surface.Canvas, this.Size.Width, this.Size.Height);
+            this.chart.Draw(e.Surface.Canvas, this.ClientSize.Width, this.ClientSize.Height);
             //SharedPage.OnPainting(sender, e);
         }
 
@@ -73,12 +73,15 @@ namespace TuggingController
     public abstract class Chart
     {
         #region Properties
-        public float Margin { get; set; } = 100;
+        public float Margin { get; set; } = 80;
         public float LabelTextSize { get; set; } = 16;
+        public SKRect chartArea;
+        protected SKRect frameArea;
 
         public SKCanvas Canvas;
         protected float width;
         protected float height;
+        public SKMatrix Transform;
 
         protected readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -88,10 +91,20 @@ namespace TuggingController
         public void Draw(SKCanvas canvas, int width, int height)
         {
             this.Canvas = canvas;
-            this.width = width - (float)this.Margin * 2.0f;
-            this.height = height - (float)this.Margin * 2.0f;
+            this.width = width;
+            this.height = height;
+
+            chartArea = new SKRect {
+                Size = new SKSize(this.width - this.Margin * 2, this.height - this.Margin * 2),
+                Location = new SKPoint(this.Margin, this.Margin)
+            };
+
+            frameArea = new SKRect {
+                Size = new SKSize(this.width, this.height)
+            };
 
             this.Canvas.Clear(SKColor.Empty);
+            this.Canvas.ResetMatrix();
 
             this.DrawArea(this);
             this.DrawContent(this);
@@ -166,26 +179,42 @@ namespace TuggingController
 
             //this.Canvas.Concat(ref rotMat);
         }
-        public override void DrawArea(object ctx) {
-            // Before drawing, do the coordinates transformation.
-            var matTra = SKMatrix.MakeIdentity();
-            SKMatrix.Concat(ref matTra, SKMatrix.MakeScale(1, -1), SKMatrix.MakeTranslation(this.Margin, -(this.height - this.Margin)));
-            //var p0 = matTra.MapPoint(new SKPoint(0, 200));
-            //var p1 = matTra.MapPoint(new SKPoint(200, 200));
-            var p0 = new SKPoint(0, 0);
-            var p1 = new SKPoint(200, 50);
 
-            var shader = SKShader.CreateLinearGradient(
-                p0,
-                p1,
-                new[] { SKColors.Red, SKColors.DarkGreen },
-                null,
-                SKShaderTileMode.Clamp
-                );
-            var paint = new SKPaint {
-                IsAntialias = true,
-                Shader = shader
-            };
+        public void SetLocalTransform() {
+            SKMatrix mat = SKMatrix.MakeScale(1, -1);
+            //SKMatrix.PreConcat(ref mat, );
+            SKMatrix.PreConcat(ref mat, SKMatrix.MakeTranslation(this.Margin, - this.chartArea.Height - this.Margin));
+            this.Transform = mat;
+        }
+        public override void DrawArea(object ctx) {
+
+            // Before drawing, do the coordinates transformation.
+            this.SetLocalTransform();
+            //SKMatrix mat = SKMatrix.MakeIdentity();
+            //SKMatrix.Concat(ref mat, SKMatrix.MakeScale(1, -1), SKMatrix.MakeTranslation(this.Margin, -this.chartArea.Height - this.Margin));
+
+            //SKMatrix matTest = SKMatrix.MakeIdentity();
+            //SKMatrix.PreConcat(ref matTest, SKMatrix.MakeScale(1, -1));
+            //SKMatrix.PreConcat(ref matTest, SKMatrix.MakeTranslation(this.Margin, -this.chartArea.Height - this.Margin));
+
+            //var p0 = new SKPoint(0, 0);
+            //var p1 = new SKPoint(200, 50);
+
+            var origin = new SKPoint(0, 0);
+            var yMax = new SKPoint(0, this.chartArea.Height);
+            var xMax = new SKPoint(this.chartArea.Width, 0);
+
+            //var shader = SKShader.CreateLinearGradient(
+            //    p0,
+            //    p1,
+            //    new[] { SKColors.Red, SKColors.DarkGreen },
+            //    null,
+            //    SKShaderTileMode.Clamp
+            //    );
+            //var paint = new SKPaint {
+            //    IsAntialias = true,
+            //    Shader = shader
+            //};
             var originPaint = new SKPaint {
                 IsAntialias = true,
                 Color = SKColors.Red,
@@ -198,15 +227,17 @@ namespace TuggingController
                 IsStroke = false
             };
 
-            this.Canvas.Concat(ref matTra);
-            this.Logger.Debug("Transformed points: p0 - ({0}), p1 - ({1})", p0, p1);
-            this.Canvas.DrawCircle(new SKPoint(0, 0), 4, originPaint);
-            this.DrawArrow(p0, p1);
+            this.DrawFrame();
+            this.Canvas.DrawText(string.Format("{0} {1}", this.chartArea.Width, this.chartArea.Height), new SKPoint(0, this.Margin), textPaint);
+
+            // Apply a local transform
+            this.Canvas.Concat(ref this.Transform);
+            this.Canvas.DrawCircle(origin, 4, originPaint);
+            this.DrawArrow(origin, xMax);
+            this.DrawArrow(origin, yMax);
+
+            // Reset local transform
             this.Canvas.ResetMatrix();
-            this.Canvas.DrawText(string.Format("{0} {1}", p0, p1), new SKPoint(0, 20), textPaint);
-            //this.Canvas.ResetMatrix();
-            //this.DrawIdentityArrow();
-            //this.Canvas.DrawLine(p0, p1, paint);
         }
         public override void DrawContent(object ctx)
         {
@@ -262,6 +293,23 @@ namespace TuggingController
             }
         }
 
+        private void DrawFrame() {
+            var paint = new SKPaint {
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                Color = SKColors.Purple,
+                StrokeCap = SKStrokeCap.Round,
+                StrokeWidth = 2
+            };
+
+
+            Logger.Debug("Window Size: {0}, {1}", this.frameArea.Width, this.frameArea.Height);
+            Logger.Debug("Frame Size: {0} {1}", this.chartArea.Width, this.chartArea.Height);
+
+            this.Canvas.DrawRect(this.frameArea, paint);
+            paint.Color = SKColors.Blue;
+            this.Canvas.DrawRect(this.chartArea, paint);
+        }
 
         #endregion
     }
