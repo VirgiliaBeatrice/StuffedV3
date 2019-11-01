@@ -121,11 +121,7 @@ namespace TuggingController
 
         public float PointSize { get; set; } = 14;
         public List<SKPoint> Points = new List<SKPoint>();
-
-        private float left;
-        private float right;
-        private float top;
-        private float bottom;
+        public List<Entry> Entries = new List<Entry>();
         #endregion
 
         #region Methods
@@ -275,9 +271,10 @@ namespace TuggingController
         public void AddPoint(Point point)
         {
             this.Points.Add(new SKPoint(point.X, point.Y));
+            this.Entries.Add(new Entry(point.X, point.Y, this.Transform));
         }
 
-        public List<Axes> Axes;
+        public List<Axis> Axes;
         public void DrawAxes(SKCanvas canvas)
         {
             if (this.Axes.Count > 0) {
@@ -314,29 +311,84 @@ namespace TuggingController
         #endregion
     }
 
-    public enum AxesPostions
-    {
-        Top = 0,
-        Bottom,
-        Left,
-        Right
+    public class Entry {
+        public SKPoint LocalCoordinate {
+            get {
+                return this.Transform.MapPoint(this.Coordinate);
+            }
+            set { } 
+        }
+        public SKPoint Coordinate {
+            get {
+                SKMatrix t;
+                this.Transform.TryInvert(out t);
+
+                return t.MapPoint(this.LocalCoordinate);
+            }
+            set { }
+        }
+        public SKMatrix Transform { get; set; } = SKMatrix.MakeIdentity();
+
+        public Entry() {
+            this.LocalCoordinate = new SKPoint(0, 0);
+        }
+
+        public Entry(float x, float y) {
+            this.LocalCoordinate = new SKPoint(x, y);
+        }
+
+        public Entry(float x, float y, SKMatrix transform) {
+            this.LocalCoordinate = new SKPoint(x, y);
+            this.Transform = transform;
+        }
     }
 
-    public class Axes
+    public class Axis
     {
         public string Type;
-        public AxesPostions Position;
-
-        private int left;
-        private int right;
-        private int top;
-        private int bottom;
+        public List<Tick> Ticks { get; set; }
+        public float MaxTicksLimit { get; set; } = 11;
         
-        public Axes() {
-            this.Type = "default";
-            this.Position = AxesPostions.Top;
-
+        public Axis() {
             //this.left
+        }
+
+    }
+
+    public class Tick {
+        public string Label { get; set; }
+        public float Length { get; set; } = 10;
+        public string Direction { get; set; } = "DOWN";
+        public SKPoint Location { get; set; }
+        
+        public Tick(float x, float y) {
+            this.Location = new SKPoint(x, y);
+        }
+
+        public void Draw(SKCanvas canvas) {
+            SKPoint dir = new SKPoint(0, 0);
+
+            if (this.Direction == "DOWN") {
+                dir -= new SKPoint(0, Length);
+            }
+            
+            switch (this.Direction) {
+                case "DOWN":
+                    dir -= new SKPoint(0, this.Length);
+                    break;
+                case "LEFT":
+                    dir -= new SKPoint(this.Length, 0);
+                    break;
+                default:
+                    break;
+            }
+
+            var paint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.4))
+            };
+
+            canvas.DrawLine(this.Location, this.Location + dir, paint);
         }
     }
 
