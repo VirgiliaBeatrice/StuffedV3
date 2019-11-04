@@ -121,21 +121,56 @@ namespace TuggingController
         #region Properties
 
         public float PointSize { get; set; } = 14;
-        public List<SKPoint> Points = new List<SKPoint>();
+        //public List<SKPoint> Points = new List<SKPoint>();
         public List<Entry> Entries = new List<Entry>();
+        public List<Axis> Axes = new List<Axis>();
         #endregion
 
         #region Methods
 
+        public PointChart() {
+            //this.Entries = new List<Entry>();
+
+            //this.SetDefault();
+        }
+        public PointChart(Entry[] entries) {
+            this.Entries = new List<Entry>(entries);
+
+            this.Axes.Add(new Axis("X", this.GetMinValueInEntries("X"), this.GetMaxValueInEntries("X")));
+            this.Axes.Add(new Axis("Y", this.GetMinValueInEntries("Y"), this.GetMaxValueInEntries("Y")));
+        }
         private double DegreeToRadian(double degree) {
             return Math.PI * degree / 180.0;
         }
-        private enum ArrowDirections {
-            Top = 90,
-            Bottom = -90,
-            Left = 180,
-            Right = 0
+
+        private void SetDefault() {
+            this.Axes.Add(new Axis("X", 200));
         }
+
+        private float GetMaxValueInEntries(string axis) {
+            if (axis == "X") {
+                return this.Entries.Max(e => e.LocalCoordinate.X);
+            }
+            else {
+                return this.Entries.Max(e => e.LocalCoordinate.Y);
+            }
+        }
+
+        private float GetMinValueInEntries(string axis) {
+            if (axis == "X") {
+                return this.Entries.Min(e => e.LocalCoordinate.X);
+            }
+            else {
+                return this.Entries.Min(e => e.LocalCoordinate.Y);
+            }
+        }
+
+        //private enum ArrowDirections {
+        //    Top = 90,
+        //    Bottom = -90,
+        //    Left = 180,
+        //    Right = 0
+        //}
         private void DrawArrow(SKPoint start, SKPoint end) {
             var dirVector = end - start;
             var dirAngle = Math.Atan2(dirVector.Y, dirVector.X);
@@ -225,19 +260,31 @@ namespace TuggingController
                 IsStroke = false
             };
 
-            this.DrawFrame();
-            this.Canvas.DrawText(string.Format("{0} {1}", this.chartArea.Width, this.chartArea.Height), new SKPoint(0, this.Margin), textPaint);
+            // For Debug: Draw frame region and debug info
+            //this.DrawFrame();
+            //this.Canvas.DrawText(string.Format("{0} {1}", this.chartArea.Width, this.chartArea.Height), new SKPoint(0, this.Margin), textPaint);
+
 
             // Apply a local transform
-            this.Canvas.ResetMatrix();
-
             this.Canvas.Concat(ref this.Transform);
-            this.Canvas.DrawCircle(origin, 4, originPaint);
+
+            // Draw axes
+            this.Axes.Add(new Axis("X", this.chartArea.Width));
+            this.Axes.Add(new Axis("Y", this.chartArea.Height));
+            this.DrawAxes();
+
+            //this.Canvas.DrawCircle(origin, 4, originPaint);
             this.DrawArrow(origin, xMax);
             this.DrawArrow(origin, yMax);
 
             // Reset local transform
             this.Canvas.ResetMatrix();
+        }
+
+        private void DrawAxes() {
+            foreach(var a in this.Axes) {
+                a.DrawAxis(this.Canvas);
+            }
         }
 
         private void TranformTest() {
@@ -311,21 +358,20 @@ namespace TuggingController
             this.Entries.Add(new Entry(point.X, point.Y, this.Transform, false));
         }
 
-        public List<Axis> Axes;
-        public void DrawAxes(SKCanvas canvas)
-        {
-            if (this.Axes.Count > 0) {
-                foreach(var axis in this.Axes) {
-                    var paint = new SKPaint {
-                        IsAntialias = true,
-                        Color = SKColors.BlueViolet,
-                        Style = SKPaintStyle.Stroke
-                    };
-                    //canvas.DrawLine();
-                }
+        //public void DrawAxes(SKCanvas canvas)
+        //{
+        //    if (this.Axes.Count > 0) {
+        //        foreach(var axis in this.Axes) {
+        //            var paint = new SKPaint {
+        //                IsAntialias = true,
+        //                Color = SKColors.BlueViolet,
+        //                Style = SKPaintStyle.Stroke
+        //            };
+        //            //canvas.DrawLine();
+        //        }
 
-            }
-        }
+        //    }
+        //}
 
         private void DrawFrame() {
             var paint = new SKPaint {
@@ -405,12 +451,56 @@ namespace TuggingController
 
     public class Axis
     {
-        public string Type;
-        public List<Tick> Ticks { get; set; }
-        public float MaxTicksLimit { get; set; } = 11;
+        public string Label { get; set; } = "X";
+        public List<Tick> Ticks { get; set; } = new List<Tick>();
+        public int MaxTicksLimit { get; set; } = 11;
+        public float MaxValue { get; set; }
+        public float MinValue { get; set; }
+        public float LengthInPixel { get; set; }
+        private float Scale {
+            get {
+                return this.LengthInPixel / this.MaxTicksLimit;
+            }
+        }
         
-        public Axis() {
-            //this.left
+        public Axis(string label, float min, float max) {
+            this.MaxValue = max;
+            this.MinValue = min;
+            this.Label = label;
+
+            var interval = (MaxValue - MinValue) / this.MaxTicksLimit;
+
+            for (var i = 0; i < this.MaxTicksLimit; i ++) {
+                var tickValue = this.MinValue + interval * i;
+                Ticks.Add(new Tick(tickValue, 0));
+            }
+        }
+
+        public Axis(string label, float length) {
+            this.Label = label;
+            this.LengthInPixel = length;
+            this.MaxValue = this.MaxTicksLimit * this.Scale;
+            this.MinValue = 0;
+
+            if (this.Label == "X") {
+                for (var i = 0; i < this.MaxTicksLimit; i++) {
+                    var tickValue = this.MinValue + this.Scale * i;
+                    Ticks.Add(new Tick(tickValue, 0));
+                }
+            }
+            else {
+                for (var i = 0; i < this.MaxTicksLimit; i++) {
+                    var tickValue = this.MinValue + this.Scale * i;
+                    Ticks.Add(new Tick(0, tickValue, "LEFT"));
+                }
+            }
+
+        }
+
+        public void DrawAxis(SKCanvas canvas) {
+            foreach(var t in this.Ticks) {
+                t.DrawTick(canvas);
+            }
         }
 
     }
@@ -424,14 +514,15 @@ namespace TuggingController
         public Tick(float x, float y) {
             this.Location = new SKPoint(x, y);
         }
+        
+        public Tick(float x, float y, string dir) {
+            this.Location = new SKPoint(x, y);
+            this.Direction = dir;
+        }
 
-        public void Draw(SKCanvas canvas) {
+        public void DrawTick(SKCanvas canvas) {
             SKPoint dir = new SKPoint(0, 0);
 
-            if (this.Direction == "DOWN") {
-                dir -= new SKPoint(0, Length);
-            }
-            
             switch (this.Direction) {
                 case "DOWN":
                     dir -= new SKPoint(0, this.Length);
