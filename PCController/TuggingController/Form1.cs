@@ -82,6 +82,7 @@ namespace TuggingController
         protected float width;
         protected float height;
         public SKMatrix Transform;
+        protected SKMatrix InverseTransform;
 
         protected readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -179,8 +180,9 @@ namespace TuggingController
         public void SetLocalTransform() {
             SKMatrix mat = SKMatrix.MakeScale(1, -1);
             //SKMatrix.PreConcat(ref mat, );
-            SKMatrix.PreConcat(ref mat, SKMatrix.MakeTranslation(this.Margin, - this.chartArea.Height - this.Margin));
+            SKMatrix.PostConcat(ref mat, SKMatrix.MakeTranslation(this.Margin, (this.chartArea.Height + this.Margin)));
             this.Transform = mat;
+            mat.TryInvert(out this.InverseTransform);
         }
         public override void DrawArea(object ctx) {
 
@@ -227,6 +229,8 @@ namespace TuggingController
             this.Canvas.DrawText(string.Format("{0} {1}", this.chartArea.Width, this.chartArea.Height), new SKPoint(0, this.Margin), textPaint);
 
             // Apply a local transform
+            this.Canvas.ResetMatrix();
+
             this.Canvas.Concat(ref this.Transform);
             this.Canvas.DrawCircle(origin, 4, originPaint);
             this.DrawArrow(origin, xMax);
@@ -235,20 +239,53 @@ namespace TuggingController
             // Reset local transform
             this.Canvas.ResetMatrix();
         }
+
+        private void TranformTest() {
+            List<SKPoint> locals = new List<SKPoint> {
+                new SKPoint(0, 0),
+                new SKPoint(100, 0),
+                new SKPoint(0, 100)
+            };
+
+            List<SKPoint> globals = new List<SKPoint>();
+
+            foreach(var local in locals) {
+                globals.Add(this.Transform.MapPoint(local));
+            }
+
+            Logger.Debug("--------------");
+            Logger.Debug("Target Coordinate: {0}", locals[0]);
+            Logger.Debug("Transformed Coordinate: {0}", globals[0]);
+
+            Logger.Debug("Target Coordinate: {0}", locals[1]);
+            Logger.Debug("Transformed Coordinate: {0}", globals[1]);
+
+            Logger.Debug("Target Coordinate: {0}", locals[2]);
+            Logger.Debug("Transformed Coordinate: {0}", globals[2]);
+
+            locals.Clear();
+            foreach(var g in globals) {
+                locals.Add(this.InverseTransform.MapPoint(g));
+            }
+
+            Logger.Debug("--------------");
+            Logger.Debug("Target Coordinate: {0}", locals[0]);
+            Logger.Debug("Transformed Coordinate: {0}", globals[0]);
+
+            Logger.Debug("Target Coordinate: {0}", locals[1]);
+            Logger.Debug("Transformed Coordinate: {0}", globals[1]);
+
+            Logger.Debug("Target Coordinate: {0}", locals[2]);
+            Logger.Debug("Transformed Coordinate: {0}", globals[2]);
+
+        }
         public override void DrawContent(object ctx)
         {
-            //For test
-            if (Points.Count > 0)
-            {
-                this.DrawPoints(this.Canvas, Points.ToArray());
+            if (this.Entries.Count > 0) {
+                foreach(var e in this.Entries) {
+                    e.DrawEntry(this.Canvas);
+                }
             }
-            //SKPoint[] points = 
-            //{
-            //    new SKPoint(100, 200),
-            //    new SKPoint(200, 200)
-            //};
-
-            //this.DrawPoints(canvas, points);
         }
 
         protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
@@ -270,8 +307,8 @@ namespace TuggingController
 
         public void AddPoint(Point point)
         {
-            this.Points.Add(new SKPoint(point.X, point.Y));
-            this.Entries.Add(new Entry(point.X, point.Y, this.Transform));
+            //this.Points.Add(new SKPoint(point.X, point.Y));
+            this.Entries.Add(new Entry(point.X, point.Y, this.Transform, false));
         }
 
         public List<Axis> Axes;
@@ -312,22 +349,16 @@ namespace TuggingController
     }
 
     public class Entry {
-        public SKPoint LocalCoordinate {
+        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        public SKPoint LocalCoordinate { get; set; }
+        public SKPoint GlobalCoordinate {
             get {
-                return this.Transform.MapPoint(this.Coordinate);
-            }
-            set { } 
-        }
-        public SKPoint Coordinate {
-            get {
-                SKMatrix t;
-                this.Transform.TryInvert(out t);
-
-                return t.MapPoint(this.LocalCoordinate);
+                return this.Transform.MapPoint(this.LocalCoordinate);
             }
             set { }
         }
         public SKMatrix Transform { get; set; } = SKMatrix.MakeIdentity();
+        private SKMatrix InverseTransform { get; set; }
 
         public Entry() {
             this.LocalCoordinate = new SKPoint(0, 0);
@@ -337,10 +368,39 @@ namespace TuggingController
             this.LocalCoordinate = new SKPoint(x, y);
         }
 
-        public Entry(float x, float y, SKMatrix transform) {
-            this.LocalCoordinate = new SKPoint(x, y);
+        public Entry(float x, float y, SKMatrix transform, bool isLocal) {
+            SKMatrix inverse;
+            transform.TryInvert(out inverse);
+
+            this.InverseTransform = inverse;
             this.Transform = transform;
+
+            if (isLocal) {
+                this.LocalCoordinate = new SKPoint(x, y);
+            } else {
+                this.LocalCoordinate = this.InverseTransform.MapPoint(new SKPoint(x, y));
+            }
+
+            Logger.Debug("Global Coordinate: {0}", this.GlobalCoordinate);
+            Logger.Debug("Local Coordinate: {0}", this.LocalCoordinate);
         }
+
+        public void DrawEntry(SKCanvas canvas) {
+            var fillPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.ForestGreen,
+                Style = SKPaintStyle.Fill
+            };
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2
+            };
+            canvas.DrawCircle(this.GlobalCoordinate, 14 / 2, fillPaint);
+            canvas.DrawCircle(this.GlobalCoordinate, 14 / 2, strokePaint);
+        }
+
     }
 
     public class Axis

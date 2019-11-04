@@ -8,8 +8,6 @@ namespace TuggingController
     {
         public RobotController()
         {
-            string title = "Simple Circle";
-
             using (var surface = SKSurface.Create(SKImageInfo.Empty))
             {
                 SKCanvas canvas = surface.Canvas;
