@@ -210,7 +210,7 @@ namespace TuggingController
         //}
 
         public override void DrawHover(Chart ctx) {
-            Hover.DrawHover(this.Canvas, ctx.PointerLocation);
+            //Hover.DrawHover(this.Canvas, ctx.PointerLocation);
         
         }
         private void DrawArrow(SKPoint start, SKPoint end) {
@@ -233,7 +233,7 @@ namespace TuggingController
 
             var paint = new SKPaint {
                 IsAntialias = true,
-                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.4f)),
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 1.0f)),
                 Style = SKPaintStyle.Stroke
                 //Shader = shader
             };
@@ -307,15 +307,15 @@ namespace TuggingController
             //this.Canvas.DrawText(string.Format("{0} {1}", this.chartArea.Width, this.chartArea.Height), new SKPoint(0, this.Margin), textPaint);
 
 
-            // Apply a local transform
-            this.Canvas.Concat(ref this.Transform);
 
             // Draw axes
             this.Axes.Clear();
-            this.Axes.Add(new Axis("X", this.chartArea.Width));
-            this.Axes.Add(new Axis("Y", this.chartArea.Height));
+            this.Axes.Add(new Axis("X", this.chartArea.Width, this.Transform));
+            this.Axes.Add(new Axis("Y", this.chartArea.Height, this.Transform));
             this.DrawAxes();
 
+            // Apply a local transform
+            this.Canvas.Concat(ref this.Transform);
             //this.Canvas.DrawCircle(origin, 4, originPaint);
             this.DrawArrow(origin, xMax);
             this.DrawArrow(origin, yMax);
@@ -445,25 +445,33 @@ namespace TuggingController
         public static void DrawHover(SKCanvas canvas, SKPoint pointerLocation) {
             var anchor = pointerLocation;
             var size = new SKSize(100, 50);
-            var offset = new SKPoint(20, -20);
+            var offset = new SKPoint(10, -25);
             anchor += offset;
             var rect = new SKRect(anchor.X, anchor.Y, anchor.X + size.Width, anchor.Y + size.Height);
             var pathPaint = new SKPaint {
                 IsAntialias = true,
-                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.6)),
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.7)),
                 Style = SKPaintStyle.Fill,
                 PathEffect = SKPathEffect.CreateCorner(5)
             };
-            var strokePaint = new SKPaint {
-                IsAntialias = true,
-                Color = SKColors.Black,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2,
-                PathEffect = SKPathEffect.CreateCorner(5)
-            };
+           
+            //var strokePaint = new SKPaint {
+            //    IsAntialias = true,
+            //    Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.4)),
+            //    Style = SKPaintStyle.Stroke,
+            //    StrokeWidth = 2,
+            //    PathEffect = SKPathEffect.CreateCorner(5)
+            //};
 
             canvas.DrawRect(rect, pathPaint);
-            canvas.DrawRect(rect, strokePaint);
+
+            var textPaint = new SKPaint {
+                Color = SKColors.White
+            };
+            textPaint.MeasureText(pointerLocation.ToString(), ref rect);
+
+            canvas.DrawText(pointerLocation.ToString(), anchor + new SKPoint(5, 25), textPaint);
+            //canvas.DrawRect(rect, strokePaint);
         }
     }
 
@@ -510,6 +518,7 @@ namespace TuggingController
 
             if (this.isHovered) {
                 radius += 2;
+                Hover.DrawHover(canvas, this.GlobalCoordinate);
             }
 
             var fillPaint = new SKPaint {
@@ -523,13 +532,32 @@ namespace TuggingController
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = 2
             };
+
+            // Draw entry shape
             canvas.DrawCircle(this.GlobalCoordinate, radius, fillPaint);
             canvas.DrawCircle(this.GlobalCoordinate, radius, strokePaint);
         }
 
     }
 
-    public class Axis
+    public abstract class CanvasObject {
+        public SKMatrix Transform { get; set; }
+        public SKPoint Location { get; set; }
+        public SKPoint GlobalLocation {
+            get {
+                return this.Transform.MapPoint(this.Location);
+            }
+        }
+
+        public CanvasObject(SKPoint location, SKMatrix transform) {
+            this.Location = location;
+            this.Transform = transform;
+        }
+
+        public abstract void Draw(SKCanvas canvas);
+    }
+
+    public class Axis : CanvasObject
     {
         public string Label { get; set; } = "X";
         public List<Tick> Ticks { get; set; } = new List<Tick>();
@@ -542,8 +570,15 @@ namespace TuggingController
                 return this.LengthInPixel / this.MaxTicksLimit;
             }
         }
+        //public SKMatrix Transform { get; set; }
+        //public SKPoint Location { get; set; }
+        //public SKPoint GlobalLocation {
+        //    get {
+        //        return this.Transform.MapPoint(this.Location);
+        //    }
+        //}
         
-        public Axis(string label, float min, float max) {
+        public Axis(string label, float min, float max) : base(new SKPoint(0, 0), SKMatrix.MakeIdentity()) {
             this.MaxValue = max;
             this.MinValue = min;
             this.Label = label;
@@ -552,11 +587,11 @@ namespace TuggingController
 
             for (var i = 0; i < this.MaxTicksLimit; i ++) {
                 var tickValue = this.MinValue + interval * i;
-                Ticks.Add(new Tick(tickValue, 0));
+                Ticks.Add(new Tick(tickValue, 0, this.Transform));
             }
         }
 
-        public Axis(string label, float length) {
+        public Axis(string label, float length) : base(new SKPoint(0, 0), SKMatrix.MakeIdentity()) {
             this.Label = label;
             this.LengthInPixel = length;
             this.MaxValue = this.MaxTicksLimit * this.Scale;
@@ -565,65 +600,236 @@ namespace TuggingController
             if (this.Label == "X") {
                 for (var i = 0; i < this.MaxTicksLimit; i++) {
                     var tickValue = this.MinValue + this.Scale * i;
-                    Ticks.Add(new Tick(tickValue, 0));
+                    Ticks.Add(new Tick(tickValue, 0, this.Transform));
                 }
             }
             else {
                 for (var i = 0; i < this.MaxTicksLimit; i++) {
                     var tickValue = this.MinValue + this.Scale * i;
-                    Ticks.Add(new Tick(0, tickValue, "LEFT"));
+                    Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT));
                 }
             }
 
         }
 
+        public Axis(string label, float length, SKMatrix transform) : base(new SKPoint(0, 0), transform) {
+            this.Label = label;
+            this.LengthInPixel = length;
+            this.MaxValue = this.MaxTicksLimit * this.Scale;
+            this.MinValue = 0;
+            //this.Transform = transform;
+            //this.Location = new SKPoint(0, 0);
+
+            if (this.Label == "X") {
+                for (var i = 0; i < this.MaxTicksLimit; i++) {
+                    var tickValue = this.MinValue + this.Scale * i;
+                    Ticks.Add(new Tick(tickValue, 0, this.Transform));
+                }
+            }
+            else {
+                for (var i = 0; i < this.MaxTicksLimit; i++) {
+                    var tickValue = this.MinValue + this.Scale * i;
+                    Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT));
+                }
+            }
+        }
+
         public void DrawAxis(SKCanvas canvas) {
             foreach(var t in this.Ticks) {
-                t.DrawTick(canvas);
+                //t.DrawTick(canvas);
+                t.Draw(canvas);
             }
+        }
+
+        public override void Draw(SKCanvas canvas) {
+
         }
 
     }
 
-    public class Tick {
-        public string Label { get; set; }
+    public class Tick : CanvasObject {
+        public enum Directions {
+            DOWN = 0,
+            UP = 1,
+            LEFT = 2,
+            RIGHT = 3
+        }
+        public Label Label {
+            get {
+                Label label = new Label("", new SKPoint(0, 0), this.Transform);
+
+                switch (this.Direction) {
+                    case Directions.DOWN:
+                        label = new Label(this.Location.X.ToString(), this.Location, this.Transform);
+                        break;
+                    case Directions.UP:
+                        label = new Label(this.Location.X.ToString(), this.Location, this.Transform);
+                        break;
+                    case Directions.LEFT:
+                        label = new Label(this.Location.Y.ToString(), this.Location, this.Transform);
+                        break;
+                    case Directions.RIGHT:
+                        label = new Label(this.Location.Y.ToString(), this.Location, this.Transform);
+                        break;
+                }
+                return label;
+            }
+        }
         public float Length { get; set; } = 10;
-        public string Direction { get; set; } = "DOWN";
-        public SKPoint Location { get; set; }
+        //public string Direction { get; set; } = "DOWN";
+        public Directions Direction { get; set; } = Directions.DOWN;
+        private SKPoint OffsetOfDirection {
+            get {
+                SKPoint offset = new SKPoint(0, 0);
+
+                switch(this.Direction) {
+                    case Directions.DOWN:
+                        offset = new SKPoint(0, -this.Length);
+                        break;
+                    case Directions.UP:
+                        offset = new SKPoint(0, this.Length);
+                        break;
+                    case Directions.LEFT:
+                        offset = new SKPoint(-this.Length, 0);
+                        break;
+                    case Directions.RIGHT:
+                        offset = new SKPoint(this.Length, 0);
+                        break;
+                }
+                return offset;
+            }
+        }
+        //public SKPoint Location { get; set; }
+        //public SKPoint GloabalLocation { get; set; }
         
-        public Tick(float x, float y) {
+        public Tick(float x, float y, SKMatrix transform) : base(new SKPoint(0, 0), transform) {
             this.Location = new SKPoint(x, y);
         }
         
-        public Tick(float x, float y, string dir) {
+        public Tick(float x, float y, Directions dir) : base(new SKPoint(0, 0), SKMatrix.MakeIdentity()) {
             this.Location = new SKPoint(x, y);
             this.Direction = dir;
         }
 
-        public void DrawTick(SKCanvas canvas) {
-            SKPoint dir = new SKPoint(0, 0);
+        public override void Draw(SKCanvas canvas) {
+            var paint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.4))
+            };
+            var textPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.6))
+            };
 
-            switch (this.Direction) {
-                case "DOWN":
-                    dir -= new SKPoint(0, this.Length);
-                    break;
-                case "LEFT":
-                    dir -= new SKPoint(this.Length, 0);
-                    break;
-                default:
-                    break;
-            }
+            canvas.Save();
+            canvas.ResetMatrix();
+
+            // Draw shape
+            canvas.DrawLine(this.GlobalLocation, this.Transform.MapPoint(this.Location + this.OffsetOfDirection), paint);
+
+            canvas.Restore();
+        }
+        public void DrawTick(SKCanvas canvas) {
+            //SKPoint dir = new SKPoint(0, 0);
+
+            //switch (this.Direction) {
+            //    case Directions:
+            //        dir -= new SKPoint(0, this.Length);
+            //        break;
+            //    case "LEFT":
+            //        dir -= new SKPoint(this.Length, 0);
+            //        break;
+            //    default:
+            //        break;
+            //}
 
             var paint = new SKPaint {
                 IsAntialias = true,
                 Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.4))
             };
+            var textPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.6))
+            };
 
-            canvas.DrawLine(this.Location, this.Location + dir, paint);
+            // Draw shape
+            canvas.DrawLine(this.Location, this.Location + this.OffsetOfDirection, paint);
+
+            // Draw label
+            this.Label.DrawLabel(canvas);
+            //var originalMat = canvas.TotalMatrix;
+            //var mat = SKMatrix.MakeScale(1, -1);
+            //canvas.Concat(ref mat);
+            //canvas.DrawText((this.Location + dir).X.ToString(), this.Location + dir, textPaint);
+            //canvas.ResetMatrix();
+            //canvas.Concat(ref originalMat);
         }
     }
 
+    public class Label : CanvasObject {
+        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        public SKPoint Anchor { get; set; }
+        public string Name { get; set; }
+
+        //public Label() { }
+        public Label(string name, SKPoint location, SKMatrix transform) : base(location, transform) {
+            this.Name = name;
+        }
+
+        public override void Draw(SKCanvas canvas) {
+            throw new NotImplementedException();
+        }
+        public void DrawLabel(SKCanvas canvas) {
+            var paint = new SKPaint {
+                IsAntialias = true,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Black, 0.8f),
+                TextSize = 14,
+                TextAlign = SKTextAlign.Center
+            };
+            var textWidth = paint.MeasureText(this.Name);
+            var offset = new SKPoint(0, paint.TextSize / 2);
+            var totalMatrix = canvas.TotalMatrix;
+
+            //var path = new SKPath();
+            //var scale = SKMatrix.MakeScale(1, -1);
+            //path.MoveTo(this.Anchor);
+            //path.RLineTo(new SKPoint(textWidth, 0));
+            //path.Transform(scale);
+            //canvas.DrawTextOnPath(this.Name, path, new SKPoint(0, 0), paint);
+
+            canvas.Save();
+            canvas.ResetMatrix();
+
+            canvas.DrawText(this.Name, this.Transform.MapPoint(this.Location + offset), paint);
+            //canvas.DrawText(this.Name, this.GlobalLocation, paint);
+
+            canvas.Restore();
+
+
+
+            //canvas.ResetMatrix();
+            //canvas.Save();
+            //canvas.ResetMatrix();
+            //var translate = SKMatrix.MakeTranslation();
+            //var scale = SKMatrix.MakeScale(1, -1);
+            //path.Transform(scale);
+
+            //canvas.Concat(ref scale);
+            //canvas.DrawTextOnPath(this.Name, path, this.Anchor + offset, paint);
+            //canvas.DrawText(this.Name, this.Anchor + offset, paint);
+            //canvas.Restore();
+            //canvas.Concat(ref totalMatrix);
+        }
+
+    }
+
     public class SkiaHelper {
+        public static SKPoint GenerateZeroPoint() {
+            return new SKPoint(0, 0);
+        }
+        public static SKColor ConvertColorWithAlpha(SKColor baseColor, float alpha) {
+            return baseColor.WithAlpha((byte)(0xFF * alpha));
+        }
 
         public static double DegreeToRadian(double degree) {
             return Math.PI * degree / 180.0;
