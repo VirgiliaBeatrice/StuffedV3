@@ -171,7 +171,7 @@ namespace TuggingController
             var ret = false;
 
             foreach(var e in this.Entries) {
-                var dist = SKPoint.Distance(pos, e.GlobalCoordinate);
+                var dist = SKPoint.Distance(pos, e.GlobalLocation);
                 if (dist <= 5) {
                     e.isHovered = true;
                     ret = true;
@@ -186,19 +186,19 @@ namespace TuggingController
 
         private float GetMaxValueInEntries(string axis) {
             if (axis == "X") {
-                return this.Entries.Max(e => e.LocalCoordinate.X);
+                return this.Entries.Max(e => e.Location.X);
             }
             else {
-                return this.Entries.Max(e => e.LocalCoordinate.Y);
+                return this.Entries.Max(e => e.Location.Y);
             }
         }
 
         private float GetMinValueInEntries(string axis) {
             if (axis == "X") {
-                return this.Entries.Min(e => e.LocalCoordinate.X);
+                return this.Entries.Min(e => e.Location.X);
             }
             else {
-                return this.Entries.Min(e => e.LocalCoordinate.Y);
+                return this.Entries.Min(e => e.Location.Y);
             }
         }
 
@@ -213,7 +213,7 @@ namespace TuggingController
             //Hover.DrawHover(this.Canvas, ctx.PointerLocation);
         
         }
-        private void DrawArrow(SKPoint start, SKPoint end) {
+        private void DrawArrow(SKPoint start, SKPoint end, SKMatrix transform) {
             var dirVector = end - start;
             var dirAngle = Math.Atan2(dirVector.Y, dirVector.X);
             var rotMat = SKMatrix.MakeRotation((float)dirAngle, end.X, end.Y);
@@ -233,7 +233,7 @@ namespace TuggingController
 
             var paint = new SKPaint {
                 IsAntialias = true,
-                Color = SKColors.Black.WithAlpha((byte)(0xFF * 1.0f)),
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.8f)),
                 Style = SKPaintStyle.Stroke
                 //Shader = shader
             };
@@ -241,6 +241,7 @@ namespace TuggingController
             // Line Path
             linePath.MoveTo(start);
             linePath.LineTo(end);
+            linePath.Transform(transform);
             this.Canvas.DrawPath(linePath, paint);
 
             // Arrow Path
@@ -248,23 +249,29 @@ namespace TuggingController
             arrowPath.LineTo(lArrow);
             arrowPath.MoveTo(end);
             arrowPath.LineTo(rArrow);
+
+            //var mat = rotMat;
+            //SKMatrix.PreConcat(ref mat, transform);
+
             arrowPath.Transform(rotMat);
+            arrowPath.Transform(transform);
             this.Canvas.DrawPath(arrowPath, paint);
 
             //this.Canvas.Concat(ref rotMat);
         }
 
-        public void SetLocalTransform() {
+        public void SetTransform() {
             SKMatrix mat = SKMatrix.MakeScale(1, -1);
-            //SKMatrix.PreConcat(ref mat, );
             SKMatrix.PostConcat(ref mat, SKMatrix.MakeTranslation(this.Margin, (this.chartArea.Height + this.Margin)));
+            //SKMatrix.PreConcat(ref mat, );
+            //SKMatrix.PostConcat(ref mat, SKMatrix.MakeTranslation(this.Margin, (this.chartArea.Height + this.Margin)));
             this.Transform = mat;
             mat.TryInvert(out this.InverseTransform);
         }
         public override void DrawArea(object ctx) {
 
             // Before drawing, do the coordinates transformation.
-            this.SetLocalTransform();
+            this.SetTransform();
             //SKMatrix mat = SKMatrix.MakeIdentity();
             //SKMatrix.Concat(ref mat, SKMatrix.MakeScale(1, -1), SKMatrix.MakeTranslation(this.Margin, -this.chartArea.Height - this.Margin));
 
@@ -307,21 +314,32 @@ namespace TuggingController
             //this.Canvas.DrawText(string.Format("{0} {1}", this.chartArea.Width, this.chartArea.Height), new SKPoint(0, this.Margin), textPaint);
 
 
+            this.Canvas.Save();
+            this.Canvas.ResetMatrix();
 
             // Draw axes
             this.Axes.Clear();
+
             this.Axes.Add(new Axis("X", this.chartArea.Width, this.Transform));
             this.Axes.Add(new Axis("Y", this.chartArea.Height, this.Transform));
             this.DrawAxes();
 
+            // Draw arrow
+            this.DrawArrow(origin, xMax, this.Transform);
+            this.DrawArrow(origin, yMax, this.Transform);
+
+            this.Canvas.Restore();
+
+
+
             // Apply a local transform
-            this.Canvas.Concat(ref this.Transform);
+            //this.Canvas.Concat(ref this.Transform);
             //this.Canvas.DrawCircle(origin, 4, originPaint);
-            this.DrawArrow(origin, xMax);
-            this.DrawArrow(origin, yMax);
+            //this.DrawArrow(origin, xMax);
+            //this.DrawArrow(origin, yMax);
 
             // Reset local transform
-            this.Canvas.ResetMatrix();
+            //this.Canvas.ResetMatrix();
         }
 
         private void DrawAxes() {
@@ -373,32 +391,32 @@ namespace TuggingController
         {
             if (this.Entries.Count > 0) {
                 foreach(var e in this.Entries) {
-                    e.DrawEntry(this.Canvas);
+                    e.Draw(this.Canvas);
                 }
             }
         }
 
-        protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
-        {
-            if (points.Length > 0)
-            {
-                foreach(var p in points)
-                {
-                    var paint = new SKPaint
-                    {
-                        IsAntialias = true,
-                        Color = SKColors.Blue,
-                        Style = SKPaintStyle.Fill                        
-                    };
-                    canvas.DrawCircle(p.X, p.Y, 14 / 2, paint);
-                }
-            }
-        }
+        //protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
+        //{
+        //    if (points.Length > 0)
+        //    {
+        //        foreach(var p in points)
+        //        {
+        //            var paint = new SKPaint
+        //            {
+        //                IsAntialias = true,
+        //                Color = SKColors.Blue,
+        //                Style = SKPaintStyle.Fill                        
+        //            };
+        //            canvas.DrawCircle(p.X, p.Y, 14 / 2, paint);
+        //        }
+        //    }
+        //}
 
         public void AddPoint(Point point)
         {
             //this.Points.Add(new SKPoint(point.X, point.Y));
-            this.Entries.Add(new Entry(point.X, point.Y, this.Transform, false));
+            this.Entries.Add(new Entry(this.InverseTransform.MapPoint(new SKPoint(point.X, point.Y)), this.Transform));
         }
 
         //public void DrawAxes(SKCanvas canvas)
@@ -475,50 +493,48 @@ namespace TuggingController
         }
     }
 
-    public class Entry {
+    public class Entry : CanvasObject {
         protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        public SKPoint LocalCoordinate { get; set; }
-        public SKPoint GlobalCoordinate {
-            get {
-                return this.Transform.MapPoint(this.LocalCoordinate);
-            }
-            set { }
-        }
-        public SKMatrix Transform { get; set; } = SKMatrix.MakeIdentity();
-        private SKMatrix InverseTransform { get; set; }
+        //public SKPoint LocalCoordinate { get; set; }
+        //public SKPoint GlobalCoordinate {
+        //    get {
+        //        return this.Transform.MapPoint(this.LocalCoordinate);
+        //    }
+        //    set { }
+        //}
+        //public SKMatrix Transform { get; set; } = SKMatrix.MakeIdentity();
+        //private SKMatrix InverseTransform { get; set; }
         public bool isHovered { get; set; } = false;
 
-        public Entry() {
-            this.LocalCoordinate = new SKPoint(0, 0);
-        }
+        public Entry() : this(0, 0, SKMatrix.MakeIdentity()) { }
 
-        public Entry(float x, float y) {
-            this.LocalCoordinate = new SKPoint(x, y);
-        }
+        public Entry(float x, float y, SKMatrix transform) : this(new SKPoint(x, y), transform) { }
 
-        public Entry(float x, float y, SKMatrix transform, bool isLocal) {
-            SKMatrix inverse;
-            transform.TryInvert(out inverse);
+        public Entry(SKPoint location, SKMatrix transform) : base(location, transform) { }
 
-            this.InverseTransform = inverse;
-            this.Transform = transform;
+        //public Entry(float x, float y, SKMatrix transform, bool isLocal) {
+        //    SKMatrix inverse;
+        //    transform.TryInvert(out inverse);
 
-            if (isLocal) {
-                this.LocalCoordinate = new SKPoint(x, y);
-            } else {
-                this.LocalCoordinate = this.InverseTransform.MapPoint(new SKPoint(x, y));
-            }
+        //    this.InverseTransform = inverse;
+        //    this.Transform = transform;
 
-            Logger.Debug("Global Coordinate: {0}", this.GlobalCoordinate);
-            Logger.Debug("Local Coordinate: {0}", this.LocalCoordinate);
-        }
+        //    if (isLocal) {
+        //        this.LocalCoordinate = new SKPoint(x, y);
+        //    } else {
+        //        this.LocalCoordinate = this.InverseTransform.MapPoint(new SKPoint(x, y));
+        //    }
 
-        public void DrawEntry(SKCanvas canvas) {
+        //    Logger.Debug("Global Coordinate: {0}", this.GlobalCoordinate);
+        //    Logger.Debug("Local Coordinate: {0}", this.LocalCoordinate);
+        //}
+
+        public override void Draw(SKCanvas canvas) {
             float radius = 5;
 
             if (this.isHovered) {
                 radius += 2;
-                Hover.DrawHover(canvas, this.GlobalCoordinate);
+                Hover.DrawHover(canvas, this.GlobalLocation);
             }
 
             var fillPaint = new SKPaint {
@@ -534,9 +550,33 @@ namespace TuggingController
             };
 
             // Draw entry shape
-            canvas.DrawCircle(this.GlobalCoordinate, radius, fillPaint);
-            canvas.DrawCircle(this.GlobalCoordinate, radius, strokePaint);
+            canvas.DrawCircle(this.GlobalLocation, radius, fillPaint);
+            canvas.DrawCircle(this.GlobalLocation, radius, strokePaint);
         }
+        //public void DrawEntry(SKCanvas canvas) {
+        //    float radius = 5;
+
+        //    if (this.isHovered) {
+        //        radius += 2;
+        //        Hover.DrawHover(canvas, this.GlobalCoordinate);
+        //    }
+
+        //    var fillPaint = new SKPaint {
+        //        IsAntialias = true,
+        //        Color = SKColors.ForestGreen,
+        //        Style = SKPaintStyle.Fill
+        //    };
+        //    var strokePaint = new SKPaint {
+        //        IsAntialias = true,
+        //        Color = SKColors.Black,
+        //        Style = SKPaintStyle.Stroke,
+        //        StrokeWidth = 2
+        //    };
+
+        //    // Draw entry shape
+        //    canvas.DrawCircle(this.GlobalCoordinate, radius, fillPaint);
+        //    canvas.DrawCircle(this.GlobalCoordinate, radius, strokePaint);
+        //}
 
     }
 
@@ -606,7 +646,7 @@ namespace TuggingController
             else {
                 for (var i = 0; i < this.MaxTicksLimit; i++) {
                     var tickValue = this.MinValue + this.Scale * i;
-                    Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT));
+                    Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT, this.Transform));
                 }
             }
 
@@ -629,16 +669,21 @@ namespace TuggingController
             else {
                 for (var i = 0; i < this.MaxTicksLimit; i++) {
                     var tickValue = this.MinValue + this.Scale * i;
-                    Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT));
+                    Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT, this.Transform));
                 }
             }
         }
 
         public void DrawAxis(SKCanvas canvas) {
+            var origin = new SKPoint(0, 0);
+            var max = new SKPoint(this.LengthInPixel, 0);
+            
             foreach(var t in this.Ticks) {
                 //t.DrawTick(canvas);
                 t.Draw(canvas);
             }
+
+            //SkiaHelper.DrawArrow(canvas, origin, max, this.Transform);
         }
 
         public override void Draw(SKCanvas canvas) {
@@ -667,9 +712,11 @@ namespace TuggingController
                         break;
                     case Directions.LEFT:
                         label = new Label(this.Location.Y.ToString(), this.Location, this.Transform);
+                        label.Type = "V";
                         break;
                     case Directions.RIGHT:
                         label = new Label(this.Location.Y.ToString(), this.Location, this.Transform);
+                        label.Type = "V";
                         break;
                 }
                 return label;
@@ -706,7 +753,7 @@ namespace TuggingController
             this.Location = new SKPoint(x, y);
         }
         
-        public Tick(float x, float y, Directions dir) : base(new SKPoint(0, 0), SKMatrix.MakeIdentity()) {
+        public Tick(float x, float y, Directions dir, SKMatrix transform) : base(new SKPoint(0, 0), transform) {
             this.Location = new SKPoint(x, y);
             this.Direction = dir;
         }
@@ -726,6 +773,10 @@ namespace TuggingController
 
             // Draw shape
             canvas.DrawLine(this.GlobalLocation, this.Transform.MapPoint(this.Location + this.OffsetOfDirection), paint);
+
+            // Draw label
+            //this.Label.DrawLabel(canvas);
+            this.Label.Draw(canvas);
 
             canvas.Restore();
         }
@@ -756,7 +807,7 @@ namespace TuggingController
             canvas.DrawLine(this.Location, this.Location + this.OffsetOfDirection, paint);
 
             // Draw label
-            this.Label.DrawLabel(canvas);
+            //this.Label.DrawLabel(canvas);
             //var originalMat = canvas.TotalMatrix;
             //var mat = SKMatrix.MakeScale(1, -1);
             //canvas.Concat(ref mat);
@@ -768,6 +819,7 @@ namespace TuggingController
 
     public class Label : CanvasObject {
         protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        public string Type { get; set; } = "H";
         public SKPoint Anchor { get; set; }
         public string Name { get; set; }
 
@@ -777,7 +829,24 @@ namespace TuggingController
         }
 
         public override void Draw(SKCanvas canvas) {
-            throw new NotImplementedException();
+            var paint = new SKPaint {
+                IsAntialias = true,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Black, 0.8f),
+                TextSize = 14,
+                TextAlign = SKTextAlign.Center
+            };
+
+            var offset = new SKPoint(0, 0);
+            var textWidth = paint.MeasureText(this.Name);
+
+            if (this.Type == "H") {
+                offset = new SKPoint(0, -(paint.TextSize + 10));
+            }
+            else {
+                offset = new SKPoint(-(textWidth / 2 + 10), - paint.TextSize / 2);
+            }
+
+            canvas.DrawText(this.Name, this.Transform.MapPoint(this.Location + offset), paint);
         }
         public void DrawLabel(SKCanvas canvas) {
             var paint = new SKPaint {
@@ -834,7 +903,7 @@ namespace TuggingController
         public static double DegreeToRadian(double degree) {
             return Math.PI * degree / 180.0;
         }
-        public static void DrawArrow(SKCanvas canvas, SKPoint start, SKPoint end) {
+        public static void DrawArrow(SKCanvas canvas, SKPoint start, SKPoint end, SKMatrix transform) {
             SKPoint dirVector = end - start;
             double dirAngle = Math.Atan2(dirVector.Y, dirVector.X);
             SKMatrix rotMat = SKMatrix.MakeRotation((float)dirAngle, end.X, end.Y);
@@ -857,6 +926,8 @@ namespace TuggingController
             SKPath linePath = new SKPath();
             linePath.MoveTo(start);
             linePath.LineTo(end);
+
+            linePath.Transform(transform);
             canvas.DrawPath(linePath, paint);
 
             // Arrow Path
@@ -865,7 +936,9 @@ namespace TuggingController
             arrowPath.LineTo(lArrow);
             arrowPath.MoveTo(end);
             arrowPath.LineTo(rArrow);
+            
             arrowPath.Transform(rotMat);
+            linePath.Transform(transform);
             canvas.DrawPath(arrowPath, paint);
         }
     }
