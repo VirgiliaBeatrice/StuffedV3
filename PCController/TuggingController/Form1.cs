@@ -211,7 +211,9 @@ namespace TuggingController
 
         public override void DrawHover(Chart ctx) {
             //Hover.DrawHover(this.Canvas, ctx.PointerLocation);
-        
+            foreach(var e in this.Entries) {
+                e.DrawHover(this.Canvas);
+            }
         }
         private void DrawArrow(SKPoint start, SKPoint end, SKMatrix transform) {
             var dirVector = end - start;
@@ -460,8 +462,8 @@ namespace TuggingController
         
         public Hover() { }
 
-        public static void DrawHover(SKCanvas canvas, SKPoint pointerLocation) {
-            var anchor = pointerLocation;
+        public static void DrawHover(SKCanvas canvas, SKPoint location, SKMatrix transform) {
+            var anchor = transform.MapPoint(location);
             var size = new SKSize(100, 50);
             var offset = new SKPoint(10, -25);
             anchor += offset;
@@ -486,9 +488,9 @@ namespace TuggingController
             var textPaint = new SKPaint {
                 Color = SKColors.White
             };
-            textPaint.MeasureText(pointerLocation.ToString(), ref rect);
+            textPaint.MeasureText(location.ToString(), ref rect);
 
-            canvas.DrawText(pointerLocation.ToString(), anchor + new SKPoint(5, 25), textPaint);
+            canvas.DrawText(location.ToString(), anchor + new SKPoint(5, 25), textPaint);
             //canvas.DrawRect(rect, strokePaint);
         }
     }
@@ -510,7 +512,9 @@ namespace TuggingController
 
         public Entry(float x, float y, SKMatrix transform) : this(new SKPoint(x, y), transform) { }
 
-        public Entry(SKPoint location, SKMatrix transform) : base(location, transform) { }
+        public Entry(SKPoint location, SKMatrix transform) : base(location, transform) {
+            Logger.Debug("Create new entry - [Location]: {0}", this.Location);
+        }
 
         //public Entry(float x, float y, SKMatrix transform, bool isLocal) {
         //    SKMatrix inverse;
@@ -534,7 +538,7 @@ namespace TuggingController
 
             if (this.isHovered) {
                 radius += 2;
-                Hover.DrawHover(canvas, this.GlobalLocation);
+                //Hover.DrawHover(canvas, this.GlobalLocation);
             }
 
             var fillPaint = new SKPaint {
@@ -552,7 +556,16 @@ namespace TuggingController
             // Draw entry shape
             canvas.DrawCircle(this.GlobalLocation, radius, fillPaint);
             canvas.DrawCircle(this.GlobalLocation, radius, strokePaint);
+
+
         }
+
+        public void DrawHover(SKCanvas canvas) {
+            if (this.isHovered) {
+                Hover.DrawHover(canvas, this.Location, this.Transform);
+            }
+        }
+
         //public void DrawEntry(SKCanvas canvas) {
         //    float radius = 5;
 
