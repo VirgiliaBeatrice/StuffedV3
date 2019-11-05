@@ -71,13 +71,22 @@ namespace TuggingController
         }
 
         private void skControl1_MouseMove(object sender, MouseEventArgs e) {
+            this.chart.PointerLocation = new SKPoint(e.Location.X, e.Location.Y);
+
             if (this.chart.isInZone(e.Location)) {
                 this.chart.Hovered = true;
-                this.chart.PointerLocation = new SKPoint(e.Location.X, e.Location.Y);
                 skControl1.Invalidate();
             }
             else {
                 this.chart.Hovered = false;
+            }
+
+            if (this.chart.isInArea(e.Location)) {
+                this.chart.hasIndicator = true;
+                skControl1.Invalidate();
+            }
+            else {
+                this.chart.hasIndicator = false;
                 skControl1.Invalidate();
             }
         }
@@ -91,6 +100,7 @@ namespace TuggingController
         public SKRect chartArea;
         protected SKRect frameArea;
         public bool Hovered { get; set; } = false;
+        public bool hasIndicator { get; set; } = false;
         public SKPoint PointerLocation { get; set; }
 
         public SKCanvas Canvas;
@@ -127,8 +137,12 @@ namespace TuggingController
             if (this.Hovered) {
                 this.DrawHover(this);
             }
+            if (this.hasIndicator) {
+                this.DrawIndicator();
+            }
         }
 
+        public abstract void DrawIndicator();
         public abstract void DrawArea(object ctx);
         public abstract void DrawContent(object ctx);
         public abstract void DrawHover(Chart chart);
@@ -184,6 +198,11 @@ namespace TuggingController
             return ret;
         }
 
+        public bool isInArea(Point globalLocation) {
+            SKPoint location = this.InverseTransform.MapPoint(new SKPoint(globalLocation.X, globalLocation.Y));
+            return (location.X <= this.chartArea.Width & location.X >= 0) && (location.Y <= this.chartArea.Height & location.Y >= 0);
+        }
+
         private float GetMaxValueInEntries(string axis) {
             if (axis == "X") {
                 return this.Entries.Max(e => e.Location.X);
@@ -214,6 +233,35 @@ namespace TuggingController
             foreach(var e in this.Entries) {
                 e.DrawHover(this.Canvas);
             }
+        }
+
+        public override void DrawIndicator() {
+            this.DrawCross(this.Canvas, this.chartArea, this.InverseTransform.MapPoint(this.PointerLocation), this.Transform);
+        }
+
+        private void DrawCross(SKCanvas canvas, SKRect bound, SKPoint location, SKMatrix transform) {
+            var horizonLineStart = new SKPoint(0, location.Y);
+            var horizonLineEnd = new SKPoint(bound.Width, location.Y);
+            var verticalLineStart = new SKPoint(location.X, 0);
+            var verticalLineEnd = new SKPoint(location.X, bound.Height);
+
+            var dashArray = new float[] { 0, 20 };
+            var paint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.8f)),
+                Style = SKPaintStyle.Stroke
+                //PathEffect = SKPathEffect.CreateDash(dashArray, 10)
+            };
+
+            var path = new SKPath();
+            path.MoveTo(horizonLineStart);
+            path.LineTo(horizonLineEnd);
+            path.MoveTo(verticalLineStart);
+            path.LineTo(verticalLineEnd);
+
+            path.Transform(transform);
+
+            canvas.DrawPath(path, paint);
         }
         private void DrawArrow(SKPoint start, SKPoint end, SKMatrix transform) {
             var dirVector = end - start;
