@@ -36,6 +36,7 @@ namespace TuggingController
             skControl1.Location = new Point(0, 0);
             skControl1.Size = this.ClientSize;
             skControl1.PaintSurface += SkControl1_PaintSurface;
+            skControl1.MouseMove += skControl1_MouseMove;
             this.SizeChanged += Form1_SizeChanged;
             this.chart = new PointChart();
         }
@@ -68,6 +69,18 @@ namespace TuggingController
             }
 
         }
+
+        private void skControl1_MouseMove(object sender, MouseEventArgs e) {
+            if (this.chart.isInZone(e.Location)) {
+                this.chart.Hovered = true;
+                this.chart.PointerLocation = new SKPoint(e.Location.X, e.Location.Y);
+                skControl1.Invalidate();
+            }
+            else {
+                this.chart.Hovered = false;
+                skControl1.Invalidate();
+            }
+        }
     }
 
     public abstract class Chart
@@ -77,6 +90,8 @@ namespace TuggingController
         public float LabelTextSize { get; set; } = 16;
         public SKRect chartArea;
         protected SKRect frameArea;
+        public bool Hovered { get; set; } = false;
+        public SKPoint PointerLocation { get; set; }
 
         public SKCanvas Canvas;
         protected float width;
@@ -109,10 +124,14 @@ namespace TuggingController
 
             this.DrawArea(this);
             this.DrawContent(this);
+            if (this.Hovered) {
+                this.DrawHover(this);
+            }
         }
 
         public abstract void DrawArea(object ctx);
         public abstract void DrawContent(object ctx);
+        public abstract void DrawHover(Chart chart);
         #endregion
     }
 
@@ -147,6 +166,24 @@ namespace TuggingController
             this.Axes.Add(new Axis("X", 200));
         }
 
+        public bool isInZone(Point pointerLocation) {
+            var pos = new SKPoint(pointerLocation.X, pointerLocation.Y);
+            var ret = false;
+
+            foreach(var e in this.Entries) {
+                var dist = SKPoint.Distance(pos, e.GlobalCoordinate);
+                if (dist <= 5) {
+                    e.isHovered = true;
+                    ret = true;
+                }
+                else {
+                    e.isHovered = false;
+                }
+            }
+
+            return ret;
+        }
+
         private float GetMaxValueInEntries(string axis) {
             if (axis == "X") {
                 return this.Entries.Max(e => e.LocalCoordinate.X);
@@ -171,6 +208,11 @@ namespace TuggingController
         //    Left = 180,
         //    Right = 0
         //}
+
+        public override void DrawHover(Chart ctx) {
+            Hover.DrawHover(this.Canvas, ctx.PointerLocation);
+        
+        }
         private void DrawArrow(SKPoint start, SKPoint end) {
             var dirVector = end - start;
             var dirAngle = Math.Atan2(dirVector.Y, dirVector.X);
@@ -269,6 +311,7 @@ namespace TuggingController
             this.Canvas.Concat(ref this.Transform);
 
             // Draw axes
+            this.Axes.Clear();
             this.Axes.Add(new Axis("X", this.chartArea.Width));
             this.Axes.Add(new Axis("Y", this.chartArea.Height));
             this.DrawAxes();
@@ -394,6 +437,36 @@ namespace TuggingController
         #endregion
     }
 
+    public class Hover {
+        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        
+        public Hover() { }
+
+        public static void DrawHover(SKCanvas canvas, SKPoint pointerLocation) {
+            var anchor = pointerLocation;
+            var size = new SKSize(100, 50);
+            var offset = new SKPoint(20, -20);
+            anchor += offset;
+            var rect = new SKRect(anchor.X, anchor.Y, anchor.X + size.Width, anchor.Y + size.Height);
+            var pathPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.6)),
+                Style = SKPaintStyle.Fill,
+                PathEffect = SKPathEffect.CreateCorner(5)
+            };
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2,
+                PathEffect = SKPathEffect.CreateCorner(5)
+            };
+
+            canvas.DrawRect(rect, pathPaint);
+            canvas.DrawRect(rect, strokePaint);
+        }
+    }
+
     public class Entry {
         protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public SKPoint LocalCoordinate { get; set; }
@@ -405,6 +478,7 @@ namespace TuggingController
         }
         public SKMatrix Transform { get; set; } = SKMatrix.MakeIdentity();
         private SKMatrix InverseTransform { get; set; }
+        public bool isHovered { get; set; } = false;
 
         public Entry() {
             this.LocalCoordinate = new SKPoint(0, 0);
@@ -432,6 +506,12 @@ namespace TuggingController
         }
 
         public void DrawEntry(SKCanvas canvas) {
+            float radius = 5;
+
+            if (this.isHovered) {
+                radius += 2;
+            }
+
             var fillPaint = new SKPaint {
                 IsAntialias = true,
                 Color = SKColors.ForestGreen,
@@ -443,8 +523,8 @@ namespace TuggingController
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = 2
             };
-            canvas.DrawCircle(this.GlobalCoordinate, 14 / 2, fillPaint);
-            canvas.DrawCircle(this.GlobalCoordinate, 14 / 2, strokePaint);
+            canvas.DrawCircle(this.GlobalCoordinate, radius, fillPaint);
+            canvas.DrawCircle(this.GlobalCoordinate, radius, strokePaint);
         }
 
     }
