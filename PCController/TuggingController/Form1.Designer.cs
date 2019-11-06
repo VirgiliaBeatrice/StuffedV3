@@ -38,7 +38,6 @@
             this.skControl1.Size = new System.Drawing.Size(703, 426);
             this.skControl1.TabIndex = 0;
             this.skControl1.Text = "skControl1";
-            this.skControl1.MouseClick += new System.Windows.Forms.MouseEventHandler(this.skControl1_MouseClick);
             // 
             // Form1
             // 

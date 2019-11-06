@@ -20,6 +20,11 @@ namespace TuggingController
         public PointChart chart;
        
         private readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
+        private bool IsDragging { get; set; } = false;
+        private Point StartLocationOnDrag { get; set; }
+        private Point CurrentLocationOnDrag { get; set; }
+        private Entry DragTarget;
         public Form1()
         {
             InitializeComponent();
@@ -37,6 +42,8 @@ namespace TuggingController
             skControl1.Size = this.ClientSize;
             skControl1.PaintSurface += SkControl1_PaintSurface;
             skControl1.MouseMove += skControl1_MouseMove;
+            skControl1.MouseDown += skControl1_MouseDown;
+            skControl1.MouseDoubleClick += skControl1_MouseClick;
             this.SizeChanged += Form1_SizeChanged;
             this.chart = new PointChart();
         }
@@ -52,6 +59,33 @@ namespace TuggingController
             //SharedPage.OnPainting(sender, e);
         }
 
+        private void skControl1_MouseDown(object sender, MouseEventArgs e) {
+            switch (e.Button) {
+                case MouseButtons.Left:
+                    //this.IsDragging = true;
+                    this.StartLocationOnDrag = e.Location;
+                    this.CurrentLocationOnDrag = e.Location;
+                    break;
+            }
+
+            Logger.Debug("Detected a mousedown event.");
+
+        }
+
+        private void skControl1_MouseUp(object sender, MouseEventArgs e) {
+            switch (e.Button) {
+                case MouseButtons.Left:
+                    //this.IsDragging = false;
+                    this.StartLocationOnDrag = new Point();
+                    this.CurrentLocationOnDrag = new Point();
+                    break;
+            }
+
+            Logger.Debug("Detected a mouseup event.");
+
+
+
+        }
         private void skControl1_MouseClick(object sender, MouseEventArgs e)
         {
             // Add new point
@@ -72,23 +106,76 @@ namespace TuggingController
 
         private void skControl1_MouseMove(object sender, MouseEventArgs e) {
             this.chart.PointerLocation = new SKPoint(e.Location.X, e.Location.Y);
+            
+            if (e.Button == MouseButtons.None) {
+                this.IsDragging = false;
+                if (this.chart.isInZone(e.Location, 5, out _)) {
+                    this.chart.Hovered = true;
+                    skControl1.Invalidate();
+                }
+                else {
+                    this.chart.Hovered = false;
+                }
 
-            if (this.chart.isInZone(e.Location)) {
-                this.chart.Hovered = true;
-                skControl1.Invalidate();
+                if (this.chart.isInArea(e.Location)) {
+                    this.chart.hasIndicator = true;
+                    skControl1.Invalidate();
+                }
+                else {
+                    this.chart.hasIndicator = false;
+                    skControl1.Invalidate();
+                }
             }
             else {
-                this.chart.Hovered = false;
+                if (this.IsDragging) {
+                    this.CurrentLocationOnDrag = e.Location;
+                    //var move = this.CurrentLocationOnDrag - this.StartLocationOnDrag;
+                    //var targetLocation = new SKPoint(e.Location.X - this.StartLocationOnDrag.X, e.Location.Y - this.StartLocationOnDrag.Y);
+                    var targetLoc = new SKPoint(e.Location.X, e.Location.Y);
+                    this.DragTarget.UpdateFromGlobalLocation(targetLoc);
+
+                    Logger.Debug("Dragging.");
+                    skControl1.Invalidate();
+                }
+                else {
+                    if (this.chart.isInZone(e.Location, 10, out this.DragTarget)) {
+                        this.CurrentLocationOnDrag = e.Location;
+                        this.IsDragging = true;
+                        //var move = this.CurrentLocationOnDrag - this.StartLocationOnDrag;
+                        //var targetLocation = new SKPoint(e.Location.X - this.StartLocationOnDrag.X, e.Location.Y - this.StartLocationOnDrag.Y);
+                        var targetLoc = new SKPoint(e.Location.X, e.Location.Y); 
+                        this.DragTarget.UpdateFromGlobalLocation(targetLoc);
+
+                        Logger.Debug("Dragging.");
+                        skControl1.Invalidate();
+                    }
+                }
+
             }
 
-            if (this.chart.isInArea(e.Location)) {
-                this.chart.hasIndicator = true;
-                skControl1.Invalidate();
-            }
-            else {
-                this.chart.hasIndicator = false;
-                skControl1.Invalidate();
-            }
+            //if (IsMouseReleased) {
+            //    if (this.chart.isInZone(e.Location) != -1) {
+            //        this.chart.Hovered = true;
+            //        skControl1.Invalidate();
+            //    }
+            //    else {
+            //        this.chart.Hovered = false;
+            //    }
+
+            //    if (this.chart.isInArea(e.Location)) {
+            //        this.chart.hasIndicator = true;
+            //        skControl1.Invalidate();
+            //    }
+            //    else {
+            //        this.chart.hasIndicator = false;
+            //        skControl1.Invalidate();
+            //    }
+            //}
+            //else {
+            //    if (this.chart.isInZone(e.Location) != -1) {
+
+            //    }
+            //}
         }
     }
 
@@ -109,7 +196,7 @@ namespace TuggingController
         protected float width;
         protected float height;
         public SKMatrix Transform;
-        protected SKMatrix InverseTransform;
+        public SKMatrix InverseTransform;
         public SKMatrix Scale;
 
         protected readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
@@ -194,15 +281,17 @@ namespace TuggingController
             this.Axes.Add(new Axis("X", 200));
         }
 
-        public bool isInZone(Point pointerLocation) {
+        public bool isInZone(Point pointerLocation, float radius, out Entry target) {
             var pos = new SKPoint(pointerLocation.X, pointerLocation.Y);
             var ret = false;
 
-            foreach(var e in this.Entries) {
+            target = null;
+            foreach(var (e, i) in this.Entries.Select((e, i) => (e, i))) {
                 var dist = SKPoint.Distance(pos, e.GlobalLocation);
-                if (dist <= 5) {
+                if (dist <= radius) {
                     e.isHovered = true;
                     ret = true;
+                    target = e;
                 }
                 else {
                     e.isHovered = false;
@@ -663,6 +752,17 @@ namespace TuggingController
 
         public void UpdateScale(SKMatrix scale) {
             this.Scale = scale;
+        }
+
+        public void UpdateFromGlobalLocation(SKPoint gLocation) {
+            SKMatrix inverseCoordinate, inverseScale;
+            this.Transform.TryInvert(out inverseCoordinate);
+            this.Scale.TryInvert(out inverseScale);
+
+            this.Value = inverseScale.MapPoint(inverseCoordinate.MapPoint(gLocation));
+        }
+        public void DoDragDrop() {
+
         }
 
         //public void DrawEntry(SKCanvas canvas) {
