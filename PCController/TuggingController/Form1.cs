@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SkiaSharp;
@@ -25,6 +26,7 @@ namespace TuggingController
         private Point StartLocationOnDrag { get; set; }
         private Point CurrentLocationOnDrag { get; set; }
         private Entry DragTarget;
+        private Triangulation Tri;
         public Form1()
         {
             InitializeComponent();
@@ -36,9 +38,10 @@ namespace TuggingController
 
             Logger.Debug("Hello World");
             //RobotController ctrl = new RobotController();
-            var tri = new Triangulation();
-            tri.OnDataReceived += Triangle_DataReceived;
-            tri.StartTask();
+            this.Tri = new Triangulation();
+            this.Tri.OnDataReceived += Triangle_DataReceived;
+            this.Tri.RunRbox();
+            this.Tri.StartTask();
 
             skControl1.Location = new Point(0, 0);
             skControl1.Size = this.ClientSize;
@@ -96,6 +99,15 @@ namespace TuggingController
                     this.StartLocationOnDrag = new Point();
                     this.CurrentLocationOnDrag = new Point();
                     Console.WriteLine(this.chart.PrintEntries());
+                    this.Tri.RunDelaunay(this.chart.PrintEntries());
+                    this.Tri.StartTask();
+                    if (File.Exists("data.txt")) {
+                        File.Delete("data.txt");
+                    }
+                    using (FileStream fs = File.Create("data.txt")) {
+                        byte[] info = new UTF8Encoding(true).GetBytes(this.chart.PrintEntries());
+                        fs.Write(info, 0, info.Length);
+                    }
 
                     break;
             }
