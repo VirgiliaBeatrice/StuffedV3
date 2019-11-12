@@ -58,6 +58,10 @@ namespace TuggingController
                     this.chart.AddPointFromValue(coordinates[0], coordinates[1]);
                 }
             }
+
+            Logger.Debug("MinValue: {0}", this.chart.MinValue);
+            Logger.Debug("MaxValue: {0}", this.chart.MaxValue);
+            skControl1.Invalidate();
         }
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
@@ -194,6 +198,16 @@ namespace TuggingController
     {
         #region Properties
         public List<Entry> Entries { get; set; } = new List<Entry>();
+        public SKPoint MaxValue {
+            get {
+                return new SKPoint(this.Entries.Max(e => e.Value.X), this.Entries.Max(e => e.Value.Y));
+            }
+        }
+        public SKPoint MinValue {
+            get {
+                return new SKPoint(this.Entries.Min(e => e.Value.X), this.Entries.Min(e => e.Value.Y));
+            }
+        }
         public List<Axis> Axes { get; set; } = new List<Axis>();
         public float Margin { get; set; } = 80;
         public float LabelTextSize { get; set; } = 16;
@@ -208,7 +222,7 @@ namespace TuggingController
         protected float height;
         public SKMatrix Transform;
         public SKMatrix InverseTransform;
-        public SKMatrix Scale;
+        public SKMatrix Scale { get; set; }
 
         protected readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -231,7 +245,11 @@ namespace TuggingController
             };
 
             // Calculate the transform of this chart
-            this.Scale = SKMatrix.MakeScale(this.chartArea.Width / 10, this.chartArea.Height / 10);
+            var translate = SKMatrix.MakeTranslation(-this.MinValue.X, -this.MinValue.Y);
+            SKMatrix.PostConcat(ref translate, SKMatrix.MakeScale(this.chartArea.Width / (this.MaxValue.X - this.MinValue.X), this.chartArea.Height / (this.MaxValue.Y - this.MinValue.Y)));
+            this.Scale = translate;
+            //this.Scale = SKMatrix.MakeScale(this.chartArea.Width / 10, this.chartArea.Height / 10);
+
             this.SetTransform();
             // Update data
             this.Entries.ForEach(e => e.UpdateTransform(this.Transform));
@@ -244,9 +262,11 @@ namespace TuggingController
 
             this.DrawArea(this);
             this.DrawContent(this);
+
             if (this.Hovered) {
                 this.DrawHover(this);
             }
+
             if (this.hasIndicator) {
                 this.DrawIndicator();
             }
@@ -281,8 +301,8 @@ namespace TuggingController
         public PointChart(Entry[] entries) {
             this.Entries = new List<Entry>(entries);
 
-            this.Axes.Add(new Axis("X", this.GetMinValueInEntries("X"), this.GetMaxValueInEntries("X")));
-            this.Axes.Add(new Axis("Y", this.GetMinValueInEntries("Y"), this.GetMaxValueInEntries("Y")));
+            //this.Axes.Add(new Axis("X", this.GetMinValueInEntries("X"), this.GetMaxValueInEntries("X")));
+            //this.Axes.Add(new Axis("Y", this.GetMinValueInEntries("Y"), this.GetMaxValueInEntries("Y")));
         }
         private double DegreeToRadian(double degree) {
             return Math.PI * degree / 180.0;
@@ -484,8 +504,15 @@ namespace TuggingController
             // Draw axes
             this.Axes.Clear();
 
-            this.Axes.Add(new Axis("X", this.chartArea.Width, this.Transform));
-            this.Axes.Add(new Axis("Y", this.chartArea.Height, this.Transform));
+            if (this.Entries.Count == 0) {
+                this.Axes.Add(new Axis("X", this.chartArea.Width, this.Transform));
+                this.Axes.Add(new Axis("Y", this.chartArea.Height, this.Transform));
+            }
+            else {
+                this.Axes.Add(new Axis("X", this.MinValue.X, this.MaxValue.X, this.chartArea.Width, this.Transform));
+                this.Axes.Add(new Axis("Y", this.MinValue.Y, this.MaxValue.Y, this.chartArea.Height, this.Transform));
+            }
+
             this.DrawAxes();
 
             // Draw arrow
@@ -672,17 +699,9 @@ namespace TuggingController
         }
     }
 
+
     public class Entry : CanvasObject {
         protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        //public SKPoint LocalCoordinate { get; set; }
-        //public SKPoint GlobalCoordinate {
-        //    get {
-        //        return this.Transform.MapPoint(this.LocalCoordinate);
-        //    }
-        //    set { }
-        //}
-        //public SKMatrix Transform { get; set; } = SKMatrix.MakeIdentity();
-        //private SKMatrix InverseTransform { get; set; }
         public bool isHovered { get; set; } = false;
         public SKPoint Value { get; set; }
         public override SKPoint Location {
@@ -707,8 +726,8 @@ namespace TuggingController
             this.Value = value;
             this.Scale = scale;
             //this.Value = scale.MapPoint(location);
-            Logger.Debug("Create new entry - [Location]: {0}", this.Location);
             Logger.Debug("Create new entry - [Value]: {0}", this.Value);
+            Logger.Debug("Create new entry - [Location]: {0}", this.Location);
         }
 
 
@@ -765,9 +784,9 @@ namespace TuggingController
             }
         }
 
-        public void UpdateTransform(SKMatrix transform) {
-            this.Transform = transform;
-        }
+        //public void UpdateTransform(SKMatrix transform) {
+        //    this.Transform = transform;
+        //}
 
         public void UpdateScale(SKMatrix scale) {
             this.Scale = scale;
@@ -830,6 +849,9 @@ namespace TuggingController
         }
 
         public abstract void Draw(SKCanvas canvas);
+        public virtual void UpdateTransform(SKMatrix transform) {
+            this.Transform = transform;
+        }
     }
 
     public class Axis : CanvasObject
@@ -846,6 +868,8 @@ namespace TuggingController
                 return (this.MaxValue - this.MinValue) / this.LengthInPixel;
             }
         }
+
+        //public SKMatrix Scale { get; set; }
         //public SKMatrix Transform { get; set; }
         //public SKPoint Location { get; set; }
         //public SKPoint GlobalLocation {
@@ -861,16 +885,26 @@ namespace TuggingController
             this.LengthInPixel = lengthInPixel;
         }
         
-        public Axis(string label, float min, float max) : base(new SKPoint(0, 0), SKMatrix.MakeIdentity()) {
-            this.MaxValue = max;
-            this.MinValue = min;
-            this.Label = label;
+        public Axis(string label, float min, float max, float lengthInPixel, SKMatrix transform) : this(label, min, max, lengthInPixel, new SKPoint(0, 0), transform) {
+            var interval = (this.MaxValue - this.MinValue) / (this.MaxTicksLimit - 1);
 
-            var interval = (MaxValue - MinValue) / this.MaxTicksLimit;
-
-            for (var i = 0; i < this.MaxTicksLimit; i ++) {
-                var tickValue = this.MinValue + interval * i;
-                Ticks.Add(new Tick(tickValue, 0, this.Transform));
+            if (this.Label == "X") {
+                for (var i = 0; i < this.MaxTicksLimit; i++) {
+                    var tickValue = this.MinValue + interval * i;
+                    var tickPixel = (0 + interval * i) / this.Scale;
+                    //Ticks.Add(new Tick(tickValue, 0, this.Transform));
+                    Ticks.Add(new Tick(tickValue.ToString(), Tick.Directions.DOWN, new SKPoint(tickPixel, 0), this.Transform));
+                }
+            }
+            else {
+                for (var i = 0; i < this.MaxTicksLimit; i++) {
+                    var tickValue = this.MinValue + interval * i;
+                    var tickPixel = (0 + interval * i) / this.Scale;
+                    //Ticks.Add(new Tick(tickValue, 0, this.Transform));
+                    Ticks.Add(new Tick(tickValue.ToString(), Tick.Directions.LEFT, new SKPoint(0, tickPixel), this.Transform));
+                    //var tickValue = this.MinValue + this.Scale * i;
+                    //Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT, this.Transform));
+                }
             }
         }
 
@@ -952,7 +986,11 @@ namespace TuggingController
         }
 
         public override void Draw(SKCanvas canvas) {
+            throw new NotImplementedException();
+        }
 
+        public override void UpdateTransform(SKMatrix transform) {
+            this.Transform = transform;
         }
 
     }
