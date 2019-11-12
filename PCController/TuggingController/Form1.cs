@@ -30,14 +30,16 @@ namespace TuggingController
             InitializeComponent();
 
             var config = new NLog.Config.LoggingConfiguration();
-
             var logConsole = new NLog.Targets.ColoredConsoleTarget("Form1");
-
             config.AddRule(LogLevel.Debug, LogLevel.Fatal, logConsole);
             NLog.LogManager.Configuration = config;
 
             Logger.Debug("Hello World");
             //RobotController ctrl = new RobotController();
+            var tri = new Triangulation();
+            tri.OnDataReceived += Triangle_DataReceived;
+            tri.StartTask();
+
             skControl1.Location = new Point(0, 0);
             skControl1.Size = this.ClientSize;
             skControl1.PaintSurface += SkControl1_PaintSurface;
@@ -48,6 +50,15 @@ namespace TuggingController
             this.chart = new PointChart();
         }
 
+        private void Triangle_DataReceived(string data) {
+            string[] lines = data.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            for(int idx = 0; idx < lines.Length; idx ++) {
+                if (idx > 1) {
+                    var coordinates = lines[idx].Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(e => Convert.ToSingle(e)).ToArray();
+                    this.chart.AddPointFromValue(coordinates[0], coordinates[1]);
+                }
+            }
+        }
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
             skControl1.Size = this.ClientSize;
@@ -95,7 +106,7 @@ namespace TuggingController
                 case MouseButtons.Left:
                     Logger.Debug("Add new point");
                     Logger.Debug(e.Location);
-                    this.chart.AddPoint(e.Location);
+                    this.chart.AddPointFromGlobal(e.Location);
                     skControl1.Invalidate();
                     break;
                 default:
@@ -566,7 +577,10 @@ namespace TuggingController
         //    }
         //}
 
-        public void AddPoint(Point point)
+        public void ClearPoints() {
+            this.Entries.Clear();
+        }
+        public void AddPointFromGlobal(Point point)
         {
             //this.Points.Add(new SKPoint(point.X, point.Y));
             //this.Entries.Add(new Entry(this.InverseTransform.MapPoint(new SKPoint(point.X, point.Y)), this.Transform));
@@ -578,6 +592,11 @@ namespace TuggingController
             tPoint = inverse.MapPoint(tPoint);
             this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
             //this.Entries.Add(new Entry(tPoint, inverse, this.InverseTransform));
+        }
+
+        public void AddPointFromValue(float x, float y) {
+            var tPoint = new SKPoint(x, y);
+            this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
         }
 
         //public void DrawAxes(SKCanvas canvas)
