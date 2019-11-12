@@ -45,6 +45,7 @@ namespace TuggingController
             skControl1.PaintSurface += SkControl1_PaintSurface;
             skControl1.MouseMove += skControl1_MouseMove;
             skControl1.MouseDown += skControl1_MouseDown;
+            skControl1.MouseUp += skControl1_MouseUp;
             skControl1.MouseDoubleClick += skControl1_MouseClick;
             this.SizeChanged += Form1_SizeChanged;
             this.chart = new PointChart();
@@ -61,6 +62,7 @@ namespace TuggingController
 
             Logger.Debug("MinValue: {0}", this.chart.MinValue);
             Logger.Debug("MaxValue: {0}", this.chart.MaxValue);
+            //Console.WriteLine(this.chart.PrintEntries());
             skControl1.Invalidate();
         }
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -93,6 +95,8 @@ namespace TuggingController
                     //this.IsDragging = false;
                     this.StartLocationOnDrag = new Point();
                     this.CurrentLocationOnDrag = new Point();
+                    Console.WriteLine(this.chart.PrintEntries());
+
                     break;
             }
 
@@ -278,6 +282,15 @@ namespace TuggingController
         public abstract void DrawHover(Chart chart);
 
         public abstract void SetTransform();
+
+        public virtual string PrintEntries() {
+            string ret = String.Format("2\r\n{0}\r\n", this.Entries.Count);
+            foreach (var e in this.Entries) {
+                ret += e.Value.X + " " + e.Value.Y + "\r\n";
+            }
+
+            return ret;
+        }
         #endregion
     }
 
