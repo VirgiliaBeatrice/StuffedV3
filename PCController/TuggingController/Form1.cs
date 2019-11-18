@@ -26,7 +26,7 @@ namespace TuggingController
         private Point StartLocationOnDrag { get; set; }
         private Point CurrentLocationOnDrag { get; set; }
         private Entry DragTarget;
-        private Triangulation Tri;
+        private Triangulation Tri { get; set; }
         public Form1()
         {
             InitializeComponent();
@@ -54,19 +54,39 @@ namespace TuggingController
             this.chart = new PointChart();
         }
 
-        private void Triangle_DataReceived(string data) {
-            string[] lines = data.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-            for(int idx = 0; idx < lines.Length; idx ++) {
-                if (idx > 1) {
-                    var coordinates = lines[idx].Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(e => Convert.ToSingle(e)).ToArray();
-                    this.chart.AddPointFromValue(coordinates[0], coordinates[1]);
-                }
-            }
+        private void Triangle_DataReceived(string fileName, string data) {
+            Logger.Debug("Filename: {0}", fileName);
 
-            Logger.Debug("MinValue: {0}", this.chart.MinValue);
-            Logger.Debug("MaxValue: {0}", this.chart.MaxValue);
-            //Console.WriteLine(this.chart.PrintEntries());
-            skControl1.Invalidate();
+            string[] lines = data.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+            if (fileName == "rbox.exe") {
+                for(int idx = 0; idx < lines.Length; idx ++) {
+                    if (idx > 1) {
+                        var coordinates = lines[idx].Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(e => Convert.ToSingle(e)).ToArray();
+                        this.chart.AddPointFromValue(coordinates[0], coordinates[1]);
+                    }
+                }
+
+                Logger.Debug("MinValue: {0}", this.chart.MinValue);
+                Logger.Debug("MaxValue: {0}", this.chart.MaxValue);
+                //Console.WriteLine(this.chart.PrintEntries());
+                skControl1.Invalidate();
+            }
+            else if (fileName == "qdelaunay") {
+                List<int[]> triangles = new List<int[]>();
+
+                for (int idx = 0; idx < lines.Length; idx ++) {
+                    if (idx > 0) {
+                        var vertices = lines[idx].Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(e => Convert.ToInt32(e)).ToArray();
+                        triangles.Add(vertices);
+                    }
+                }
+
+                Logger.Debug(triangles);
+
+                this.chart.Triangulate(triangles);
+                skControl1.Invalidate();
+            }
         }
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
@@ -98,9 +118,7 @@ namespace TuggingController
                     //this.IsDragging = false;
                     this.StartLocationOnDrag = new Point();
                     this.CurrentLocationOnDrag = new Point();
-                    Console.WriteLine(this.chart.PrintEntries());
-                    this.Tri.RunDelaunay(this.chart.PrintEntries());
-                    this.Tri.StartTask();
+                    //Console.WriteLine(this.chart.PrintEntries());
                     if (File.Exists("data.txt")) {
                         File.Delete("data.txt");
                     }
@@ -109,6 +127,8 @@ namespace TuggingController
                         fs.Write(info, 0, info.Length);
                     }
 
+                    this.Tri.RunDelaunay();
+                    this.Tri.StartTask();
                     break;
             }
 
@@ -214,6 +234,7 @@ namespace TuggingController
     {
         #region Properties
         public List<Entry> Entries { get; set; } = new List<Entry>();
+        public List<Triangle> Triangles { get; set; } = new List<Triangle>();
         public SKPoint MaxValue {
             get {
                 return new SKPoint(this.Entries.Max(e => e.Value.X), this.Entries.Max(e => e.Value.Y));
@@ -238,7 +259,7 @@ namespace TuggingController
         protected float height;
         public SKMatrix Transform;
         public SKMatrix InverseTransform;
-        public SKMatrix Scale { get; set; }
+        public SKMatrix Scale;
 
         protected readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -270,6 +291,8 @@ namespace TuggingController
             // Update data
             this.Entries.ForEach(e => e.UpdateTransform(this.Transform));
             this.Entries.ForEach(e => e.UpdateScale(this.Scale));
+            this.Triangles.ForEach(t => t.UpdateTransform(this.Transform));
+            this.Triangles.ForEach(t => t.UpdateScale(this.Scale));
 
 
             // Draw canvas
@@ -564,45 +587,6 @@ namespace TuggingController
             }
         }
 
-        private void TranformTest() {
-            List<SKPoint> locals = new List<SKPoint> {
-                new SKPoint(0, 0),
-                new SKPoint(100, 0),
-                new SKPoint(0, 100)
-            };
-
-            List<SKPoint> globals = new List<SKPoint>();
-
-            foreach(var local in locals) {
-                globals.Add(this.Transform.MapPoint(local));
-            }
-
-            Logger.Debug("--------------");
-            Logger.Debug("Target Coordinate: {0}", locals[0]);
-            Logger.Debug("Transformed Coordinate: {0}", globals[0]);
-
-            Logger.Debug("Target Coordinate: {0}", locals[1]);
-            Logger.Debug("Transformed Coordinate: {0}", globals[1]);
-
-            Logger.Debug("Target Coordinate: {0}", locals[2]);
-            Logger.Debug("Transformed Coordinate: {0}", globals[2]);
-
-            locals.Clear();
-            foreach(var g in globals) {
-                locals.Add(this.InverseTransform.MapPoint(g));
-            }
-
-            Logger.Debug("--------------");
-            Logger.Debug("Target Coordinate: {0}", locals[0]);
-            Logger.Debug("Transformed Coordinate: {0}", globals[0]);
-
-            Logger.Debug("Target Coordinate: {0}", locals[1]);
-            Logger.Debug("Transformed Coordinate: {0}", globals[1]);
-
-            Logger.Debug("Target Coordinate: {0}", locals[2]);
-            Logger.Debug("Transformed Coordinate: {0}", globals[2]);
-
-        }
         public override void DrawContent(object ctx)
         {
             if (this.Entries.Count > 0) {
@@ -610,6 +594,13 @@ namespace TuggingController
                     e.Draw(this.Canvas);
                 }
             }
+
+            if (this.Triangles.Count > 0) {
+                foreach(var t in this.Triangles) {
+                    t.Draw(this.Canvas);
+                }
+            }
+
         }
 
         //protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
@@ -649,6 +640,14 @@ namespace TuggingController
         public void AddPointFromValue(float x, float y) {
             var tPoint = new SKPoint(x, y);
             this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
+        }
+
+        public void Triangulate(List<int[]> triangles) {
+            this.Triangles.Clear();
+            foreach(var t in triangles) {
+                SKPoint[] vertices = new SKPoint[] { this.Entries[t[0]].Location, this.Entries[t[1]].Location, this.Entries[t[2]].Location };
+                this.Triangles.Add(new Triangle(vertices, this.Scale, this.InverseTransform));
+            }
         }
 
         //public void DrawAxes(SKCanvas canvas)
@@ -724,9 +723,48 @@ namespace TuggingController
         }
     }
 
+    public class Triangle : CanvasObject {
+        public SKPoint[] Vertices { get; set; }
+        public SKMatrix Scale { get; set; }
+
+        public Triangle(SKPoint[] vertices) : this(vertices, new SKPoint(0, 0), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
+
+        public Triangle(SKPoint[] vertices, SKMatrix scale, SKMatrix transform) : this(vertices, new SKPoint(0, 0), scale, transform) { }
+        public Triangle(SKPoint[] vertices, SKPoint location, SKMatrix scale, SKMatrix transform): base(location, transform) {
+            this.Scale = scale;
+            this.Vertices = vertices;
+        }
+        public void UpdateScale(SKMatrix scale) {
+            this.Scale = scale;
+        }
+        public override void Draw(SKCanvas canvas) {
+            var fillPaint = new SKPaint {
+                IsAntialias = true,
+                //Color = SKColors.ForestGreen,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.5f),
+                Style = SKPaintStyle.Fill
+            };
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2
+            };
+            var path = new SKPath();
+            SKPoint[] gVertices = this.Transform.MapPoints(this.Vertices);
+
+            path.MoveTo(gVertices[0]);
+            path.LineTo(gVertices[1]);
+            path.LineTo(gVertices[2]);
+            path.LineTo(gVertices[0]);
+
+            canvas.DrawPath(path, fillPaint);
+            canvas.DrawPath(path, strokePaint);
+        }
+    }
 
     public class Entry : CanvasObject {
-        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        //protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public bool isHovered { get; set; } = false;
         public SKPoint Value { get; set; }
         public override SKPoint Location {
@@ -856,6 +894,8 @@ namespace TuggingController
     }
 
     public abstract class CanvasObject {
+        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public SKMatrix Transform { get; set; }
         public virtual SKPoint Location { get; set; }
         public SKPoint GlobalLocation {

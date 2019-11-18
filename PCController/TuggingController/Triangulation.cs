@@ -10,7 +10,7 @@ using NLog;
 namespace TuggingController {
     class Triangulation {
         public Process Task;
-        public delegate void DataReceivedHandler(string data);
+        public delegate void DataReceivedHandler(string name, string data);
         private readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public DataReceivedHandler OnDataReceived;
         public string ReceivedData = "";
@@ -49,7 +49,7 @@ namespace TuggingController {
             };
 
 
-            Logger.Debug("Start a new process for test purpose.");
+            Logger.Debug("Start a new process for test rbox.");
             this.Task = new Process();
             this.Task.StartInfo = taskInfo;
             this.Task.OutputDataReceived += CMD_DataReceived;
@@ -57,8 +57,8 @@ namespace TuggingController {
             this.Task.Exited += CMD_ProcessExited;
         }
 
-        public void RunDelaunay(string input) {
-            Logger.Debug(input);
+        public void RunDelaunay() {
+            //Logger.Debug(input);
             var taskInfo = new ProcessStartInfo {
                 FileName = "qdelaunay",
                 Arguments = "QJ i TI data.txt",
@@ -70,22 +70,22 @@ namespace TuggingController {
             };
 
 
-            Logger.Debug("Start a new process for test purpose.");
+            Logger.Debug("Start a new process for test delaunay.");
             this.Task = new Process();
             this.Task.StartInfo = taskInfo;
             this.Task.OutputDataReceived += CMD_DataReceived;
             this.Task.ErrorDataReceived += CMD_ErrorReceived;
             this.Task.EnableRaisingEvents = true;
-            //this.Task.Exited += CMD_ProcessExited;
+            this.Task.Exited += CMD_ProcessExited;
         }
 
-        public void CMD_DataReceived(object sernser, DataReceivedEventArgs e) {
+        public void CMD_DataReceived(object sender, DataReceivedEventArgs e) {
             //Console.WriteLine("Output from other process.");
-            Console.WriteLine(e.Data);
+            //Console.WriteLine(e.Data);
             ReceivedData += e.Data + "\r\n";
         }
 
-        public void CMD_ErrorReceived(object sernser, DataReceivedEventArgs e) {
+        public void CMD_ErrorReceived(object sender, DataReceivedEventArgs e) {
             Console.WriteLine(e.Data);
         }
 
@@ -97,9 +97,14 @@ namespace TuggingController {
         }
 
         public void CMD_ProcessExited(object sender, EventArgs e) {
-            this.OnDataReceived(this.ReceivedData);
+            this.OnDataReceived(this.Task.StartInfo.FileName, this.ReceivedData);
             ReceivedData = "";
             this.Task = null;
         }
     }
+
+    //public class TrianglulationReceivedEventArgs : EventArgs {
+    //    public string Data { get; set; }
+
+    //    }
 }
