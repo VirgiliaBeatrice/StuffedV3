@@ -233,8 +233,11 @@ namespace TuggingController
     public abstract class Chart
     {
         #region Properties
+        public List<Axis> Axes { get; set; } = new List<Axis>();
         public List<Entry> Entries { get; set; } = new List<Entry>();
         public List<Triangle> Triangles { get; set; } = new List<Triangle>();
+        public SKRect RangeOfValue { get; set; }
+        public SKRect RangeOfInflatedValue { get; set; }
         public SKPoint MaxValue {
             get {
                 return new SKPoint(this.Entries.Max(e => e.Value.X), this.Entries.Max(e => e.Value.Y));
@@ -245,8 +248,8 @@ namespace TuggingController
                 return new SKPoint(this.Entries.Min(e => e.Value.X), this.Entries.Min(e => e.Value.Y));
             }
         }
-        public List<Axis> Axes { get; set; } = new List<Axis>();
         public float Margin { get; set; } = 80;
+        public float Padding;
         public float LabelTextSize { get; set; } = 16;
         public SKRect chartArea;
         protected SKRect frameArea;
@@ -266,6 +269,41 @@ namespace TuggingController
         #endregion
 
         #region Methods
+
+        // WIP
+        private void CalculateSize() {
+            this.RangeOfValue = new SKRect(this.MinValue.X, this.MaxValue.Y, this.MaxValue.X, this.MinValue.Y);
+            int validDigits = 2;
+
+            double bottom = this.RangeOfValue.Bottom;
+            double left = this.RangeOfValue.Left;
+
+            int expB = Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(bottom))));
+            int expL = Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(left))));
+
+            double mantissaB = bottom / Math.Pow(10, expB - validDigits);
+            double mantissaL = left / Math.Pow(10, expL - validDigits);
+
+            double bExt = Math.Ceiling(Math.Abs(mantissaB)) * Math.Pow(10, expB - validDigits) * (mantissaB > 0 ? 1 : -1);
+            double LExt = Math.Ceiling(Math.Abs(mantissaL)) * Math.Pow(10, expL - validDigits) * (mantissaL > 0 ? 1 : -1);
+
+            double decW = this.RangeOfValue.Width;
+            double decH = this.RangeOfValue.Height;
+
+            int expW = (int)Math.Truncate(Math.Log10(Math.Abs(decW)));
+            int expH = (int)Math.Truncate(Math.Log10(Math.Abs(decH)));
+
+            double mantissaW = decW / Math.Pow(10, expW - validDigits);
+            double mantissaH = decH / Math.Pow(10, expH - validDigits);
+
+            double wExt = Math.Ceiling(mantissaW) * Math.Pow(10, expW - validDigits);
+            double hExt = Math.Ceiling(mantissaH) * Math.Pow(10, expH - validDigits);
+
+            this.RangeOfInflatedValue = SKRect.Create(Convert.ToSingle(LExt), Convert.ToSingle(bExt), Convert.ToSingle(wExt), Convert.ToSingle(hExt));
+
+            Logger.Debug("Original Range: {0}", this.RangeOfValue);
+            Logger.Debug("Inflated Range: {0}", this.RangeOfInflatedValue);
+        }
         public void Draw(SKCanvas canvas, int width, int height)
         {
             this.Canvas = canvas;
@@ -281,6 +319,15 @@ namespace TuggingController
                 Size = new SKSize(this.width, this.height)
             };
 
+            // Calculation
+            this.CalculateSize();
+
+            // Scale on a specific pivot
+            //SKMatrix paddingScale = SKMatrix.MakeIdentity();
+            //SKMatrix.PreConcat(ref paddingScale, SKMatrix.MakeTranslation(rangeOfInflatedValue.MidX, rangeOfInflatedValue.MidY));
+            //SKMatrix.PreConcat(ref paddingScale, SKMatrix.MakeScale(rangeOfInflatedValue.Width / rangeOfValue.Width, rangeOfInflatedValue.Height / rangeOfValue.Height));
+            //SKMatrix.PreConcat(ref paddingScale, SKMatrix.MakeTranslation(-rangeOfInflatedValue.MidX, -rangeOfInflatedValue.MidY));
+
             // Calculate the transform of this chart
             var translate = SKMatrix.MakeTranslation(-this.MinValue.X, -this.MinValue.Y);
             SKMatrix.PostConcat(ref translate, SKMatrix.MakeScale(this.chartArea.Width / (this.MaxValue.X - this.MinValue.X), this.chartArea.Height / (this.MaxValue.Y - this.MinValue.Y)));
@@ -289,6 +336,7 @@ namespace TuggingController
 
             this.SetTransform();
             // Update data
+            // TODO: Transformation didn't match to each other.
             this.Entries.ForEach(e => e.UpdateTransform(this.Transform));
             this.Entries.ForEach(e => e.UpdateScale(this.Scale));
             this.Triangles.ForEach(t => t.UpdateTransform(this.Transform));
@@ -402,13 +450,6 @@ namespace TuggingController
                 return this.Entries.Min(e => e.Location.Y);
             }
         }
-
-        //private enum ArrowDirections {
-        //    Top = 90,
-        //    Bottom = -90,
-        //    Left = 180,
-        //    Right = 0
-        //}
 
         public override void DrawHover(Chart ctx) {
             //Hover.DrawHover(this.Canvas, ctx.PointerLocation);
@@ -557,8 +598,10 @@ namespace TuggingController
                 this.Axes.Add(new Axis("Y", this.chartArea.Height, this.Transform));
             }
             else {
-                this.Axes.Add(new Axis("X", this.MinValue.X, this.MaxValue.X, this.chartArea.Width, this.Transform));
-                this.Axes.Add(new Axis("Y", this.MinValue.Y, this.MaxValue.Y, this.chartArea.Height, this.Transform));
+                //this.Axes.Add(new Axis("X", this.MinValue.X, this.MaxValue.X, this.chartArea.Width, this.Transform));
+                //this.Axes.Add(new Axis("Y", this.MinValue.Y, this.MaxValue.Y, this.chartArea.Height, this.Transform));
+                this.Axes.Add(new Axis("X", this.RangeOfInflatedValue.Left, this.RangeOfInflatedValue.Right, this.chartArea.Width, this.Transform));
+                this.Axes.Add(new Axis("Y", this.RangeOfInflatedValue.Bottom, this.RangeOfInflatedValue.Top, this.chartArea.Height, this.Transform));
             }
 
             this.DrawAxes();
@@ -934,15 +977,6 @@ namespace TuggingController
             }
         }
 
-        //public SKMatrix Scale { get; set; }
-        //public SKMatrix Transform { get; set; }
-        //public SKPoint Location { get; set; }
-        //public SKPoint GlobalLocation {
-        //    get {
-        //        return this.Transform.MapPoint(this.Location);
-        //    }
-        //}
-
         public Axis(string label, float min, float max, float lengthInPixel, SKPoint location, SKMatrix transform) : base(location, transform) {
             this.MaxValue = max;
             this.MinValue = min;
@@ -1016,27 +1050,7 @@ namespace TuggingController
                 }
             }
         }
-        //public Axis(string label, float length, SKMatrix transform) : base(new SKPoint(0, 0), transform) {
-        //    this.Label = label;
-        //    this.LengthInPixel = length;
-        //    this.MaxValue = this.MaxTicksLimit * this.Scale;
-        //    this.MinValue = 0;
-        //    //this.Transform = transform;
-        //    //this.Location = new SKPoint(0, 0);
 
-        //    if (this.Label == "X") {
-        //        for (var i = 0; i < this.MaxTicksLimit; i++) {
-        //            var tickValue = this.MinValue + this.Scale * i;
-        //            Ticks.Add(new Tick(tickValue, 0, this.Transform));
-        //        }
-        //    }
-        //    else {
-        //        for (var i = 0; i < this.MaxTicksLimit; i++) {
-        //            var tickValue = this.MinValue + this.Scale * i;
-        //            Ticks.Add(new Tick(0, tickValue, Tick.Directions.LEFT, this.Transform));
-        //        }
-        //    }
-        //}
 
         public void DrawAxis(SKCanvas canvas) {
             var origin = new SKPoint(0, 0);
@@ -1288,6 +1302,19 @@ namespace TuggingController
     }
 
     public class SkiaHelper {
+        public static decimal CeilingOrFloor(decimal dec) {
+            return dec < 0 ? decimal.Floor(dec) : decimal.Ceiling(dec);
+        }
+
+        // Ref: https://qiita.com/chocolamint/items/80ca5271c6ce1a185430
+        public static int GetExpFromDecimal(decimal dec) {
+            int[] bin = decimal.GetBits(dec);
+            int info = bin[3];
+            int signAndExp = info >> 16;
+            int exp = signAndExp & 0x00FF;
+
+            return exp;
+        }
         public static SKPoint GenerateZeroPoint() {
             return new SKPoint(0, 0);
         }
