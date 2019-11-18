@@ -263,6 +263,7 @@ namespace TuggingController
         public SKMatrix Transform;
         public SKMatrix InverseTransform;
         public SKMatrix Scale;
+        public SKMatrix InverseScale;
 
         protected readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -270,8 +271,11 @@ namespace TuggingController
 
         #region Methods
 
-        // WIP
-        private void CalculateSize() {
+        private void ConvertToScientificNotation(int digits) {
+
+        }
+        // TODO: Calculation still has some problems.
+        protected void CalculateSize() {
             this.RangeOfValue = new SKRect(this.MinValue.X, this.MaxValue.Y, this.MaxValue.X, this.MinValue.Y);
             int validDigits = 2;
 
@@ -284,25 +288,54 @@ namespace TuggingController
             double mantissaB = bottom / Math.Pow(10, expB - validDigits);
             double mantissaL = left / Math.Pow(10, expL - validDigits);
 
-            double bExt = Math.Ceiling(Math.Abs(mantissaB)) * Math.Pow(10, expB - validDigits) * (mantissaB > 0 ? 1 : -1);
-            double LExt = Math.Ceiling(Math.Abs(mantissaL)) * Math.Pow(10, expL - validDigits) * (mantissaL > 0 ? 1 : -1);
+            //double bExt = Math.Ceiling(Math.Abs(mantissaB)) * Math.Pow(10, expB - validDigits) * (mantissaB > 0 ? 1 : -1);
+            //double lExt = Math.Ceiling(Math.Abs(mantissaL)) * Math.Pow(10, expL - validDigits) * (mantissaL > 0 ? 1 : -1);
 
-            double decW = this.RangeOfValue.Width;
-            double decH = this.RangeOfValue.Height;
+            double bExt = Math.Floor(mantissaB) * Math.Pow(10, expB - validDigits);
+            double lExt = Math.Floor(mantissaL) * Math.Pow(10, expL - validDigits);
 
-            int expW = (int)Math.Truncate(Math.Log10(Math.Abs(decW)));
-            int expH = (int)Math.Truncate(Math.Log10(Math.Abs(decH)));
+            // Height of SKRect is written in reverse direction.
+            double width = this.RangeOfValue.Width;
+            double height = this.RangeOfValue.Height;
 
-            double mantissaW = decW / Math.Pow(10, expW - validDigits);
-            double mantissaH = decH / Math.Pow(10, expH - validDigits);
+            int expW = (int)Math.Truncate(Math.Log10(Math.Abs(width)));
+            int expH = (int)Math.Truncate(Math.Log10(Math.Abs(height)));
 
-            double wExt = Math.Ceiling(mantissaW) * Math.Pow(10, expW - validDigits);
-            double hExt = Math.Ceiling(mantissaH) * Math.Pow(10, expH - validDigits);
+            double mantissaW = width / Math.Pow(10, expW - validDigits);
+            double mantissaH = height / Math.Pow(10, expH - validDigits);
 
-            this.RangeOfInflatedValue = SKRect.Create(Convert.ToSingle(LExt), Convert.ToSingle(bExt), Convert.ToSingle(wExt), Convert.ToSingle(hExt));
+            double wExt = Math.Ceiling(Math.Abs(mantissaW)) * Math.Pow(10, expW - validDigits) * (mantissaW > 0 ? 1 : -1);
+            double hExt = Math.Ceiling(Math.Abs(mantissaH)) * Math.Pow(10, expH - validDigits) * (mantissaH > 0 ? 1 : -1);
+            //double wExt = Math.Ceiling(Math.Abs(mantissaW)) * Math.Pow(10, expW - validDigits);
+            //double hExt = Math.Ceiling(Math.Abs(mantissaH)) * Math.Pow(10, expH - validDigits);
+
+
+            this.RangeOfInflatedValue = SKRect.Create(Convert.ToSingle(lExt), Convert.ToSingle(bExt + Math.Abs(hExt)), Convert.ToSingle(wExt), Convert.ToSingle(hExt));
 
             Logger.Debug("Original Range: {0}", this.RangeOfValue);
             Logger.Debug("Inflated Range: {0}", this.RangeOfInflatedValue);
+        }
+
+        // Scale Transform: Local Coordinate [Screen] =====> Value Coordinate [Chart]
+        protected void UpdateScale() {
+            SKMatrix scale = SKMatrix.MakeTranslation(this.RangeOfInflatedValue.Left, this.RangeOfInflatedValue.Bottom);
+            SKMatrix.PreConcat(ref scale, SKMatrix.MakeScale(this.RangeOfInflatedValue.Width / this.chartArea.Width, Math.Abs(this.RangeOfInflatedValue.Height) / this.chartArea.Height));
+            this.Scale = scale;
+
+            this.Scale.TryInvert(out this.InverseScale);
+            // Test
+            SKPoint[] tps = {
+                new SKPoint(0, 0),
+                new SKPoint(this.chartArea.Width, this.chartArea.Height)
+            };
+
+            Logger.Debug("Local Coordinate: {0}, {1}", tps[0], tps[1]);
+            SKPoint[] MappedTPs = this.Scale.MapPoints(tps);
+            Logger.Debug("Value Coordinate: {0}, {1}", MappedTPs[0], MappedTPs[1]);
+
+            tps = this.InverseScale.MapPoints(MappedTPs);
+            Logger.Debug("Local Coordinate: {0}, {1}", tps[0], tps[1]);
+            Logger.Debug("Value Coordinate: {0}, {1}", MappedTPs[0], MappedTPs[1]);
         }
         public void Draw(SKCanvas canvas, int width, int height)
         {
@@ -329,18 +362,19 @@ namespace TuggingController
             //SKMatrix.PreConcat(ref paddingScale, SKMatrix.MakeTranslation(-rangeOfInflatedValue.MidX, -rangeOfInflatedValue.MidY));
 
             // Calculate the transform of this chart
-            var translate = SKMatrix.MakeTranslation(-this.MinValue.X, -this.MinValue.Y);
-            SKMatrix.PostConcat(ref translate, SKMatrix.MakeScale(this.chartArea.Width / (this.MaxValue.X - this.MinValue.X), this.chartArea.Height / (this.MaxValue.Y - this.MinValue.Y)));
-            this.Scale = translate;
+            //var translate = SKMatrix.MakeTranslation(-this.MinValue.X, -this.MinValue.Y);
+            //SKMatrix.PostConcat(ref translate, SKMatrix.MakeScale(this.chartArea.Width / (this.MaxValue.X - this.MinValue.X), this.chartArea.Height / (this.MaxValue.Y - this.MinValue.Y)));
+            //this.Scale = translate;
             //this.Scale = SKMatrix.MakeScale(this.chartArea.Width / 10, this.chartArea.Height / 10);
-
-            this.SetTransform();
+            this.UpdateScale();
+            this.UpdateTransform();
             // Update data
             // TODO: Transformation didn't match to each other.
+
             this.Entries.ForEach(e => e.UpdateTransform(this.Transform));
-            this.Entries.ForEach(e => e.UpdateScale(this.Scale));
+            this.Entries.ForEach(e => e.UpdateScale(this.InverseScale));
             this.Triangles.ForEach(t => t.UpdateTransform(this.Transform));
-            this.Triangles.ForEach(t => t.UpdateScale(this.Scale));
+            this.Triangles.ForEach(t => t.UpdateScale(this.InverseScale));
 
 
             // Draw canvas
@@ -364,7 +398,7 @@ namespace TuggingController
         public abstract void DrawContent(object ctx);
         public abstract void DrawHover(Chart chart);
 
-        public abstract void SetTransform();
+        public abstract void UpdateTransform();
 
         public virtual string PrintEntries() {
             string ret = String.Format("2\r\n{0}\r\n", this.Entries.Count);
@@ -381,24 +415,13 @@ namespace TuggingController
     {
         #region Properties
 
-        public float PointSize { get; set; } = 14;
-        //public List<SKPoint> Points = new List<SKPoint>();
-        //public List<Entry> Entries = new List<Entry>();
-        //public List<Axis> Axes = new List<Axis>();
         #endregion
 
         #region Methods
 
-        public PointChart() {
-            //this.Entries = new List<Entry>();
-
-            //this.SetDefault();
-        }
+        public PointChart() : base() { }
         public PointChart(Entry[] entries) {
             this.Entries = new List<Entry>(entries);
-
-            //this.Axes.Add(new Axis("X", this.GetMinValueInEntries("X"), this.GetMaxValueInEntries("X")));
-            //this.Axes.Add(new Axis("Y", this.GetMinValueInEntries("Y"), this.GetMaxValueInEntries("Y")));
         }
         private double DegreeToRadian(double degree) {
             return Math.PI * degree / 180.0;
@@ -533,7 +556,7 @@ namespace TuggingController
             //this.Canvas.Concat(ref rotMat);
         }
 
-        public override void SetTransform() {
+        public override void UpdateTransform() {
             SKMatrix mat = SKMatrix.MakeScale(1, -1);
             SKMatrix.PostConcat(ref mat, SKMatrix.MakeTranslation(this.Margin, (this.chartArea.Height + this.Margin)));
             //SKMatrix.PreConcat(ref mat, );
@@ -676,13 +699,18 @@ namespace TuggingController
             var tPoint = new SKPoint(point.X, point.Y);
             tPoint = this.InverseTransform.MapPoint(tPoint);
             tPoint = inverse.MapPoint(tPoint);
-            this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
+            //this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
             //this.Entries.Add(new Entry(tPoint, inverse, this.InverseTransform));
+            this.Entries.Add(new Entry(tPoint));
         }
 
         public void AddPointFromValue(float x, float y) {
+            //SKMatrix inverse;
+            //this.Scale.TryInvert(out inverse);
             var tPoint = new SKPoint(x, y);
-            this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
+            //this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
+            //this.Entries.Add(new Entry(tPoint, inverse, this.InverseTransform));
+            this.Entries.Add(new Entry(tPoint));
         }
 
         public void Triangulate(List<int[]> triangles) {
@@ -807,7 +835,6 @@ namespace TuggingController
     }
 
     public class Entry : CanvasObject {
-        //protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public bool isHovered { get; set; } = false;
         public SKPoint Value { get; set; }
         public override SKPoint Location {
@@ -816,6 +843,7 @@ namespace TuggingController
                 return this.Scale.MapPoint(this.Value);
             }
         }
+        // Scale Transformation: Value ==> Local Coordinate
         public SKMatrix Scale { get; set; }
 
         public Entry() : this(0, 0, SKMatrix.MakeIdentity()) { }
@@ -827,6 +855,8 @@ namespace TuggingController
         //    Logger.Debug("Create new entry - [Location]: {0}", this.Location);
         //    Logger.Debug("Create new entry - [Value]: {0}", this.Value);
         //}
+
+        public Entry(SKPoint value) : this(value, SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
         public Entry(SKPoint value, SKMatrix scale, SKMatrix transform) : base(transform) {
             this.Value = value;
@@ -896,6 +926,9 @@ namespace TuggingController
 
         public void UpdateScale(SKMatrix scale) {
             this.Scale = scale;
+
+            Logger.Debug("Update Scale - [Value]: {0}", this.Value);
+            Logger.Debug("Update Scale - [Location]: {0}", this.Location);
         }
 
         public void UpdateFromGlobalLocation(SKPoint gLocation) {
@@ -939,6 +972,7 @@ namespace TuggingController
     public abstract class CanvasObject {
         protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+        // Transform: Local Coordinate [Screen: Left-Top] ==> Global Coordinate [Screen: Left-Bottom, Center]
         public SKMatrix Transform { get; set; }
         public virtual SKPoint Location { get; set; }
         public SKPoint GlobalLocation {
@@ -1227,7 +1261,6 @@ namespace TuggingController
     }
 
     public class Label : CanvasObject {
-        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public string Type { get; set; } = "H";
         public SKPoint Anchor { get; set; }
         public string Name { get; set; }
