@@ -286,8 +286,15 @@ namespace TuggingController {
                     var targetLoc = new SKPoint(e.Location.X, e.Location.Y);
                     this.chart.TestPoint.UpdateFromGlobalLocation(targetLoc);
 
+                    if (this.mapping.Configurations.Count == 3) {
+                        var result = this.mapping.GetInterpolatedConfiguration(targetLoc);
+                        //Logger.Debug("Interpolated Config: {0}", result.ToSKPoint());
+                        this.configuration.ControlPoints = result.ToSKPoint();
+                    }
+
                     //Logger.Debug("Dragging.");
                     TuggingController.Invalidate();
+                    ConfigurationSpace.Invalidate();
                 }
                 else {
                     if (this.chart.TestPoint.CheckIsInZone(e.Location, 10)) {
