@@ -11,8 +11,23 @@ using System.Numerics;
 
 namespace TuggingController {
 
-    public class Mapping {
-        public struct BarycentricCoordinate {
+    public class SimplicialComplex {
+
+        public class BarycentricCoordinate {
+            public float U { get; set; }
+            public float V { get; set; }
+            public float W { get; set; }
+
+            public BarycentricCoordinate() { }
+            // TODO: Precision Bug
+            public bool IsInside {
+                get {
+                    //return (U <= 1 & U >= 0) & (V <= 1 & V >= 0) & (W <= 1 & W >= 0) & (U + V + W == 1);
+                    return (U <= 1 & U >= 0) & (V <= 1 & V >= 0) & (W <= 1 & W >= 0);
+                }
+            }
+        }
+        public struct BarycentricCoordinateI {
             public float U;
             public float V;
             public float W;
@@ -66,18 +81,24 @@ namespace TuggingController {
             }
 
         }
-        public class StateSpace : List<SKPoint> {
-            public SKPoint X1 {
+
+        public struct Simplex3I {
+            public SKPoint V1;
+            public SKPoint V2;
+            public SKPoint V3;
+        }
+        public class Simplex3 : List<SKPoint> {
+            public SKPoint V1 {
                 get {
                     return this[0];
                 }
             }
-            public SKPoint X2 {
+            public SKPoint V2 {
                 get {
                     return this[1];
                 }
             }
-            public SKPoint X3 {
+            public SKPoint V3 {
                 get {
                     return this[2];
                 }
@@ -85,8 +106,8 @@ namespace TuggingController {
         }
 
         public ConfigurationSpace Configurations { get; set; } = new ConfigurationSpace();
-        public StateSpace Controls { get; set; } = new StateSpace();
-        public Mapping() { }
+        public Simplex3 States { get; set; } = new Simplex3();
+        public SimplicialComplex() { }
 
         public ConfigurationObject GetInterpolatedConfiguration(SKPoint target) {
             BarycentricCoordinate coor = this.GetBarycentricCoordinate(target);
@@ -98,8 +119,20 @@ namespace TuggingController {
                 C4 = this.Configurations.X1.C4 * coor.U + this.Configurations.X2.C4 * coor.V + this.Configurations.X3.C4 * coor.W,
             };
         }
+
+        public void CreateSimplex(SKPoint[] vertices) {
+            foreach(SKPoint v in vertices) {
+                this.States.Add(v);
+                // Create empty ConfigurationObject
+                this.Configurations.Add(new ConfigurationObject());
+            }
+        }
+
+        public void SetConfig(int idx, SKPoint[] config) {
+            this.Configurations[idx] = new ConfigurationObject(config);
+        }
         public void CreatePair(SKPoint control, SKPoint[] configuration) {
-            this.Controls.Add(control);
+            this.States.Add(control);
             this.Configurations.Add(new ConfigurationObject(configuration));
 
             //if (this.Configurations.Count == 3) {
@@ -107,20 +140,46 @@ namespace TuggingController {
             //}
         }
 
-        // https://blog.csdn.net/silangquan/article/details/21990713
-        public BarycentricCoordinate GetBarycentricCoordinate(SKPoint target) {
-            var a1 = this.GetTriangleArea(new SKPoint[] {
-                Controls.X2, Controls.X3, target
+        public static BarycentricCoordinate GetBarycentricCoordinate(SKPoint target, Simplex3I simplex) {
+            var a1 = GetTriangleArea(new SKPoint[] {
+                simplex.V2, simplex.V3, target
             });
-            var a2 = this.GetTriangleArea(new SKPoint[] {
-                Controls.X1, Controls.X3, target
+            var a2 = GetTriangleArea(new SKPoint[] {
+                simplex.V1, simplex.V3, target
             });
-            var a3 = this.GetTriangleArea(new SKPoint[] {
-                Controls.X1, Controls.X2, target
+            var a3 = GetTriangleArea(new SKPoint[] {
+                simplex.V1, simplex.V2, target
             });
 
-            var a = this.GetTriangleArea(new SKPoint[] {
-                Controls.X1, Controls.X2, Controls.X3
+            var a = GetTriangleArea(new SKPoint[] {
+                simplex.V1, simplex.V2, simplex.V3
+            });
+
+            var u = a1 / a;
+            var v = a2 / a;
+            var w = a3 / a;
+
+            return new BarycentricCoordinate {
+                U = u,
+                V = v,
+                W = w
+            };
+        }
+
+        // https://blog.csdn.net/silangquan/article/details/21990713
+        public BarycentricCoordinate GetBarycentricCoordinate(SKPoint target) {
+            var a1 = GetTriangleArea(new SKPoint[] {
+                States.V2, States.V3, target
+            });
+            var a2 = GetTriangleArea(new SKPoint[] {
+                States.V1, States.V3, target
+            });
+            var a3 = GetTriangleArea(new SKPoint[] {
+                States.V1, States.V2, target
+            });
+
+            var a = GetTriangleArea(new SKPoint[] {
+                States.V1, States.V2, States.V3
             });
 
             var u = a1 / a;
@@ -135,7 +194,7 @@ namespace TuggingController {
         }
 
         // https://en.wikipedia.org/wiki/Shoelace_formula
-        private float GetTriangleArea(SKPoint[] vertices) {
+        private static float GetTriangleArea(SKPoint[] vertices) {
             TriangleMath tri = new TriangleMath() {
                 A = vertices[0],
                 B = vertices[1],
@@ -145,6 +204,15 @@ namespace TuggingController {
         }
     }
 
+    public class Complices : List<SimplicialComplex> {
+        public Complices() : base() { }
+    }
+
+    public struct Triangle2I {
+        public Vector2 A;
+        public Vector2 B;
+        public Vector2 C;
+    }
     public class TriangleMath {
         public SKPoint A { get; set; }
         public SKPoint B { get; set; }

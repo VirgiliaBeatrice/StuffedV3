@@ -20,7 +20,7 @@ namespace TuggingController {
     {
         public PointChart chart;
         public ConfigurationCanvas configuration;
-        public Mapping mapping = new Mapping();
+        public SimplicialComplex mapping = new SimplicialComplex();
        
         private readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -277,12 +277,22 @@ namespace TuggingController {
                     this.chart.hasIndicator = false;
                     TuggingController.Invalidate();
                 }
+
+                this.chart.IsInTriangle(this.chart.PointerLocation);
+                TuggingController.Invalidate();
+
+                //if (this.chart.IsInComplex(this.chart.PointerLocation, out int idx)) {
+                //    this.chart.Triangles[idx].IsHovered = true;
+                //    TuggingController.Invalidate();
+                //}
+                //else {
+                //    this.chart.Triangles[idx].IsHovered = false;
+                //    TuggingController.Invalidate();
+                //}
             }
             else if (e.Button == MouseButtons.Right) {
                 if (this.IsDragging) {
                     this.CurrentLocationOnDrag = e.Location;
-                    //var move = this.CurrentLocationOnDrag - this.StartLocationOnDrag;
-                    //var targetLocation = new SKPoint(e.Location.X - this.StartLocationOnDrag.X, e.Location.Y - this.StartLocationOnDrag.Y);
                     var targetLoc = new SKPoint(e.Location.X, e.Location.Y);
                     this.chart.TestPoint.UpdateFromGlobalLocation(targetLoc);
 
@@ -605,7 +615,7 @@ namespace TuggingController {
     public class PointChart : Chart
     {
         #region Properties
-
+        public List<SimplicialComplex> Complices { get; set; } = new List<SimplicialComplex>();
         #endregion
 
         #region Methods
@@ -626,6 +636,11 @@ namespace TuggingController {
                 new Entry(new SKPoint(1, 0)),
                 new Entry(new SKPoint(0, 1)),
             };
+        }
+
+        public void IsInTriangle(SKPoint target) {
+            var value = this.Scale.MapPoint(this.Transform.MapPoint(target));
+            this.Triangles.ForEach(t => t.IsInside(value));
         }
 
         public bool isInZone(Point pointerLocation, float radius, out Entry target) {
@@ -929,9 +944,13 @@ namespace TuggingController {
 
         public void Triangulate(List<int[]> triangles) {
             this.Triangles.Clear();
+
             foreach(var t in triangles) {
                 SKPoint[] vertices = new SKPoint[] { this.Entries[t[0]].Location, this.Entries[t[1]].Location, this.Entries[t[2]].Location };
                 this.Triangles.Add(new Triangle(this.Scale.MapPoints(vertices), this.InverseScale, this.InverseTransform));
+                var complex = new SimplicialComplex();
+                complex.CreateSimplex(vertices);
+                this.Complices.Add(complex);
             }
         }
 
@@ -1009,6 +1028,7 @@ namespace TuggingController {
     }
 
     public class Triangle : CanvasObject {
+        public bool IsHovered { get; set; } = false;
         // Vertice [Value]
         public SKPoint[] Vertices { get; set; }
         public SKMatrix Scale { get; set; }
@@ -1019,6 +1039,14 @@ namespace TuggingController {
         public Triangle(SKPoint[] vertices, SKPoint location, SKMatrix scale, SKMatrix transform): base(location, transform) {
             this.Scale = scale;
             this.Vertices = vertices;
+        }
+
+        public bool IsInside(SKPoint target) {
+            var coor = SimplicialComplex.GetBarycentricCoordinate(target, new SimplicialComplex.Simplex3I { V1 = Vertices[0], V2 = Vertices[1], V3 = Vertices[2] });
+
+            this.IsHovered = coor.IsInside;
+
+            return coor.IsInside;
         }
         public void UpdateScale(SKMatrix scale) {
             this.Scale = scale;
@@ -1044,6 +1072,10 @@ namespace TuggingController {
             path.LineTo(gVertices[1]);
             path.LineTo(gVertices[2]);
             path.LineTo(gVertices[0]);
+
+            if (this.IsHovered) {
+                fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.6f);
+            }
 
             canvas.DrawPath(path, fillPaint);
             canvas.DrawPath(path, strokePaint);
