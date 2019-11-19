@@ -45,7 +45,7 @@ namespace TuggingController {
             this.Tri.StartTask();
 
             Point mid = new Point {
-                X = this.ClientSize.Width / 2,
+                X = (this.groupbox1.Location.X) / 2,
                 Y = this.ClientSize.Height
             };
 
@@ -145,7 +145,7 @@ namespace TuggingController {
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
             Point mid = new Point {
-                X = this.ClientSize.Width / 2,
+                X = this.groupbox1.Location.X / 2,
                 Y = this.ClientSize.Height
             };
 
@@ -161,7 +161,7 @@ namespace TuggingController {
         private void SkControl1_PaintSurface(object sender, SKPaintSurfaceEventArgs e)
         {
             Point mid = new Point {
-                X = this.ClientSize.Width / 2,
+                X = this.groupbox1.Location.X / 2,
                 Y = this.ClientSize.Height
             };
 
