@@ -136,7 +136,7 @@ namespace TuggingController {
                     }
                 }
 
-                Logger.Debug(triangles);
+                //Logger.Debug(triangles);
 
                 this.chart.Triangulate(triangles);
                 TuggingController.Invalidate();
@@ -501,6 +501,7 @@ namespace TuggingController {
             if (this.hasIndicator) {
                 this.DrawIndicator();
             }
+
         }
 
         public abstract void DrawIndicator();
@@ -790,6 +791,10 @@ namespace TuggingController {
                 foreach(var e in this.Entries) {
                     e.Draw(this.Canvas);
                 }
+            }
+
+            if (this.Entries.Count == 3) {
+                this.Triangulate(new List<int[]>() { new int[] { 0, 1, 2 } });
             }
 
             if (this.Triangles.Count > 0) {
