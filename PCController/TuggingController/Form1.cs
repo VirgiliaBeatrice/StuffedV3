@@ -207,6 +207,9 @@ namespace TuggingController {
                     this.Tri.RunDelaunay();
                     this.Tri.StartTask();
                     break;
+                case MouseButtons.Right:
+                    this.skControl1_MouseClick(sender, e);
+                    break;
             }
 
             Logger.Debug("Detected a mouseup event.");
@@ -234,12 +237,19 @@ namespace TuggingController {
         }
 
         private void skControl1_MouseClick(object sender, MouseEventArgs e) {
+            Logger.Debug("Detected a mouseclick event.");
+
             switch (e.Button) {
                 case MouseButtons.Left:
                     if (this.chart.isInZone(e.Location, 5, out Entry target)) {
                         target.isSelected = !target.isSelected;
                     }
                     Logger.Debug("");
+                    break;
+                case MouseButtons.Right:
+                    this.chart.TestPoint.IsDisplayed = !this.chart.TestPoint.IsDisplayed;
+                    this.chart.TestPoint.UpdateFromGlobalLocation(new SKPoint(e.Location.X, e.Location.Y));
+                    TuggingController.Invalidate();
                     break;
                 default:
                     break;
@@ -358,6 +368,7 @@ namespace TuggingController {
         public List<Axis> Axes { get; set; } = new List<Axis>();
         //public List<Entry> Entries { get; set; } = new List<Entry>();
         public Entries Entries { get; set; } = new Entries();
+        public TestPoint TestPoint { get; set; } = new TestPoint();
         public List<Triangle> Triangles { get; set; } = new List<Triangle>();
         public SKRect RangeOfValue { get; set; }
         public SKRect RangeOfInflatedValue { get; set; }
@@ -508,6 +519,7 @@ namespace TuggingController {
                 this.UpdateScale();
                 this.Entries.ForEach(e => e.UpdateScale(this.InverseScale));
                 this.Triangles.ForEach(t => t.UpdateScale(this.InverseScale));
+                this.TestPoint.UpdateScale(this.InverseScale);
 
                 this.forceUpdateScale = !this.forceUpdateScale;
             }
@@ -517,6 +529,7 @@ namespace TuggingController {
             this.UpdateTransform();
             this.Entries.ForEach(e => e.UpdateTransform(this.InverseTransform));
             this.Triangles.ForEach(t => t.UpdateTransform(this.InverseTransform));
+            this.TestPoint.UpdateTransform(this.InverseTransform);
 
             //if (this.Entries)
 
@@ -534,6 +547,8 @@ namespace TuggingController {
             if (this.hasIndicator) {
                 this.DrawIndicator();
             }
+
+            this.TestPoint.Draw(canvas);
 
         }
 
@@ -1003,6 +1018,78 @@ namespace TuggingController {
         }
     }
 
+    // TODO: ChartObject [with Scale]  <-- CanvasObject
+    public abstract class ChartObject : CanvasObject {
+        public SKPoint Value { get; set; }
+        public SKMatrix Scale { get; set; }
+        public override SKPoint Location {
+            get {
+                return this.Scale.MapPoint(this.Value);
+            }
+        } 
+
+        public ChartObject(SKPoint value, SKMatrix scale, SKMatrix transform) : base(transform) {
+            this.Value = value;
+            this.Scale = scale;
+        }
+
+        public ChartObject(SKPoint value) : this(value, SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
+
+        public virtual void UpdateScale(SKMatrix scale) {
+            this.Scale = scale;
+        }
+    }
+    public class TestPoint : ChartObject {
+        public bool IsDisplayed { get; set; } = false;
+        public bool isHovered { get; set; } = false;
+        public bool isSelected { get; set; } = false;
+
+        public TestPoint() : base(new SKPoint(0, 0)) { }
+        public TestPoint(SKPoint value) : base(value) { }
+        public override void Draw(SKCanvas canvas) {
+            if (!this.IsDisplayed)
+                return;
+
+            float radius = 5;
+
+            if (this.isHovered | this.isSelected) {
+                radius += 2;
+                //Hover.DrawHover(canvas, this.GlobalLocation);
+            }
+
+            var fillPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.DarkCyan,
+                Style = SKPaintStyle.Fill
+            };
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2
+            };
+
+            //if (this.isSelected) {
+            //    fillPaint.Color = SKColors.MediumVioletRed;
+            //}
+            // Draw entry shape
+            canvas.DrawCircle(this.GlobalLocation, radius, fillPaint);
+            canvas.DrawCircle(this.GlobalLocation, radius, strokePaint);
+
+            //Logger.Debug("Entry Global Location: {0}", this.GlobalLocation);
+            //Logger.Debug("Entry Local Location: {0}", this.Location);
+
+
+        }
+        public void UpdateFromGlobalLocation(SKPoint gLocation) {
+            SKMatrix inverseCoordinate, inverseScale;
+            this.Transform.TryInvert(out inverseCoordinate);
+            this.Scale.TryInvert(out inverseScale);
+
+            this.Value = inverseScale.MapPoint(inverseCoordinate.MapPoint(gLocation));
+        }
+    }
+
     public class Entry : CanvasObject {
         public bool isSelected { get; set; } = false;
         public bool isHovered { get; set; } = false;
@@ -1114,9 +1201,6 @@ namespace TuggingController {
             this.Scale.TryInvert(out inverseScale);
 
             this.Value = inverseScale.MapPoint(inverseCoordinate.MapPoint(gLocation));
-        }
-        public void DoDragDrop() {
-
         }
 
         //public void DrawEntry(SKCanvas canvas) {
