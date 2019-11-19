@@ -287,7 +287,7 @@ namespace TuggingController {
                     this.chart.TestPoint.UpdateFromGlobalLocation(targetLoc);
 
                     if (this.mapping.Configurations.Count == 3) {
-                        var result = this.mapping.GetInterpolatedConfiguration(targetLoc);
+                        var result = this.mapping.GetInterpolatedConfiguration(this.chart.TestPoint.Value);
                         //Logger.Debug("Interpolated Config: {0}", result.ToSKPoint());
                         this.configuration.ControlPoints = result.ToSKPoint();
                     }
