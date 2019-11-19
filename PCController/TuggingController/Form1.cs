@@ -15,11 +15,11 @@ using SkiaSharp.Views.Desktop;
 using NLog;
 
 
-namespace TuggingController
-{
+namespace TuggingController {
     public partial class Form1 : Form
     {
         public PointChart chart;
+        public ConfigurationCanvas configuration;
        
         private readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -44,23 +44,68 @@ namespace TuggingController
             this.Tri.RunRbox();
             this.Tri.StartTask();
 
-            skControl1.Location = new Point(0, 0);
-            skControl1.Size = this.ClientSize;
-            skControl1.PaintSurface += SkControl1_PaintSurface;
-            skControl1.MouseMove += skControl1_MouseMove;
-            skControl1.MouseDown += skControl1_MouseDown;
-            skControl1.MouseUp += skControl1_MouseUp;
-            skControl1.MouseDoubleClick += skControl1_MouseClick;
+            Point mid = new Point {
+                X = this.ClientSize.Width / 2,
+                Y = this.ClientSize.Height
+            };
+
+            TuggingController.Location = new Point(0, 0);
+            TuggingController.Size = new Size(mid.X, mid.Y);
+            
+            TuggingController.PaintSurface += SkControl1_PaintSurface;
+            TuggingController.MouseMove += skControl1_MouseMove;
+            TuggingController.MouseDown += skControl1_MouseDown;
+            TuggingController.MouseUp += skControl1_MouseUp;
+            TuggingController.MouseDoubleClick += skControl1_MouseClick;
             this.SizeChanged += Form1_SizeChanged;
             this.chart = new PointChart();
             this.chart.Entries.CollectionChanged += Entries_CollectionChanged;
+
+            this.configuration = new ConfigurationCanvas(mid.X, mid.Y);
+            ConfigurationSpace.Location = new Point(mid.X, 0);
+            ConfigurationSpace.Size = new Size(mid.X, mid.Y);
+            ConfigurationSpace.PaintSurface += ConfigurationSpace_PaintSurface1;
+            ConfigurationSpace.MouseMove += ConfigurationSpace_MouseMove;
+            ConfigurationSpace.MouseDown += ConfigurationSpace_MouseDown;
+            ConfigurationSpace.MouseUp += ConfigurationSpace_MouseUp;
+        }
+
+        private void ConfigurationSpace_MouseUp(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                this.configuration.IsDragging = false;
+            }
+        }
+
+        private void ConfigurationSpace_MouseDown(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                this.configuration.IsDragging = true;
+            }
+        }
+
+        private void ConfigurationSpace_MouseMove(object sender, MouseEventArgs e) {
+            SKPoint location = new SKPoint(e.Location.X, e.Location.Y);
+
+            if (this.configuration.IsDragging) {
+                if (this.configuration.CheckInControlArea(location, out int idx)) {
+                    this.configuration.ControlPoints[idx] = location;
+
+                    this.ConfigurationSpace.Invalidate();
+                }
+            }
+
+        }
+
+        private void ConfigurationSpace_PaintSurface1(object sender, SKPaintSurfaceEventArgs e) {
+            this.configuration.Draw(e.Surface.Canvas);
+
+            //throw new NotImplementedException();
         }
 
         private void Entries_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
             //this.Tri.RunDelaunay();
             //this.Tri.StartTask();
 
-            skControl1.Invalidate();
+            TuggingController.Invalidate();
         }
 
         private void Triangle_DataReceived(string fileName, string data) {
@@ -79,7 +124,7 @@ namespace TuggingController
                 Logger.Debug("MinValue: {0}", this.chart.MinValue);
                 Logger.Debug("MaxValue: {0}", this.chart.MaxValue);
                 //Console.WriteLine(this.chart.PrintEntries());
-                skControl1.Invalidate();
+                TuggingController.Invalidate();
             }
             else if (fileName == "qdelaunay") {
                 List<int[]> triangles = new List<int[]>();
@@ -94,19 +139,33 @@ namespace TuggingController
                 Logger.Debug(triangles);
 
                 this.chart.Triangulate(triangles);
-                skControl1.Invalidate();
+                TuggingController.Invalidate();
             }
         }
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
-            skControl1.Size = this.ClientSize;
+            Point mid = new Point {
+                X = this.ClientSize.Width / 2,
+                Y = this.ClientSize.Height
+            };
+
+            TuggingController.Size = new Size(mid.X, mid.Y);
+            ConfigurationSpace.Size = new Size(mid.X, mid.Y);
             this.chart.forceUpdateScale = true;
-            skControl1.Invalidate();
+
+            this.configuration.CanvasSize = new SKSize(mid.X, mid.Y);
+            TuggingController.Invalidate();
+            ConfigurationSpace.Invalidate();
         }
 
         private void SkControl1_PaintSurface(object sender, SKPaintSurfaceEventArgs e)
         {
-            this.chart.Draw(e.Surface.Canvas, this.ClientSize.Width, this.ClientSize.Height);
+            Point mid = new Point {
+                X = this.ClientSize.Width / 2,
+                Y = this.ClientSize.Height
+            };
+
+            this.chart.Draw(e.Surface.Canvas, mid.X, mid.Y);
             //SharedPage.OnPainting(sender, e);
         }
 
@@ -158,7 +217,7 @@ namespace TuggingController
                     Logger.Debug("Add new point");
                     Logger.Debug(e.Location);
                     this.chart.AddPointFromGlobal(e.Location);
-                    skControl1.Invalidate();
+                    TuggingController.Invalidate();
                     break;
                 default:
                     break;
@@ -173,7 +232,7 @@ namespace TuggingController
                 this.IsDragging = false;
                 if (this.chart.isInZone(e.Location, 5, out _)) {
                     this.chart.Hovered = true;
-                    skControl1.Invalidate();
+                    TuggingController.Invalidate();
                 }
                 else {
                     this.chart.Hovered = false;
@@ -181,11 +240,11 @@ namespace TuggingController
 
                 if (this.chart.isInArea(e.Location)) {
                     this.chart.hasIndicator = true;
-                    skControl1.Invalidate();
+                    TuggingController.Invalidate();
                 }
                 else {
                     this.chart.hasIndicator = false;
-                    skControl1.Invalidate();
+                    TuggingController.Invalidate();
                 }
             }
             else {
@@ -197,7 +256,7 @@ namespace TuggingController
                     this.DragTarget.UpdateFromGlobalLocation(targetLoc);
 
                     //Logger.Debug("Dragging.");
-                    skControl1.Invalidate();
+                    TuggingController.Invalidate();
                 }
                 else {
                     if (this.chart.isInZone(e.Location, 10, out this.DragTarget)) {
@@ -210,7 +269,7 @@ namespace TuggingController
                             this.DragTarget.UpdateFromGlobalLocation(targetLoc);
 
                             //Logger.Debug("Dragging.");
-                            skControl1.Invalidate();
+                            TuggingController.Invalidate();
 
                         }
                     }
@@ -242,6 +301,7 @@ namespace TuggingController
             //    }
             //}
         }
+
     }
 
     public class Entries : ObservableCollection<Entry> {
