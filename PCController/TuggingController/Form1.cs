@@ -41,8 +41,8 @@ namespace TuggingController {
             //RobotController ctrl = new RobotController();
             this.Tri = new Triangulation();
             this.Tri.OnDataReceived += Triangle_DataReceived;
-            this.Tri.RunRbox();
-            this.Tri.StartTask();
+            //this.Tri.RunRbox();
+            //this.Tri.StartTask();
 
             Point mid = new Point {
                 X = (this.groupbox1.Location.X) / 2,
@@ -302,6 +302,11 @@ namespace TuggingController {
             //}
         }
 
+        private void button2_Click(object sender, EventArgs e) {
+            this.chart.SetInitialization();
+            this.chart.forceUpdateScale = true;
+            this.TuggingController.Invalidate();
+        }
     }
 
     public class Entries : ObservableCollection<Entry> {
@@ -357,12 +362,14 @@ namespace TuggingController {
 
         #region Methods
 
-        private void ConvertToScientificNotation(int digits) {
-
-        }
         // TODO: Calculation still has some problems.
         protected void CalculateSize() {
-            this.RangeOfValue = new SKRect(this.MinValue.X, this.MaxValue.Y, this.MaxValue.X, this.MinValue.Y);
+            if (this.Entries.Count > 0) {
+                this.RangeOfValue = new SKRect(this.MinValue.X, this.MaxValue.Y, this.MaxValue.X, this.MinValue.Y);
+            }
+            else {
+                this.RangeOfValue = new SKRect(0, 1, 1, 0);
+            }
             int validDigits = 2;
 
             double bottom = this.RangeOfValue.Bottom;
@@ -370,10 +377,10 @@ namespace TuggingController {
             double top = this.RangeOfValue.Top;
             double right = this.RangeOfValue.Right;
 
-            int expB = Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(bottom))));
-            int expL = Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(left))));
-            int expT = Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(top))));
-            int expR = Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(right))));
+            int expB = Math.Abs(bottom) != 0 ? Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(bottom)))) : 0;
+            int expL = Math.Abs(left) != 0 ? Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(left)))) : 0;
+            int expT = Math.Abs(top) != 0 ? Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(top)))) : 0;
+            int expR = Math.Abs(right) != 0 ? Convert.ToInt32(Math.Truncate(Math.Log10(Math.Abs(right)))): 0;
 
             double mantissaB = bottom / Math.Pow(10, expB - validDigits);
             double mantissaL = left / Math.Pow(10, expL - validDigits);
@@ -522,7 +529,9 @@ namespace TuggingController {
 
         #region Methods
 
-        public PointChart() : base() { }
+        public PointChart() : base() {
+        
+        }
         //public PointChart(Entry[] entries) {
         //    this.Entries = new List<Entry>(entries);
         //}
@@ -530,8 +539,12 @@ namespace TuggingController {
             return Math.PI * degree / 180.0;
         }
 
-        private void SetDefault() {
-            this.Axes.Add(new Axis("X", 200));
+        public void SetInitialization() {
+            this.Entries = new Entries() {
+                new Entry(new SKPoint(0, 0)),
+                new Entry(new SKPoint(1, 0)),
+                new Entry(new SKPoint(0, 1)),
+            };
         }
 
         public bool isInZone(Point pointerLocation, float radius, out Entry target) {
