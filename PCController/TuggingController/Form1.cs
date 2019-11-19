@@ -249,7 +249,7 @@ namespace TuggingController {
                 case MouseButtons.Right:
                     this.chart.TestPoint.IsDisplayed = !this.chart.TestPoint.IsDisplayed;
                     this.chart.TestPoint.UpdateFromGlobalLocation(new SKPoint(e.Location.X, e.Location.Y));
-                    TuggingController.Invalidate();
+                    //TuggingController.Invalidate();
                     break;
                 default:
                     break;
@@ -276,6 +276,31 @@ namespace TuggingController {
                 else {
                     this.chart.hasIndicator = false;
                     TuggingController.Invalidate();
+                }
+            }
+            else if (e.Button == MouseButtons.Right) {
+                if (this.IsDragging) {
+                    this.CurrentLocationOnDrag = e.Location;
+                    //var move = this.CurrentLocationOnDrag - this.StartLocationOnDrag;
+                    //var targetLocation = new SKPoint(e.Location.X - this.StartLocationOnDrag.X, e.Location.Y - this.StartLocationOnDrag.Y);
+                    var targetLoc = new SKPoint(e.Location.X, e.Location.Y);
+                    this.chart.TestPoint.UpdateFromGlobalLocation(targetLoc);
+
+                    //Logger.Debug("Dragging.");
+                    TuggingController.Invalidate();
+                }
+                else {
+                    if (this.chart.TestPoint.CheckIsInZone(e.Location, 10)) {
+                        if (this.chart.isInArea(e.Location)) {
+                            this.CurrentLocationOnDrag = e.Location;
+                            this.IsDragging = true;
+                            var targetLoc = new SKPoint(e.Location.X, e.Location.Y);
+                            this.chart.TestPoint.UpdateFromGlobalLocation(targetLoc);
+
+                            TuggingController.Invalidate();
+                        }
+
+                    }
                 }
             }
             else {
@@ -1087,6 +1112,22 @@ namespace TuggingController {
             this.Scale.TryInvert(out inverseScale);
 
             this.Value = inverseScale.MapPoint(inverseCoordinate.MapPoint(gLocation));
+        }
+
+        public bool CheckIsInZone(Point gLocation, float radius) {
+            var pos = new SKPoint(gLocation.X, gLocation.Y);
+            var ret = false;
+
+            var dist = SKPoint.DistanceSquared(pos, this.GlobalLocation);
+            if (dist <= Math.Pow(radius, 2)) {
+                this.isHovered = true;
+                ret = true;
+            }
+            else {
+                this.isHovered = true;
+            }
+
+            return ret;
         }
     }
 
