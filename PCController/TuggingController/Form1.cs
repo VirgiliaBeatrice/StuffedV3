@@ -20,6 +20,7 @@ namespace TuggingController {
     {
         public PointChart chart;
         public ConfigurationCanvas configuration;
+        public Mapping mapping = new Mapping();
        
         private readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -56,7 +57,8 @@ namespace TuggingController {
             TuggingController.MouseMove += skControl1_MouseMove;
             TuggingController.MouseDown += skControl1_MouseDown;
             TuggingController.MouseUp += skControl1_MouseUp;
-            TuggingController.MouseDoubleClick += skControl1_MouseClick;
+            //TuggingController.MouseClick += skControl1_MouseClick;
+            TuggingController.MouseDoubleClick += skControl1_MouseDoubleClick;
             this.SizeChanged += Form1_SizeChanged;
             this.chart = new PointChart();
             this.chart.Entries.CollectionChanged += Entries_CollectionChanged;
@@ -68,6 +70,8 @@ namespace TuggingController {
             ConfigurationSpace.MouseMove += ConfigurationSpace_MouseMove;
             ConfigurationSpace.MouseDown += ConfigurationSpace_MouseDown;
             ConfigurationSpace.MouseUp += ConfigurationSpace_MouseUp;
+
+
         }
 
         private void ConfigurationSpace_MouseUp(object sender, MouseEventArgs e) {
@@ -186,6 +190,9 @@ namespace TuggingController {
             switch (e.Button) {
                 case MouseButtons.Left:
                     //this.IsDragging = false;
+                    if (!this.IsDragging) {
+                        this.skControl1_MouseClick(sender, e);
+                    }
                     this.StartLocationOnDrag = new Point();
                     this.CurrentLocationOnDrag = new Point();
                     //Console.WriteLine(this.chart.PrintEntries());
@@ -207,13 +214,14 @@ namespace TuggingController {
 
 
         }
-        private void skControl1_MouseClick(object sender, MouseEventArgs e)
+        private void skControl1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             // Add new point
 
             switch (e.Button)
             {
                 case MouseButtons.Left:
+                    //if ()
                     Logger.Debug("Add new point");
                     Logger.Debug(e.Location);
                     this.chart.AddPointFromGlobal(e.Location);
@@ -223,6 +231,19 @@ namespace TuggingController {
                     break;
             }
 
+        }
+
+        private void skControl1_MouseClick(object sender, MouseEventArgs e) {
+            switch (e.Button) {
+                case MouseButtons.Left:
+                    if (this.chart.isInZone(e.Location, 5, out Entry target)) {
+                        target.isSelected = !target.isSelected;
+                    }
+                    Logger.Debug("");
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void skControl1_MouseMove(object sender, MouseEventArgs e) {
@@ -306,6 +327,18 @@ namespace TuggingController {
             this.chart.SetInitialization();
             this.chart.forceUpdateScale = true;
             this.TuggingController.Invalidate();
+        }
+
+        private void button1_Click(object sender, EventArgs ev) {
+            var selectedEntry = this.chart.Entries.Where(e => e.isSelected).ToArray()[0];
+            var currentConfiguration = this.configuration.ControlPoints;
+
+            this.mapping.CreatePair(selectedEntry.Value, currentConfiguration);
+
+            selectedEntry.isPaired = true;
+            selectedEntry.isSelected = false;
+
+            TuggingController.Invalidate();
         }
     }
 
@@ -971,7 +1004,9 @@ namespace TuggingController {
     }
 
     public class Entry : CanvasObject {
+        public bool isSelected { get; set; } = false;
         public bool isHovered { get; set; } = false;
+        public bool isPaired { get; set; } = false;
         public SKPoint Value { get; set; }
         public override SKPoint Location {
             get {
@@ -1023,7 +1058,7 @@ namespace TuggingController {
         public override void Draw(SKCanvas canvas) {
             float radius = 5;
 
-            if (this.isHovered) {
+            if (this.isHovered | this.isSelected) {
                 radius += 2;
                 //Hover.DrawHover(canvas, this.GlobalLocation);
             }
@@ -1040,6 +1075,12 @@ namespace TuggingController {
                 StrokeWidth = 2
             };
 
+            if (this.isSelected) {
+                fillPaint.Color = SKColors.MediumVioletRed;
+            }
+            else if (!this.isSelected & this.isPaired) {
+                fillPaint.Color = SKColors.YellowGreen;
+            }
             // Draw entry shape
             canvas.DrawCircle(this.GlobalLocation, radius, fillPaint);
             canvas.DrawCircle(this.GlobalLocation, radius, strokePaint);

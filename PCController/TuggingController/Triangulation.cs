@@ -6,8 +6,21 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics;
 using NLog;
+using SkiaSharp;
 
 namespace TuggingController {
+
+    public class Mapping {
+        public List<SKPoint[]> Configurations { get; set; } = new List<SKPoint[]>();
+        public List<SKPoint> Controls { get; set; } = new List<SKPoint>();
+        public Mapping() { }
+
+        public void CreatePair(SKPoint control, SKPoint[] configuration) {
+            this.Controls.Add(control);
+            this.Configurations.Add(configuration);
+        }
+    }
+
     class Triangulation {
         public Process Task;
         public delegate void DataReceivedHandler(string name, string data);
