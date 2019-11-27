@@ -12,8 +12,9 @@ using System.Numerics;
 namespace TuggingController {
 
     public class SimplicialComplex {
-
         public class BarycentricCoordinate {
+            protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
             public float U { get; set; }
             public float V { get; set; }
             public float W { get; set; }
@@ -23,7 +24,8 @@ namespace TuggingController {
             public bool IsInside {
                 get {
                     //return (U <= 1 & U >= 0) & (V <= 1 & V >= 0) & (W <= 1 & W >= 0) & (U + V + W == 1);
-                    return (U <= 1 & U >= 0) & (V <= 1 & V >= 0) & (W <= 1 & W >= 0);
+                    //Logger.Debug("UVW: {0} {1} {2}", U, V, W);
+                    return (U <= 1.0f & U >= 0.0f) & (V <= 1.0f & V >= 0.0f) & (W <= 1.0f & W >= 0.0f) & (Math.Round(U + V + W, 2) == 1.0f);
                 }
             }
         }
@@ -142,13 +144,13 @@ namespace TuggingController {
 
         public static BarycentricCoordinate GetBarycentricCoordinate(SKPoint target, Simplex3I simplex) {
             var a1 = GetTriangleArea(new SKPoint[] {
-                simplex.V2, simplex.V3, target
+                target, simplex.V2, simplex.V3
             });
             var a2 = GetTriangleArea(new SKPoint[] {
-                simplex.V1, simplex.V3, target
+                target, simplex.V1, simplex.V3
             });
             var a3 = GetTriangleArea(new SKPoint[] {
-                simplex.V1, simplex.V2, target
+                target, simplex.V1, simplex.V2
             });
 
             var a = GetTriangleArea(new SKPoint[] {
@@ -158,6 +160,10 @@ namespace TuggingController {
             var u = a1 / a;
             var v = a2 / a;
             var w = a3 / a;
+
+            //var u = a1 / a > 1.0f ? 0.0f : a1 / a;
+            //var v = a2 / a > 1.0f ? 0.0f : a2 / a;
+            //var w = a3 / a > 1.0f ? 0.0f : a3 / a;
 
             return new BarycentricCoordinate {
                 U = u,
@@ -169,13 +175,13 @@ namespace TuggingController {
         // https://blog.csdn.net/silangquan/article/details/21990713
         public BarycentricCoordinate GetBarycentricCoordinate(SKPoint target) {
             var a1 = GetTriangleArea(new SKPoint[] {
-                States.V2, States.V3, target
+                target, States.V2, States.V3
             });
             var a2 = GetTriangleArea(new SKPoint[] {
-                States.V1, States.V3, target
+                target, States.V3, States.V1
             });
             var a3 = GetTriangleArea(new SKPoint[] {
-                States.V1, States.V2, target
+                target, States.V1, States.V2
             });
 
             var a = GetTriangleArea(new SKPoint[] {
@@ -185,6 +191,11 @@ namespace TuggingController {
             var u = a1 / a;
             var v = a2 / a;
             var w = a3 / a;
+
+            //var u = a1 / a > 1.0f ? 0.0f : a1 / a;
+            //var v = a2 / a > 1.0f ? 0.0f : a2 / a;
+            //var w = a3 / a > 1.0f ? 0.0f : a3 / a;
+
 
             return new BarycentricCoordinate { 
                 U = u,
@@ -200,7 +211,9 @@ namespace TuggingController {
                 B = vertices[1],
                 C = vertices[2]
             };
-            return Math.Abs(tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2;
+
+            //return (tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2.0f;
+            return Math.Abs(tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2.0f;
         }
     }
 

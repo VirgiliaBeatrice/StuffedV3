@@ -1046,6 +1046,7 @@ namespace TuggingController {
 
             this.IsHovered = coor.IsInside;
 
+            //Logger.Debug("Triangle: {0}", string.Join(",", this.Vertices.Select(v => v.ToString())));
             return coor.IsInside;
         }
         public void UpdateScale(SKMatrix scale) {
