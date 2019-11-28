@@ -169,7 +169,7 @@ namespace TuggingController {
                 Y = this.ClientSize.Height
             };
 
-            this.chart.Draw(e.Surface.Canvas, mid.X, mid.Y);
+            this.chart.Draw(e.Surface, mid.X, mid.Y);
             //SharedPage.OnPainting(sender, e);
         }
 
@@ -392,6 +392,10 @@ namespace TuggingController {
 
             TuggingController.Invalidate();
         }
+
+        private void button3_Click(object sender, EventArgs e) {
+            this.chart.SaveToFile();
+        }
     }
 
     public class Entries : ObservableCollection<Entry> {
@@ -434,6 +438,8 @@ namespace TuggingController {
         public bool hasIndicator { get; set; } = false;
         public SKPoint PointerLocation { get; set; }
 
+        public SKSurface Surface { get; set; }
+        public SKBitmap SavedBitmap { get; set; }
         public SKCanvas Canvas;
         protected float width;
         protected float height;
@@ -527,11 +533,14 @@ namespace TuggingController {
             //Logger.Debug("Local Coordinate: {0}, {1}", tps[0], tps[1]);
             //Logger.Debug("Value Coordinate: {0}, {1}", MappedTPs[0], MappedTPs[1]);
         }
-        public void Draw(SKCanvas canvas, int width, int height)
+        public void Draw(SKSurface surface, int width, int height)
         {
-            this.Canvas = canvas;
+            this.Surface = surface;
             this.width = width;
             this.height = height;
+            this.SavedBitmap = new SKBitmap(width, height);
+            this.Canvas = new SKCanvas(SavedBitmap);
+            //this.Canvas = surface.Canvas;
 
             chartArea = new SKRect {
                 Size = new SKSize(this.width - this.Margin * 2, this.height - this.Margin * 2),
@@ -590,8 +599,10 @@ namespace TuggingController {
                 this.DrawIndicator();
             }
 
-            this.TestPoint.Draw(canvas);
+            this.TestPoint.Draw(this.Canvas);
 
+            surface.Canvas.Clear();
+            surface.Canvas.DrawBitmap(this.SavedBitmap, 0, 0);
         }
 
         public abstract void DrawIndicator();
@@ -608,6 +619,15 @@ namespace TuggingController {
             }
 
             return ret;
+        }
+
+        public virtual void SaveToFile() {
+            SKBitmap snap = this.SavedBitmap;
+
+            using (FileStream fs = new FileStream("screenshot.png", FileMode.OpenOrCreate))
+            using (SKManagedWStream wStream = new SKManagedWStream(fs)) { 
+                snap.Encode(wStream, SKEncodedImageFormat.Png, 10);
+            }
         }
         #endregion
     }
@@ -808,6 +828,10 @@ namespace TuggingController {
             var yMax = new SKPoint(0, this.chartArea.Height);
             var xMax = new SKPoint(this.chartArea.Width, 0);
 
+            var canvasRect = new SKRect() {
+                Size = new SKSize(this.chartArea.Width, this.chartArea.Height)
+            };
+
             //var shader = SKShader.CreateLinearGradient(
             //    p0,
             //    p1,
@@ -830,14 +854,17 @@ namespace TuggingController {
                 Color = SKColors.Black,
                 IsStroke = false
             };
+            var bgPaint = new SKPaint {
+                Color = SKColors.White
+            };
 
             // For Debug: Draw frame region and debug info
             //this.DrawFrame();
             //this.Canvas.DrawText(string.Format("{0} {1}", this.chartArea.Width, this.chartArea.Height), new SKPoint(0, this.Margin), textPaint);
 
 
-            this.Canvas.Save();
-            this.Canvas.ResetMatrix();
+            //this.Canvas.Save();
+            //this.Canvas.ResetMatrix();
 
             // Draw axes
             this.Axes.Clear();
@@ -859,9 +886,9 @@ namespace TuggingController {
             this.DrawArrow(origin, xMax, this.InverseTransform);
             this.DrawArrow(origin, yMax, this.InverseTransform);
 
-            this.Canvas.Restore();
+            //this.Canvas.Restore();
 
-
+            //this.Canvas.DrawRect(canvasRect, bgPaint);
 
             // Apply a local transform
             //this.Canvas.Concat(ref this.Transform);

@@ -66,6 +66,8 @@ namespace TuggingController {
         }
 
         public class ConfigurationSpace : List<ConfigurationObject> {
+            protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
             public ConfigurationObject X1 {
                 get {
                     return this[0];
@@ -144,22 +146,26 @@ namespace TuggingController {
 
         public static BarycentricCoordinate GetBarycentricCoordinate(SKPoint target, Simplex3I simplex) {
             var a1 = GetTriangleArea(new SKPoint[] {
-                target, simplex.V2, simplex.V3
-            });
+                simplex.V2, simplex.V3, target
+            }, true);
             var a2 = GetTriangleArea(new SKPoint[] {
-                target, simplex.V1, simplex.V3
-            });
+                simplex.V3, simplex.V1, target
+            }, true);
             var a3 = GetTriangleArea(new SKPoint[] {
-                target, simplex.V1, simplex.V2
-            });
+                simplex.V1, simplex.V2, target
+            }, true);
 
             var a = GetTriangleArea(new SKPoint[] {
                 simplex.V1, simplex.V2, simplex.V3
-            });
+            }, true);
 
             var u = a1 / a;
             var v = a2 / a;
             var w = a3 / a;
+
+            Logger logger = LogManager.GetCurrentClassLogger();
+            logger.Debug("UVW: {0} {1} {2}", u, v, w);
+            logger.Debug("A: {0}", a);
 
             //var u = a1 / a > 1.0f ? 0.0f : a1 / a;
             //var v = a2 / a > 1.0f ? 0.0f : a2 / a;
@@ -175,18 +181,18 @@ namespace TuggingController {
         // https://blog.csdn.net/silangquan/article/details/21990713
         public BarycentricCoordinate GetBarycentricCoordinate(SKPoint target) {
             var a1 = GetTriangleArea(new SKPoint[] {
-                target, States.V2, States.V3
-            });
+                States.V2, States.V3, target
+            }, true);
             var a2 = GetTriangleArea(new SKPoint[] {
-                target, States.V3, States.V1
-            });
+                States.V3, States.V1, target
+            }, true);
             var a3 = GetTriangleArea(new SKPoint[] {
-                target, States.V1, States.V2
-            });
+                States.V1, States.V2, target
+            }, true);
 
             var a = GetTriangleArea(new SKPoint[] {
                 States.V1, States.V2, States.V3
-            });
+            }, true);
 
             var u = a1 / a;
             var v = a2 / a;
@@ -205,15 +211,34 @@ namespace TuggingController {
         }
 
         // https://en.wikipedia.org/wiki/Shoelace_formula
-        private static float GetTriangleArea(SKPoint[] vertices) {
+        private static float GetTriangleArea(SKPoint[] vertices, bool isSigned) {
+            Logger logger = LogManager.GetCurrentClassLogger();
+
             TriangleMath tri = new TriangleMath() {
                 A = vertices[0],
                 B = vertices[1],
                 C = vertices[2]
             };
 
+            var orientation = GetNormalOfTriangle(vertices);
+            //logger.Debug("Orient: {0}", orientation == 1 ? "CCW" : "CW");
+            var ret = Math.Abs(tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2.0f;
+
             //return (tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2.0f;
-            return Math.Abs(tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2.0f;
+
+            return isSigned ? ret * orientation : ret;
+        }
+
+        private static float GetNormalOfTriangle(SKPoint[] vertices) {
+            Vector3 v0, v1, v2;
+
+            v0 = new Vector3(vertices[0].X, vertices[0].Y, 0);
+            v1 = new Vector3(vertices[1].X, vertices[1].Y, 0);
+            v2 = new Vector3(vertices[2].X, vertices[2].Y, 0);
+
+            Vector3 normal = Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
+
+            return normal.Z;
         }
     }
 
