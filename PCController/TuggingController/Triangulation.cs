@@ -163,9 +163,9 @@ namespace TuggingController {
             var v = a2 / a;
             var w = a3 / a;
 
-            Logger logger = LogManager.GetCurrentClassLogger();
-            logger.Debug("UVW: {0} {1} {2}", u, v, w);
-            logger.Debug("A: {0}", a);
+            //Logger logger = LogManager.GetCurrentClassLogger();
+            //logger.Debug("UVW: {0} {1} {2}", u, v, w);
+            //logger.Debug("A: {0}", a);
 
             //var u = a1 / a > 1.0f ? 0.0f : a1 / a;
             //var v = a2 / a > 1.0f ? 0.0f : a2 / a;
@@ -337,11 +337,12 @@ namespace TuggingController {
         }
 
         public void CMD_ErrorReceived(object sender, DataReceivedEventArgs e) {
-            Console.WriteLine(e.Data);
+            Console.WriteLine("Error: " + e.Data);
         }
 
         public void StartTask() {
             this.Task.Start();
+            Console.WriteLine("Started process ID = 0x{0:X}.", this.Task.Id);
             this.Task.BeginOutputReadLine();
             //Console.WriteLine(this.Task.StandardOutput.ReadToEnd());
             //this.Task.WaitForExit();
@@ -350,6 +351,7 @@ namespace TuggingController {
         public void CMD_ProcessExited(object sender, EventArgs e) {
             this.OnDataReceived(this.Task.StartInfo.FileName, this.ReceivedData);
             ReceivedData = "";
+            Console.WriteLine("Stopped process ID = 0x{0:X}.", this.Task.Id);
             this.Task = null;
         }
     }

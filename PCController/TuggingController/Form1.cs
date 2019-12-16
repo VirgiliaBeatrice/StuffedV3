@@ -200,6 +200,18 @@ namespace TuggingController {
 
         }
 
+        private void RunTriangulationTask() {
+            if (File.Exists("data.txt")) {
+                File.Delete("data.txt");
+            }
+            using (FileStream fs = File.Create("data.txt")) {
+                byte[] info = new UTF8Encoding(true).GetBytes(this.chart.PrintEntries());
+                fs.Write(info, 0, info.Length);
+            }
+
+            this.Tri.RunDelaunay();
+            this.Tri.StartTask();
+        }
         private void skControl1_MouseUp(object sender, MouseEventArgs e) {
             switch (e.Button) {
                 case MouseButtons.Left:
@@ -207,19 +219,21 @@ namespace TuggingController {
                     if (!this.IsDragging) {
                         this.skControl1_MouseClick(sender, e);
                     }
-                    this.StartLocationOnDrag = new Point();
-                    this.CurrentLocationOnDrag = new Point();
+                    
+                    this.RunTriangulationTask();
+                    //this.StartLocationOnDrag = new Point();
+                    //this.CurrentLocationOnDrag = new Point();
                     //Console.WriteLine(this.chart.PrintEntries());
-                    if (File.Exists("data.txt")) {
-                        File.Delete("data.txt");
-                    }
-                    using (FileStream fs = File.Create("data.txt")) {
-                        byte[] info = new UTF8Encoding(true).GetBytes(this.chart.PrintEntries());
-                        fs.Write(info, 0, info.Length);
-                    }
+                    //if (File.Exists("data.txt")) {
+                    //    File.Delete("data.txt");
+                    //}
+                    //using (FileStream fs = File.Create("data.txt")) {
+                    //    byte[] info = new UTF8Encoding(true).GetBytes(this.chart.PrintEntries());
+                    //    fs.Write(info, 0, info.Length);
+                    //}
 
-                    this.Tri.RunDelaunay();
-                    this.Tri.StartTask();
+                    //this.Tri.RunDelaunay();
+                    //this.Tri.StartTask();
                     break;
                 case MouseButtons.Right:
                     this.skControl1_MouseClick(sender, e);
