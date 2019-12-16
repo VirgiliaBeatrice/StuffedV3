@@ -27,6 +27,8 @@ namespace TuggingController {
         private bool IsDragging { get; set; } = false;
         private Point StartLocationOnDrag { get; set; }
         private Point CurrentLocationOnDrag { get; set; }
+
+        private int DragTargetConfiguration;
         private Entry DragTarget;
         private Triangulation Tri { get; set; }
         public Form1()
@@ -76,22 +78,34 @@ namespace TuggingController {
 
         private void ConfigurationSpace_MouseUp(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
+                this.configuration.IsDown = false;
                 this.configuration.IsDragging = false;
+                DragTargetConfiguration = 0;
             }
         }
 
         private void ConfigurationSpace_MouseDown(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                this.configuration.IsDragging = true;
+                //this.configuration.IsDragging = true;
+                this.configuration.IsDown = true;
             }
         }
 
         private void ConfigurationSpace_MouseMove(object sender, MouseEventArgs e) {
             SKPoint location = new SKPoint(e.Location.X, e.Location.Y);
 
-            if (this.configuration.IsDragging) {
-                if (this.configuration.CheckInControlArea(location, out int idx)) {
-                    this.configuration.ControlPoints[idx] = location;
+            if (this.configuration.IsDown) {
+                if (!this.configuration.IsDragging) {
+                    if (this.configuration.CheckInControlArea(location, out int idx)) {
+                        this.configuration.ControlPoints[idx] = location;
+                        this.configuration.IsDragging = true;
+                        DragTargetConfiguration = idx;
+
+                        this.ConfigurationSpace.Invalidate();
+                    }
+                }
+                else {
+                    this.configuration.ControlPoints[DragTargetConfiguration] = location;
 
                     this.ConfigurationSpace.Invalidate();
                 }

@@ -28,6 +28,7 @@ namespace TuggingController {
         public float Radius { get; set; } = 16;
         public float Threshold { get; set; } = 16;
         public bool IsDragging { get; set; } = false;
+        public bool IsDown { get; set; } = false;
         // Scale: Local ==> Value
         public SKMatrix Scale { get; set; }
         public SKMatrix InverseScale { get; set; }
