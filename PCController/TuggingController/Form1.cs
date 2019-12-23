@@ -407,8 +407,13 @@ namespace TuggingController {
         }
     }
 
-    public class Entries : ObservableCollection<Entry> {
-        public Entries() : base() { }
+    public class EntryCollection : ObservableCollection<Entry> {
+        public EntryCollection() : base() { }
+
+        public Entry[] Where(Func<Triangle, bool> predicate) {
+
+            return null;
+        }
 
         public void ForEach(Action<Entry> action) {
             for (int i = 0; i < this.Count; i++) {
@@ -417,8 +422,8 @@ namespace TuggingController {
         }
     }
 
-    public class Triangles : ObservableCollection<Triangle> {
-        public Triangles() : base() { }
+    public class TriangleCollection : ObservableCollection<Triangle> {
+        public TriangleCollection() : base() { }
 
         public Triangle[] Where(Func<Triangle, bool> predicate) {
             var ret = new List<Triangle>();
@@ -440,10 +445,10 @@ namespace TuggingController {
         #region Properties
         public List<Axis> Axes { get; set; } = new List<Axis>();
         //public List<Entry> Entries { get; set; } = new List<Entry>();
-        public Entries Entries { get; set; } = new Entries();
+        public EntryCollection Entries { get; set; } = new EntryCollection();
         public TestPoint TestPoint { get; set; } = new TestPoint();
         public List<Triangle> Triangles { get; set; } = new List<Triangle>();
-        public Triangles TrianglesNew { get; set; } = new Triangles();
+        public TriangleCollection TrianglesNew { get; set; } = new TriangleCollection();
         public SKRect RangeOfValue { get; set; }
         public SKRect RangeOfInflatedValue { get; set; }
         public SKPoint MaxValue {
@@ -679,7 +684,7 @@ namespace TuggingController {
         }
 
         public void SetInitialization() {
-            this.Entries = new Entries() {
+            this.Entries = new EntryCollection() {
                 new Entry(new SKPoint(0, 0)),
                 new Entry(new SKPoint(1, 0)),
                 new Entry(new SKPoint(0, 1)),
