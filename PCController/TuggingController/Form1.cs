@@ -447,8 +447,7 @@ namespace TuggingController {
         //public List<Entry> Entries { get; set; } = new List<Entry>();
         public EntryCollection Entries { get; set; } = new EntryCollection();
         public TestPoint TestPoint { get; set; } = new TestPoint();
-        public List<Triangle> Triangles { get; set; } = new List<Triangle>();
-        public TriangleCollection TrianglesNew { get; set; } = new TriangleCollection();
+        public TriangleCollection Triangles { get; set; } = new TriangleCollection();
         public SKRect RangeOfValue { get; set; }
         public SKRect RangeOfInflatedValue { get; set; }
         public SKPoint MaxValue {
@@ -601,8 +600,7 @@ namespace TuggingController {
                 this.CalculateSize();
                 this.UpdateScale();
                 this.Entries.ForEach(e => e.UpdateScale(this.InverseScale));
-                this.TrianglesNew.ForEach(e => e.UpdateScale(this.InverseScale));
-                this.Triangles.ForEach(t => t.UpdateScale(this.InverseScale));
+                this.Triangles.ForEach(e => e.UpdateScale(this.InverseScale));
                 this.TestPoint.UpdateScale(this.InverseScale);
 
                 this.forceUpdateScale = !this.forceUpdateScale;
@@ -613,7 +611,6 @@ namespace TuggingController {
             this.UpdateTransform();
             this.Entries.ForEach(e => e.UpdateTransform(this.InverseTransform));
             this.Triangles.ForEach(t => t.UpdateTransform(this.InverseTransform));
-            this.TrianglesNew.ForEach(t => t.UpdateTransform(this.InverseTransform));
             this.TestPoint.UpdateTransform(this.InverseTransform);
 
             //if (this.Entries)
@@ -693,8 +690,8 @@ namespace TuggingController {
 
         public void IsInTriangle(SKPoint target) {
             var value = this.Scale.MapPoint(this.Transform.MapPoint(target));
+            //this.Triangles.ForEach(t => t.IsInside(value));
             this.Triangles.ForEach(t => t.IsInside(value));
-            this.TrianglesNew.ForEach(t => t.IsInside(value));
         }
 
         public bool isInZone(Point pointerLocation, float radius, out Entry target) {
@@ -957,12 +954,6 @@ namespace TuggingController {
                     t.Draw(this.Canvas);
                 }
             }
-
-            if (this.TrianglesNew.Count > 0) {
-                foreach (var t in this.TrianglesNew) {
-                    t.Draw(this.Canvas);
-                }
-            }
         }
 
         //protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
@@ -1008,7 +999,6 @@ namespace TuggingController {
 
         public void Triangulate(List<int[]> triangles) {
             this.Triangles.Clear();
-            this.TrianglesNew.Clear();
 
             foreach (var t in triangles) {
                 SKPoint[] vertices = new SKPoint[] { this.Entries[t[0]].Location, this.Entries[t[1]].Location, this.Entries[t[2]].Location };
@@ -1016,10 +1006,7 @@ namespace TuggingController {
                     t[0], t[1], t[2]
                 };
 
-                //this.Triangles.Add(new Triangle(this.Scale.MapPoints(vertices), verticeIndexes, this.InverseScale, this.InverseTransform));
-                this.TrianglesNew.Add(new Triangle(new Entry[] { this.Entries[t[0]], this.Entries[t[1]], this.Entries[t[2]] }, verticeIndexes, this.InverseScale, this.InverseTransform));
-                //this.TrianglesNew.Add(new Triangle(this.Scale.MapPoints(vertices), verticeIndexes, this.InverseScale, this.InverseTransform));
-
+                this.Triangles.Add(new Triangle(new Entry[] { this.Entries[t[0]], this.Entries[t[1]], this.Entries[t[2]] }, verticeIndexes, this.InverseScale, this.InverseTransform));
                 var complex = new SimplicialComplex();
 
                 complex.CreateSimplex(vertices);
@@ -1105,7 +1092,7 @@ namespace TuggingController {
         //public SKPoint location;
         public int idx;
     }
-    public class TriVertices {
+    public class TriVertexCollection {
         public Dictionary<string, TriVertex> Vertices;
 
         //public TriVertices(SKPoint[] locations, int[] indexes) {
@@ -1116,7 +1103,7 @@ namespace TuggingController {
         //    };
         //}
 
-        public TriVertices(Entry[] entries, int[] indexes) {
+        public TriVertexCollection(Entry[] entries, int[] indexes) {
             this.Vertices = new Dictionary<string, TriVertex> {
                 ["A"] = new TriVertex { Entry = entries[0], idx = indexes[0] },
                 ["B"] = new TriVertex { Entry = entries[1], idx = indexes[1] },
@@ -1143,7 +1130,7 @@ namespace TuggingController {
         public bool IsHovered { get; set; } = false;
         // Vertice [Value]
         public Entry[] Vertices { get; set; }
-        public TriVertices VerticesNew { get; set; }
+        public TriVertexCollection VerticesNew { get; set; }
         public int[] VertexIndexes { get; set; }
         public SKMatrix Scale { get; set; }
 
@@ -1158,7 +1145,7 @@ namespace TuggingController {
         public Triangle(Entry[] vertices, int[] vertexIndexes, SKPoint location, SKMatrix scale, SKMatrix transform) : base(location, transform) {
             this.Scale = scale;
             this.Vertices = vertices;
-            this.VerticesNew = new TriVertices(vertices, vertexIndexes);
+            this.VerticesNew = new TriVertexCollection(vertices, vertexIndexes);
             this.VertexIndexes = vertexIndexes;
         }
 
