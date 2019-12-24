@@ -250,10 +250,15 @@ namespace TuggingController {
 
             switch (e.Button) {
                 case MouseButtons.Left:
-                    if (this.chart.isInZone(e.Location, 5, out Entry target)) {
+                    Entry target = this.chart.isInZone(e.Location, 5);
+
+                    //target!.isSelected = !target!.isSelected;
+                    if (target != null) {
                         target.isSelected = !target.isSelected;
                     }
-                    Logger.Debug("");
+                    //if (this.chart.isInZone(e.Location, 5, out Entry target)) {
+                    //    target.isSelected = !target.isSelected;
+                    //}
                     break;
                 case MouseButtons.Right:
                     this.chart.TestPoint.IsDisplayed = !this.chart.TestPoint.IsDisplayed;
@@ -270,7 +275,11 @@ namespace TuggingController {
 
             if (e.Button == MouseButtons.None) {
                 this.IsDragging = false;
-                if (this.chart.isInZone(e.Location, 5, out _)) {
+                //if (this.chart.isInZone(e.Location, 5, out _)) {
+                //    this.chart.Hovered = true;
+                //    TuggingController.Invalidate();
+                //}
+                if (this.chart.isInZone(e.Location, 5) != null) {
                     this.chart.Hovered = true;
                     TuggingController.Invalidate();
                 }
@@ -341,7 +350,9 @@ namespace TuggingController {
                     TuggingController.Invalidate();
                 }
                 else {
-                    if (this.chart.isInZone(e.Location, 10, out this.DragTarget)) {
+                    this.DragTarget = this.chart.isInZone(e.Location, 10);
+                    //if (this.chart.isInZone(e.Location, 10, out this.DragTarget)) {
+                    if (this.DragTarget != null) {
                         if (this.chart.isInArea(e.Location)) {
                             this.CurrentLocationOnDrag = e.Location;
                             this.IsDragging = true;
@@ -410,9 +421,29 @@ namespace TuggingController {
     public class EntryCollection : ObservableCollection<Entry> {
         public EntryCollection() : base() { }
 
-        public Entry[] Where(Func<Triangle, bool> predicate) {
+        //public Entry[] Where(Func<Entry, bool> predicate) {
 
-            return null;
+        //    return null;
+        //}
+
+        public (Entry entry, float minValue) MinElement(Func<Entry, float> selector) {
+            float? minValue = null;
+            (Entry, float) ret = (null, 0.0f);
+
+            foreach (var e in this) {
+                if (minValue == null) {
+                    minValue = selector(e);
+                    ret = (e, (float)minValue);
+                }
+                else {
+                    if (selector(e) <= minValue) {
+                        minValue = selector(e);
+                        ret = (e, (float)minValue);
+                    }
+                }
+            }
+
+            return ret;
         }
 
         public void ForEach(Action<Entry> action) {
@@ -444,10 +475,9 @@ namespace TuggingController {
     public abstract class Chart {
         #region Properties
         public List<Axis> Axes { get; set; } = new List<Axis>();
-        //public List<Entry> Entries { get; set; } = new List<Entry>();
         public EntryCollection Entries { get; set; } = new EntryCollection();
-        public TestPoint TestPoint { get; set; } = new TestPoint();
         public TriangleCollection Triangles { get; set; } = new TriangleCollection();
+        public TestPoint TestPoint { get; set; } = new TestPoint();
         public SKRect RangeOfValue { get; set; }
         public SKRect RangeOfInflatedValue { get; set; }
         public SKPoint MaxValue {
@@ -694,24 +724,38 @@ namespace TuggingController {
             this.Triangles.ForEach(t => t.IsInside(value));
         }
 
-        public bool isInZone(Point pointerLocation, float radius, out Entry target) {
-            var pos = new SKPoint(pointerLocation.X, pointerLocation.Y);
-            var ret = false;
+        //public bool isInZone(Point pointerLocation, float radius, out Entry target) {
+        //    var pos = new SKPoint(pointerLocation.X, pointerLocation.Y);
+        //    var ret = false;
 
-            target = null;
-            foreach (var (e, i) in this.Entries.Select((e, i) => (e, i))) {
-                var dist = SKPoint.Distance(pos, e.GlobalLocation);
-                if (dist <= radius) {
-                    e.isHovered = true;
-                    ret = true;
-                    target = e;
-                }
-                else {
-                    e.isHovered = false;
-                }
+        //    target = null;
+        //    foreach (var (e, i) in this.Entries.Select((e, i) => (e, i))) {
+        //        var dist = SKPoint.Distance(pos, e.GlobalLocation);
+        //        if (dist <= radius) {
+        //            e.isHovered = true;
+        //            ret = true;
+        //            target = e;
+        //        }
+        //        else {
+        //            e.isHovered = false;
+        //        }
+        //    }
+
+        //    return ret;
+        //}
+
+        public Entry isInZone(Point pointerLoc, float radius) {
+            SKPoint location = SkiaHelper.ToSKPoint(pointerLoc);
+
+            this.Entries.ForEach(e => e.isHovered = false);
+            (Entry entry, float minValue) candidate = this.Entries.MinElement(e => SKPoint.Distance(location, e.GlobalLocation));
+
+            Entry ret = candidate.minValue <= radius ? candidate.entry : null;
+            if (ret != null) {
+                ret.isHovered = true;
             }
-
             return ret;
+
         }
 
         public bool isInArea(Point globalLocation) {
@@ -940,9 +984,7 @@ namespace TuggingController {
         // TODO: [Bug] Sync task may cause collections modified exception.
         public override void DrawContent(object ctx) {
             if (this.Entries.Count > 0) {
-                foreach (var e in this.Entries) {
-                    e.Draw(this.Canvas);
-                }
+                this.Entries.ForEach(e => e.Draw(this.Canvas));
             }
 
             if (this.Entries.Count == 3) {
@@ -950,9 +992,7 @@ namespace TuggingController {
             }
 
             if (this.Triangles.Count > 0) {
-                foreach (var t in this.Triangles) {
-                    t.Draw(this.Canvas);
-                }
+                this.Triangles.ForEach(tri => tri.Draw(this.Canvas));
             }
         }
 
@@ -1009,8 +1049,8 @@ namespace TuggingController {
                 this.Triangles.Add(new Triangle(new Entry[] { this.Entries[t[0]], this.Entries[t[1]], this.Entries[t[2]] }, verticeIndexes, this.InverseScale, this.InverseTransform));
                 var complex = new SimplicialComplex();
 
-                complex.CreateSimplex(vertices);
-                this.Complices.Add(complex);
+                //complex.CreateSimplex(vertices);
+                //this.Complices.Add(complex);
             }
         }
 
@@ -1094,15 +1134,6 @@ namespace TuggingController {
     }
     public class TriVertexCollection {
         public Dictionary<string, TriVertex> Vertices;
-
-        //public TriVertices(SKPoint[] locations, int[] indexes) {
-        //    this.Vertices = new Dictionary<string, TriVertex> {
-        //        ["A"] = new TriVertex { location = locations[0], idx = indexes[0] },
-        //        ["B"] = new TriVertex { location = locations[1], idx = indexes[1] },
-        //        ["C"] = new TriVertex { location = locations[2], idx = indexes[2] }
-        //    };
-        //}
-
         public TriVertexCollection(Entry[] entries, int[] indexes) {
             this.Vertices = new Dictionary<string, TriVertex> {
                 ["A"] = new TriVertex { Entry = entries[0], idx = indexes[0] },
@@ -1805,6 +1836,10 @@ namespace TuggingController {
             int exp = signAndExp & 0x00FF;
 
             return exp;
+        }
+
+        public static SKPoint ToSKPoint(Point p) {
+            return new SKPoint { X = p.X, Y = p.Y };
         }
         public static SKPoint GenerateZeroPoint() {
             return new SKPoint(0, 0);
