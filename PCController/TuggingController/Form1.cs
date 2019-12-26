@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -250,7 +251,7 @@ namespace TuggingController {
 
             switch (e.Button) {
                 case MouseButtons.Left:
-                    Entry target = this.chart.isInZone(e.Location, 5);
+                    Entry target = this.chart.IsInEntryArea(e.Location, 5);
 
                     //target!.isSelected = !target!.isSelected;
                     if (target != null) {
@@ -279,7 +280,7 @@ namespace TuggingController {
                 //    this.chart.Hovered = true;
                 //    TuggingController.Invalidate();
                 //}
-                if (this.chart.isInZone(e.Location, 5) != null) {
+                if (this.chart.IsInEntryArea(e.Location, 5) != null) {
                     this.chart.Hovered = true;
                     TuggingController.Invalidate();
                 }
@@ -287,7 +288,7 @@ namespace TuggingController {
                     this.chart.Hovered = false;
                 }
 
-                if (this.chart.isInArea(e.Location)) {
+                if (this.chart.IsInChartArea(e.Location)) {
                     this.chart.hasIndicator = true;
                     TuggingController.Invalidate();
                 }
@@ -296,7 +297,8 @@ namespace TuggingController {
                     TuggingController.Invalidate();
                 }
 
-                this.chart.IsInTriangle(this.chart.PointerLocation);
+                this.chart.IsInTriangleArea(this.chart.PointerLocation);
+                //this.chart.IsInTriangle(this.chart.PointerLocation);
                 TuggingController.Invalidate();
 
                 //if (this.chart.IsInComplex(this.chart.PointerLocation, out int idx)) {
@@ -326,7 +328,7 @@ namespace TuggingController {
                 }
                 else {
                     if (this.chart.TestPoint.CheckIsInZone(e.Location, 10)) {
-                        if (this.chart.isInArea(e.Location)) {
+                        if (this.chart.IsInChartArea(e.Location)) {
                             this.CurrentLocationOnDrag = e.Location;
                             this.IsDragging = true;
                             var targetLoc = new SKPoint(e.Location.X, e.Location.Y);
@@ -350,10 +352,10 @@ namespace TuggingController {
                     TuggingController.Invalidate();
                 }
                 else {
-                    this.DragTarget = this.chart.isInZone(e.Location, 10);
+                    this.DragTarget = this.chart.IsInEntryArea(e.Location, 10);
                     //if (this.chart.isInZone(e.Location, 10, out this.DragTarget)) {
                     if (this.DragTarget != null) {
-                        if (this.chart.isInArea(e.Location)) {
+                        if (this.chart.IsInChartArea(e.Location)) {
                             this.CurrentLocationOnDrag = e.Location;
                             this.IsDragging = true;
                             //var move = this.CurrentLocationOnDrag - this.StartLocationOnDrag;
@@ -396,7 +398,7 @@ namespace TuggingController {
         }
 
         private void button2_Click(object sender, EventArgs e) {
-            this.chart.SetInitialization();
+            this.chart.Initialize();
             this.chart.forceUpdateScale = true;
             this.TuggingController.Invalidate();
         }
@@ -421,10 +423,10 @@ namespace TuggingController {
     public class EntryCollection : ObservableCollection<Entry> {
         public EntryCollection() : base() { }
 
-        //public Entry[] Where(Func<Entry, bool> predicate) {
+        public void UpdateScale(SKMatrix scale) => this.ForEach(e => e.UpdateScale(scale));
+        public void UpdateTransform(SKMatrix transform) => this.ForEach(e => e.UpdateTransform(transform));
+        public void ResetHoverStates() => this.ForEach(e => e.isHovered = false);
 
-        //    return null;
-        //}
 
         public (Entry entry, float minValue) MinElement(Func<Entry, float> selector) {
             float? minValue = null;
@@ -455,6 +457,9 @@ namespace TuggingController {
 
     public class TriangleCollection : ObservableCollection<Triangle> {
         public TriangleCollection() : base() { }
+
+        public void UpdateScale(SKMatrix scale) => this.ForEach(e => e.UpdateScale(scale));
+        public void UpdateTransform(SKMatrix transform) => this.ForEach(e => e.UpdateTransform(transform));
 
         public Triangle[] Where(Func<Triangle, bool> predicate) {
             var ret = new List<Triangle>();
@@ -629,9 +634,13 @@ namespace TuggingController {
                 // Calculation
                 this.CalculateSize();
                 this.UpdateScale();
-                this.Entries.ForEach(e => e.UpdateScale(this.InverseScale));
-                this.Triangles.ForEach(e => e.UpdateScale(this.InverseScale));
+
+                this.Entries.UpdateScale(this.InverseScale);
+                this.Triangles.UpdateScale(this.InverseScale);
                 this.TestPoint.UpdateScale(this.InverseScale);
+
+                //this.Entries.ForEach(e => e.UpdateScale(this.InverseScale));
+                //this.Triangles.ForEach(e => e.UpdateScale(this.InverseScale));
 
                 this.forceUpdateScale = !this.forceUpdateScale;
             }
@@ -639,11 +648,13 @@ namespace TuggingController {
 
             // TODO: Transformation didn't match to each other.
             this.UpdateTransform();
-            this.Entries.ForEach(e => e.UpdateTransform(this.InverseTransform));
+
+            this.Entries.UpdateTransform(this.InverseTransform);
+            this.Triangles.UpdateTransform(this.InverseScale);
             this.Triangles.ForEach(t => t.UpdateTransform(this.InverseTransform));
             this.TestPoint.UpdateTransform(this.InverseTransform);
 
-            //if (this.Entries)
+            //this.Entries.ForEach(e => e.UpdateTransform(this.InverseTransform));
 
             // Draw canvas
             this.Canvas.Clear(SKColor.Empty);
@@ -710,7 +721,7 @@ namespace TuggingController {
             return Math.PI * degree / 180.0;
         }
 
-        public void SetInitialization() {
+        public void Initialize() {
             this.Entries = new EntryCollection() {
                 new Entry(new SKPoint(0, 0)),
                 new Entry(new SKPoint(1, 0)),
@@ -718,10 +729,16 @@ namespace TuggingController {
             };
         }
 
-        public void IsInTriangle(SKPoint target) {
-            var value = this.Scale.MapPoint(this.Transform.MapPoint(target));
-            //this.Triangles.ForEach(t => t.IsInside(value));
-            this.Triangles.ForEach(t => t.IsInside(value));
+        //public void IsInTriangle(SKPoint target) {
+        //    var targetValue = this.Scale.MapPoint(this.Transform.MapPoint(target));
+        //    this.Triangles.ForEach(t => t.IsInside(targetValue));
+        //}
+
+        public Triangle IsInTriangleArea(SKPoint pointerLocation) {
+            //SKPoint value = this.Scale.MapPoint(this.Transform.MapPoint(SkiaHelper.ToSKPoint(pointerLocation)));
+
+            Triangle[] retTri = this.Triangles.Where(t => t.IsInsideFromGlobalLocation(pointerLocation) != null);
+            return retTri.Length != 0 ? retTri[0] : null;
         }
 
         //public bool isInZone(Point pointerLocation, float radius, out Entry target) {
@@ -744,13 +761,14 @@ namespace TuggingController {
         //    return ret;
         //}
 
-        public Entry isInZone(Point pointerLoc, float radius) {
+        public Entry IsInEntryArea(Point pointerLoc, float radius) {
             SKPoint location = SkiaHelper.ToSKPoint(pointerLoc);
 
-            this.Entries.ForEach(e => e.isHovered = false);
-            (Entry entry, float minValue) candidate = this.Entries.MinElement(e => SKPoint.Distance(location, e.GlobalLocation));
+            this.Entries.ResetHoverStates();
 
+            (Entry entry, float minValue) candidate = this.Entries.MinElement(e => SKPoint.Distance(location, e.GlobalLocation));
             Entry ret = candidate.minValue <= radius ? candidate.entry : null;
+
             if (ret != null) {
                 ret.isHovered = true;
             }
@@ -758,34 +776,17 @@ namespace TuggingController {
 
         }
 
-        public bool isInArea(Point globalLocation) {
-            SKPoint location = this.Transform.MapPoint(new SKPoint(globalLocation.X, globalLocation.Y));
-            return (location.X <= this.chartArea.Width & location.X >= 0) && (location.Y <= this.chartArea.Height & location.Y >= 0);
-        }
-
-        private float GetMaxValueInEntries(string axis) {
-            if (axis == "X") {
-                return this.Entries.Max(e => e.Location.X);
-            }
-            else {
-                return this.Entries.Max(e => e.Location.Y);
-            }
-        }
-
-        private float GetMinValueInEntries(string axis) {
-            if (axis == "X") {
-                return this.Entries.Min(e => e.Location.X);
-            }
-            else {
-                return this.Entries.Min(e => e.Location.Y);
-            }
+        public bool IsInChartArea(Point pointerLocation) {
+            SKPoint relativeLocation = this.Transform.MapPoint(SkiaHelper.ToSKPoint(pointerLocation));
+            return (relativeLocation.X <= this.chartArea.Width & relativeLocation.X >= 0) && (relativeLocation.Y <= this.chartArea.Height & relativeLocation.Y >= 0);
         }
 
         public override void DrawHover(Chart ctx) {
+            this.Entries.ForEach(e => e.DrawHover(this.Canvas));
             //Hover.DrawHover(this.Canvas, ctx.PointerLocation);
-            foreach (var e in this.Entries) {
-                e.DrawHover(this.Canvas);
-            }
+            //foreach (var e in this.Entries) {
+            //    e.DrawHover(this.Canvas);
+            //}
         }
 
         public override void DrawIndicator() {
@@ -1132,38 +1133,67 @@ namespace TuggingController {
         //public SKPoint location;
         public int idx;
     }
-    public class TriVertexCollection {
-        public Dictionary<string, TriVertex> Vertices;
-        public TriVertexCollection(Entry[] entries, int[] indexes) {
-            this.Vertices = new Dictionary<string, TriVertex> {
-                ["A"] = new TriVertex { Entry = entries[0], idx = indexes[0] },
-                ["B"] = new TriVertex { Entry = entries[1], idx = indexes[1] },
-                ["C"] = new TriVertex { Entry = entries[2], idx = indexes[2] },
-            };
-        }
 
-        public TriVertex this[string idx] {
-            get {
-                return this.Vertices[idx];
-            }
-            set {
-                this.Vertices[idx] = value;
-            }
+    [Serializable]
+    public class TriVertexCollection : Dictionary<string, TriVertex> {
+        public TriVertexCollection(Entry[] entries, int[] indexes) : base() {
+            this.Add("A", new TriVertex { Entry = entries[0], idx = indexes[0] });
+            this.Add("B", new TriVertex { Entry = entries[1], idx = indexes[1] });
+            this.Add("C", new TriVertex { Entry = entries[2], idx = indexes[2] });
         }
+        protected TriVertexCollection(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    
+        public SKPoint[] ToGlobalLocations() => this.Values.Select(v => v.Entry.GlobalLocation).ToArray();
+        //public TriVertex this[string idx] {
+        //    get {
+        //        return this.Vertices[idx];
+        //    }
+        //    set {
+        //        this.Vertices[idx] = value;
+        //    }
+        //}
         public TriVertex? Any(int targetIdx) {
-            var ret = this.Vertices.Values.Where(value => value.idx == targetIdx).ToArray();
+            var ret = this.Values.Where(value => value.idx == targetIdx).ToArray();
 
             return ret.Length > 0 ? ret[0] : (TriVertex?)null;
         }
+
     };
 
-    public class Triangle : CanvasObject {
+    public enum PointType {
+        Value,
+        Local,
+        Global
+    }
+
+    public abstract class ScalableCanvasObject : CanvasObject, IScalable {
+        public SKMatrix Scale { get; set; }
+
+        protected ScalableCanvasObject(SKMatrix scale) : base(new SKPoint(0, 0), SKMatrix.MakeIdentity()) {
+            this.Scale = scale;
+        }
+
+        protected ScalableCanvasObject(SKPoint location, SKMatrix transform, SKMatrix scale) : base(location, transform) {
+            this.Scale = scale;
+        }
+        public virtual void UpdateScale(SKMatrix scale) => this.Scale = scale;
+
+    }
+
+    public interface IScalable {
+        SKMatrix Scale { get; set; }
+        void UpdateScale(SKMatrix scale);
+    }
+
+
+
+    public class Triangle : ScalableCanvasObject {
         public bool IsHovered { get; set; } = false;
-        // Vertice [Value]
-        public Entry[] Vertices { get; set; }
+        // Vertex [Value]
+        //public Entry[] Vertices { get; set; }
         public TriVertexCollection VerticesNew { get; set; }
         public int[] VertexIndexes { get; set; }
-        public SKMatrix Scale { get; set; }
+        //public SKMatrix Scale { get; set; }
 
         public Triangle(Entry[] vertices) : this(vertices, new int[]{ 0, 1, 2 }, new SKPoint(0, 0), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
@@ -1173,32 +1203,54 @@ namespace TuggingController {
         //    this.Vertices = vertices;
         //}
 
-        public Triangle(Entry[] vertices, int[] vertexIndexes, SKPoint location, SKMatrix scale, SKMatrix transform) : base(location, transform) {
-            this.Scale = scale;
-            this.Vertices = vertices;
+        public Triangle(Entry[] vertices, int[] vertexIndexes, SKPoint location, SKMatrix scale, SKMatrix transform) : base(location, transform, scale) {
+            //this.Vertices = vertices;
             this.VerticesNew = new TriVertexCollection(vertices, vertexIndexes);
             this.VertexIndexes = vertexIndexes;
         }
 
-        public Triangle IsVertex(int targetIdx) {
-            return this.VerticesNew.Any(targetIdx).HasValue ? this : null;
+        public Triangle IsVertex(int targetIdx) => this.VerticesNew.Any(targetIdx).HasValue ? this : null;
+
+
+        public Triangle IsInsideFromGlobalLocation(SKPoint gTarget) => this.IsInside_v1(gTarget, PointType.Global);
+        public Triangle IsInsideFromLocation(SKPoint lTarget) => this.IsInside_v1(lTarget, PointType.Local);
+        public Triangle IsInsideFromValue(SKPoint vTarget) => this.IsInside_v1(vTarget, PointType.Value);
+        public Triangle IsInside_v1(SKPoint target, PointType type) {
+            string propertyName = "";
+
+            switch (type) {
+                case PointType.Value:
+                    propertyName = "Value";
+                    break;
+                case PointType.Local:
+                    propertyName = "Location";
+                    break;
+                case PointType.Global:
+                    propertyName = "GlobalLocation";
+                    break;
+            }
+
+            var barycentricCoordinate = SimplicialComplex.GetBarycentricCoordinate(
+                    target,
+                    new SimplicialComplex.Simplex3I {
+                        V1 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.VerticesNew["A"].Entry),
+                        V2 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.VerticesNew["B"].Entry),
+                        V3 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.VerticesNew["C"].Entry)
+                    });
+            this.IsHovered = barycentricCoordinate.IsInside;
+
+            return barycentricCoordinate.IsInside ? this : null;
         }
-            
-        //    {
-        //    return this.VerticesNew.Any(targetIdx);
+
+
+        //public bool IsInside(SKPoint target) {
+        //    var coor = SimplicialComplex.GetBarycentricCoordinate(target, new SimplicialComplex.Simplex3I { V1 = Vertices[0].Value, V2 = Vertices[1].Value, V3 = Vertices[2].Value });
+
+        //    this.IsHovered = coor.IsInside;
+
+        //    //Logger.Debug("Triangle: {0}", string.Join(",", this.Vertices.Select(v => v.ToString())));
+        //    return coor.IsInside;
         //}
-
-        public bool IsInside(SKPoint target) {
-            var coor = SimplicialComplex.GetBarycentricCoordinate(target, new SimplicialComplex.Simplex3I { V1 = Vertices[0].Value, V2 = Vertices[1].Value, V3 = Vertices[2].Value });
-
-            this.IsHovered = coor.IsInside;
-
-            //Logger.Debug("Triangle: {0}", string.Join(",", this.Vertices.Select(v => v.ToString())));
-            return coor.IsInside;
-        }
-        public void UpdateScale(SKMatrix scale) {
-            this.Scale = scale;
-        }
         public override void Draw(SKCanvas canvas) {
             var fillPaint = new SKPaint {
                 IsAntialias = true,
@@ -1213,8 +1265,9 @@ namespace TuggingController {
                 StrokeWidth = 2
             };
             var path = new SKPath();
-            SKPoint[] gVertices = this.Scale.MapPoints(this.Vertices.Select(e => e.Value).ToArray());
-            gVertices = this.Transform.MapPoints(gVertices);
+            //SKPoint[] gVertices = this.Scale.MapPoints(this.Vertices.Select(e => e.Value).ToArray());
+            SKPoint[] gVertices = this.VerticesNew.ToGlobalLocations();
+            //gVertices = this.Transform.MapPoints(gVertices);
 
             path.MoveTo(gVertices[0]);
             path.LineTo(gVertices[1]);
@@ -1318,7 +1371,7 @@ namespace TuggingController {
         }
     }
 
-    public class Entry : CanvasObject {
+    public class Entry : ScalableCanvasObject {
         public bool isSelected { get; set; } = false;
         public bool isHovered { get; set; } = false;
         public bool isPaired { get; set; } = false;
@@ -1330,7 +1383,6 @@ namespace TuggingController {
             }
         }
         // Scale Transformation: Value ==> Local Coordinate
-        public SKMatrix Scale { get; set; }
 
         public Entry() : this(0, 0, SKMatrix.MakeIdentity()) { }
 
@@ -1416,12 +1468,12 @@ namespace TuggingController {
         //    this.Transform = transform;
         //}
 
-        public void UpdateScale(SKMatrix scale) {
-            this.Scale = scale;
+        //public override void UpdateScale(SKMatrix scale) {
+        //    this.Scale = scale;
 
-            Logger.Debug("Update Scale - [Value]: {0}", this.Value);
-            Logger.Debug("Update Scale - [Location]: {0}", this.Location);
-        }
+        //    Logger.Debug("Update Scale - [Value]: {0}", this.Value);
+        //    Logger.Debug("Update Scale - [Location]: {0}", this.Location);
+        //}
 
         public void UpdateFromGlobalLocation(SKPoint gLocation) {
             SKMatrix inverseCoordinate, inverseScale;
@@ -1458,8 +1510,13 @@ namespace TuggingController {
 
     }
 
-    public abstract class CanvasObject {
-        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    public interface ILoggable {
+        Logger Logger { get; }
+    }
+
+
+    public abstract class CanvasObject : ILoggable {
+        public Logger Logger { get; private set; }
 
         // Transform: Local Coordinate [Screen: Left-Top] ==> Global Coordinate [Screen: Left-Bottom, Center]
         public SKMatrix Transform { get; set; }
@@ -1470,13 +1527,20 @@ namespace TuggingController {
             }
         }
 
-        public CanvasObject(SKPoint location, SKMatrix transform) {
+        protected CanvasObject(SKPoint location, SKMatrix transform) {
             this.Location = location;
             this.Transform = transform;
+
+            this.EnableLogging();
         }
 
-        public CanvasObject(SKMatrix transform) {
-            this.Transform = transform;
+        protected CanvasObject(SKMatrix transform) : this(new SKPoint(), transform) { }
+
+        public void EnableLogging() {
+            this.Logger = LogManager.GetCurrentClassLogger();
+        }
+        public void DisableLogging() {
+            this.Logger = null;
         }
 
         public abstract void Draw(SKCanvas canvas);
