@@ -263,7 +263,7 @@ namespace TuggingController {
         public Process Task;
         public delegate void DataReceivedHandler(string name, string data);
         private readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        public DataReceivedHandler OnDataReceived;
+        public DataReceivedHandler DataReceived;
         public string ReceivedData = "";
 
         public Triangulation() {
@@ -371,7 +371,7 @@ namespace TuggingController {
         }
 
         public void CMD_ProcessExited(object sender, EventArgs e) {
-            this.OnDataReceived(this.Task.StartInfo.FileName, this.ReceivedData);
+            this.DataReceived(this.Task.StartInfo.FileName, this.ReceivedData);
             ReceivedData = "";
             Console.WriteLine("Stopped process ID = 0x{0:X}.", this.Task.Id);
             this.Task = null;

@@ -34,6 +34,8 @@ namespace TuggingController {
         public Form1() {
             InitializeComponent();
 
+            this.KeyPreview = true;
+
             var config = new NLog.Config.LoggingConfiguration();
             var logConsole = new NLog.Targets.ColoredConsoleTarget("Form1");
             config.AddRule(LogLevel.Debug, LogLevel.Fatal, logConsole);
@@ -42,7 +44,7 @@ namespace TuggingController {
             Logger.Debug("Hello World");
             //RobotController ctrl = new RobotController();
             this.Tri = new Triangulation();
-            this.Tri.OnDataReceived += Triangle_DataReceived;
+            this.Tri.DataReceived += Triangle_DataReceived;
             //this.Tri.RunRbox();
             //this.Tri.StartTask();
 
@@ -72,7 +74,27 @@ namespace TuggingController {
             ConfigurationSpace.MouseDown += ConfigurationSpace_MouseDown;
             ConfigurationSpace.MouseUp += ConfigurationSpace_MouseUp;
 
+            this.comboBox1.DataSource = Enum.GetValues(typeof(ConfigurationCanvas.CanvasState));
+            this.comboBox1.SelectedIndexChanged += this.ConfigurationSpace_ChangeState;
+        }
 
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
+            if (keyData == Keys.E) {
+                this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Edit;
+                //this.configuration.State = ConfigurationCanvas.CanvasState.Edit;
+                return true;
+            }
+            else if (keyData == Keys.Escape) {
+                this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Control;
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void ConfigurationSpace_ChangeState(object sender, EventArgs e) {
+            this.configuration.State = (ConfigurationCanvas.CanvasState) this.comboBox1.SelectedItem;
+
+            this.ConfigurationSpace.Invalidate();
         }
 
         private void ConfigurationSpace_MouseUp(object sender, MouseEventArgs e) {

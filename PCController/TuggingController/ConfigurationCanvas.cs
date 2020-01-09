@@ -17,9 +17,23 @@ using NLog;
 
 namespace TuggingController {
     public class ConfigurationCanvas {
+        public enum CanvasState {
+            Control,
+            Edit
+        }
+
+        public enum EdittingState {
+            None,
+            Dragging
+        }
+
+        public enum MouseState {
+            Left,
+            Right
+        }
         private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        public int Mode { get; set; } = 0;
+        public CanvasState State { get; set; } = CanvasState.Control;
         public SKSize CanvasSize { get; set; }
         // Transformation: Global ==> Local
         public SKMatrix Transform { get; set; }
@@ -64,38 +78,52 @@ namespace TuggingController {
 
             return ret;
         }
-        public bool CheckInControlArea(SKPoint location, out int idx) {
-            var leastDistance = this.Threshold;
-            var ret = false;
-            idx = -1;
+        //public bool CheckInControlArea(SKPoint location, out int idx) {
+        //    var leastDistance = this.Threshold;
+        //    var ret = false;
+        //    idx = -1;
 
-            for (int i = 0; i < this.ControlPoints.Length; i++) {
-                var dist = SKPoint.DistanceSquared(location, this.ControlPoints[i]);
-                if (dist <= Math.Pow(this.Threshold, 2)) {
-                    ret = true;
-                    idx = i;
-                }
+        //    for (int i = 0; i < this.ControlPoints.Length; i++) {
+        //        var dist = SKPoint.DistanceSquared(location, this.ControlPoints[i]);
+        //        if (dist <= Math.Pow(this.Threshold, 2)) {
+        //            ret = true;
+        //            idx = i;
+        //        }
 
-                //if (ret) {
-                //    if (leastDistance < dist) {
-                //        idx = i;
-                //        leastDistance = dist;
-                //    }
-                //}
+        //        //if (ret) {
+        //        //    if (leastDistance < dist) {
+        //        //        idx = i;
+        //        //        leastDistance = dist;
+        //        //    }
+        //        //}
+        //    }
+
+        //    return ret;
+        //}
+
+        private void DrawBackground(SKCanvas canvas) {
+
+            var backgroundRect = new SKRect() {
+                Size = this.CanvasSize
+            };
+            var bgPaint = new SKPaint() {
+                Color = SKColors.White
+            };
+
+            switch (this.State) {
+                case CanvasState.Control:
+                    bgPaint.Color = SKColors.White;
+                    break;
+                case CanvasState.Edit:
+                    bgPaint.Color = SKColors.DimGray;
+                    break;
             }
 
-            return ret;
+            canvas.DrawRect(backgroundRect, bgPaint);
         }
 
-        public void Draw(SKCanvas canvas) {
+        private void DrawControlPoints(SKCanvas canvas) {
             var path = new SKPath();
-
-            //var start = new SKPoint(this.CanvasSize.Width / 2, 80);
-            //var pivots = new SKPoint[] {
-            //    new SKPoint(this.CanvasSize.Width / 2, 80 + 100),
-            //    new SKPoint(this.CanvasSize.Width / 2, 80 + 400 - 100)
-            //};
-            //var end = new SKPoint(this.CanvasSize.Width / 2, 80 + 400);
 
             path.MoveTo(this.ControlPoints[0]);
             path.CubicTo(this.ControlPoints[1], this.ControlPoints[2], this.ControlPoints[3]);
@@ -119,15 +147,19 @@ namespace TuggingController {
                 PathEffect = SKPathEffect.CreateDash(new float[] { 10, 10 }, 10)
             };
 
-            canvas.Clear();
-
             canvas.DrawPath(path, strokePaint);
-            for (int i = 0; i < this.ControlPoints.Length; i ++) {
+            for (int i = 0; i < this.ControlPoints.Length; i++) {
                 canvas.DrawCircle(ControlPoints[i], this.Radius, circlePaint);
             }
             canvas.DrawLine(this.ControlPoints[0], this.ControlPoints[1], tanStrokePaint);
             canvas.DrawLine(this.ControlPoints[3], this.ControlPoints[2], tanStrokePaint);
         }
+        public void Draw(SKCanvas canvas) {
+            canvas.Clear();
 
+            // Draw background
+            this.DrawBackground(canvas);
+            this.DrawControlPoints(canvas);
+        }
     }
 }
