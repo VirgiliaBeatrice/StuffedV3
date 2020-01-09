@@ -19,6 +19,7 @@ namespace TuggingController {
     public class ConfigurationCanvas {
         private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+        public int Mode { get; set; } = 0;
         public SKSize CanvasSize { get; set; }
         // Transformation: Global ==> Local
         public SKMatrix Transform { get; set; }
@@ -48,6 +49,21 @@ namespace TuggingController {
             };
         }
 
+
+        public int? IsInControlArea(SKPoint location) {
+            double leastDistance = Math.Pow(this.Threshold, 2);
+            int? ret = null;
+
+            for (int i = 0; i < this.ControlPoints.Length; i ++) {
+                float dist = SKPoint.Distance(location, this.ControlPoints[i]);
+                if (dist <= leastDistance) {
+                    ret = i;
+                    leastDistance = dist;
+                }
+            }
+
+            return ret;
+        }
         public bool CheckInControlArea(SKPoint location, out int idx) {
             var leastDistance = this.Threshold;
             var ret = false;

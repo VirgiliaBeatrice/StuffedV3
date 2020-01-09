@@ -308,6 +308,28 @@ namespace TuggingController {
             this.Task.Exited += CMD_ProcessExited;
         }
 
+        //TODO: Command process
+        public void RunConvexHull() {
+            var taskInfo = new ProcessStartInfo {
+                FileName = "qdelaunay",
+                Arguments = "QJ i TI data.txt",
+                CreateNoWindow = true,
+                //RedirectStandardInput = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+            };
+
+
+            Logger.Debug("Start a new process for test delaunay.");
+            this.Task = new Process();
+            this.Task.StartInfo = taskInfo;
+            this.Task.OutputDataReceived += CMD_DataReceived;
+            this.Task.ErrorDataReceived += CMD_ErrorReceived;
+            this.Task.EnableRaisingEvents = true;
+            this.Task.Exited += CMD_ProcessExited;
+        }
+
         public void RunDelaunay() {
             //Logger.Debug(input);
             var taskInfo = new ProcessStartInfo {

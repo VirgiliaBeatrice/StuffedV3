@@ -95,13 +95,22 @@ namespace TuggingController {
 
             if (this.configuration.IsDown) {
                 if (!this.configuration.IsDragging) {
-                    if (this.configuration.CheckInControlArea(location, out int idx)) {
-                        this.configuration.ControlPoints[idx] = location;
+                    int? idx = this.configuration.IsInControlArea(location);
+                    if (idx != null) {
+                        this.configuration.ControlPoints[(int) idx] = location;
                         this.configuration.IsDragging = true;
-                        DragTargetConfiguration = idx;
-
+                        DragTargetConfiguration = (int) idx;
+                        
                         this.ConfigurationSpace.Invalidate();
                     }
+
+                    //if (this.configuration.CheckInControlArea(location, out int idx)) {
+                    //    this.configuration.ControlPoints[idx] = location;
+                    //    this.configuration.IsDragging = true;
+                    //    DragTargetConfiguration = idx;
+
+                    //this.ConfigurationSpace.Invalidate();
+                    //}
                 }
                 else {
                     this.configuration.ControlPoints[DragTargetConfiguration] = location;
