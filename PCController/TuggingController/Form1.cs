@@ -96,6 +96,10 @@ namespace TuggingController {
                 case Keys.E:
                     this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Edit;
                     return true;
+                case Keys.F:
+                    this.chart.forceUpdateScale = true;
+                    this.TuggingController.Invalidate();
+                    return true;
                 case Keys.Escape:
                     this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Control;
                     return true;
@@ -584,7 +588,9 @@ namespace TuggingController {
         // TODO: Calculation still has some problems.
         protected void CalculateSize() {
             if (this.Entries.Count > 0) {
-                this.RangeOfValue = new SKRect(this.MinValue.X, this.MaxValue.Y, this.MaxValue.X, this.MinValue.Y);
+                SKSize margin = new SKSize() { Height = (this.MaxValue.X - this.MinValue.X) * 0.1f, Width = (this.MaxValue.Y - this.MinValue.Y) * 0.1f };
+                //this.RangeOfValue = new SKRect(this.MinValue.X, this.MaxValue.Y, this.MaxValue.X, this.MinValue.Y);
+                this.RangeOfValue = new SKRect(this.MinValue.X - margin.Width, this.MaxValue.Y + margin.Height, this.MaxValue.X + margin.Width , this.MinValue.Y - margin.Height);
             }
             else {
                 this.RangeOfValue = new SKRect(0, 1, 1, 0);
@@ -1044,16 +1050,16 @@ namespace TuggingController {
 
         // TODO: [Bug] Sync task may cause collections modified exception.
         public override void DrawContent(object ctx) {
-            if (this.Entries.Count > 0) {
-                this.Entries.ForEach(e => e.Draw(this.Canvas));
-            }
-
             if (this.Entries.Count == 3) {
                 this.Triangulate(new List<int[]>() { new int[] { 0, 1, 2 } });
             }
 
             if (this.Triangles.Count > 0) {
                 this.Triangles.ForEach(tri => tri.Draw(this.Canvas));
+            }
+
+            if (this.Entries.Count > 0) {
+                this.Entries.ForEach(e => e.Draw(this.Canvas));
             }
         }
 
@@ -1490,9 +1496,14 @@ namespace TuggingController {
                 //Hover.DrawHover(canvas, this.GlobalLocation);
             }
 
+            //var fillPaint = new SKPaint {
+            //    IsAntialias = true,
+            //    Color = SKColors.ForestGreen,
+            //    Style = SKPaintStyle.Fill
+            //};
             var fillPaint = new SKPaint {
                 IsAntialias = true,
-                Color = SKColors.ForestGreen,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
                 Style = SKPaintStyle.Fill
             };
             var strokePaint = new SKPaint {
