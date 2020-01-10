@@ -79,15 +79,28 @@ namespace TuggingController {
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
-            if (keyData == Keys.E) {
-                this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Edit;
-                //this.configuration.State = ConfigurationCanvas.CanvasState.Edit;
-                return true;
+            //if (keyData == Keys.E) {
+            //    this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Edit;
+            //    //this.configuration.State = ConfigurationCanvas.CanvasState.Edit;
+            //    return true;
+            //}
+            //else if (keyData == Keys.Escape) {
+            //    this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Control;
+            //    return true;
+            //}
+
+            switch (keyData) {
+                case Keys.P:
+                    this.CreatePair();
+                    return true;
+                case Keys.E:
+                    this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Edit;
+                    return true;
+                case Keys.Escape:
+                    this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Control;
+                    return true;
             }
-            else if (keyData == Keys.Escape) {
-                this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Control;
-                return true;
-            }
+
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -286,7 +299,9 @@ namespace TuggingController {
 
                     //target!.isSelected = !target!.isSelected;
                     if (target != null) {
-                        target.isSelected = !target.isSelected;
+                        bool prevState = target.isSelected;
+                        this.chart.Entries.ResetSelectedStates();
+                        target.isSelected = !prevState;
                     }
                     //if (this.chart.isInZone(e.Location, 5, out Entry target)) {
                     //    target.isSelected = !target.isSelected;
@@ -428,13 +443,7 @@ namespace TuggingController {
             //}
         }
 
-        private void button2_Click(object sender, EventArgs e) {
-            this.chart.Initialize();
-            this.chart.forceUpdateScale = true;
-            this.TuggingController.Invalidate();
-        }
-
-        private void button1_Click(object sender, EventArgs ev) {
+        private void CreatePair() {
             var selectedEntry = this.chart.Entries.Where(e => e.isSelected).ToArray()[0];
             var currentConfiguration = this.configuration.ControlPoints;
 
@@ -444,6 +453,25 @@ namespace TuggingController {
             selectedEntry.isSelected = false;
 
             TuggingController.Invalidate();
+        }
+
+        private void button2_Click(object sender, EventArgs e) {
+            this.chart.Initialize();
+            this.chart.forceUpdateScale = true;
+            this.TuggingController.Invalidate();
+        }
+
+        private void button1_Click(object sender, EventArgs ev) {
+            this.CreatePair();
+            //var selectedEntry = this.chart.Entries.Where(e => e.isSelected).ToArray()[0];
+            //var currentConfiguration = this.configuration.ControlPoints;
+
+            //this.mapping.CreatePair(selectedEntry.Value, currentConfiguration);
+
+            //selectedEntry.isPaired = true;
+            //selectedEntry.isSelected = false;
+
+            //TuggingController.Invalidate();
         }
 
         private void button3_Click(object sender, EventArgs e) {
@@ -457,6 +485,7 @@ namespace TuggingController {
         public void UpdateScale(SKMatrix scale) => this.ForEach(e => e.UpdateScale(scale));
         public void UpdateTransform(SKMatrix transform) => this.ForEach(e => e.UpdateTransform(transform));
         public void ResetHoverStates() => this.ForEach(e => e.isHovered = false);
+        public void ResetSelectedStates() => this.ForEach(e => e.isSelected = false);
 
 
         public (Entry entry, float minValue) MinElement(Func<Entry, float> selector) {
