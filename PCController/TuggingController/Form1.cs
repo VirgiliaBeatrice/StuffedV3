@@ -91,7 +91,13 @@ namespace TuggingController {
 
             switch (keyData) {
                 case Keys.P:
-                    this.CreatePair();
+                    bool result = this.CreatePair();
+                    if (result) {
+                        MessageBox.Show("Pair created.");
+                    }
+                    else {
+                        MessageBox.Show("No entry has been selected.");
+                    }
                     return true;
                 case Keys.E:
                     this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Edit;
@@ -447,16 +453,27 @@ namespace TuggingController {
             //}
         }
 
-        private void CreatePair() {
-            var selectedEntry = this.chart.Entries.Where(e => e.isSelected).ToArray()[0];
-            var currentConfiguration = this.configuration.ControlPoints;
+        private bool CreatePair() {
+            //var selectedEntry = this.chart.Entries.Where(e => e.isSelected).ToArray()[0];
 
-            this.mapping.CreatePair(selectedEntry.Value, currentConfiguration);
+            Entry[] target = this.chart.Entries.Where(e => e.isSelected).ToArray();
 
-            selectedEntry.isPaired = true;
-            selectedEntry.isSelected = false;
+            if (target.Length != 0) {
+                Entry selectedEntry = target[0];
+                var currentConfiguration = this.configuration.ControlPoints;
 
-            TuggingController.Invalidate();
+                this.mapping.CreatePair(selectedEntry.Value, currentConfiguration);
+
+                selectedEntry.isPaired = true;
+                selectedEntry.isSelected = false;
+
+                TuggingController.Invalidate();
+
+                return true;
+            }
+            else {
+                return false;
+            }
         }
 
         private void button2_Click(object sender, EventArgs e) {
