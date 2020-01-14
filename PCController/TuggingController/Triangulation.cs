@@ -86,6 +86,36 @@ namespace TuggingController {
 
         }
 
+        [Serializable]
+        public class ConfigurationSpace_v1 : Dictionary<string, ConfigurationObject> {
+            protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+            public ConfigurationObject X1 {
+                get {
+                    return this["A"];
+                }
+            }
+            public ConfigurationObject X2 {
+                get {
+                    return this["B"];
+                }
+            }
+            public ConfigurationObject X3 {
+                get {
+                    return this["C"];
+                }
+            }
+
+            public ConfigurationSpace_v1() {
+                this["A"] = null;
+                this["B"] = null;
+                this["C"] = null;
+            }
+
+            protected ConfigurationSpace_v1(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) {
+            }
+        }
+
         public struct Simplex3I {
             public SKPoint V1;
             public SKPoint V2;
@@ -109,8 +139,36 @@ namespace TuggingController {
             }
         }
 
+        [Serializable]
+        public class Simplex3_v1 : Dictionary<string, Entry> {
+            public SKPoint V1 {
+                get {
+                    return this["A"].Value;
+                }
+            }
+            public SKPoint V2 {
+                get {
+                    return this["B"].Value;
+                }
+            }
+            public SKPoint V3 {
+                get {
+                    return this["C"].Value;
+                }
+            }
+            public Simplex3_v1() {
+                this["A"] = null;
+                this["B"] = null;
+                this["C"] = null;
+            }
+            protected Simplex3_v1(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        }
+
         public ConfigurationSpace Configurations { get; set; } = new ConfigurationSpace();
+        public ConfigurationSpace_v1 Configurations_v1 { get; set; } = new ConfigurationSpace_v1();
         public Simplex3 States { get; set; } = new Simplex3();
+        public Simplex3_v1 States_v1 { get; set; } = new Simplex3_v1();
+        public bool IsSet { get; set; } = false;
         public SimplicialComplex() { }
 
         public ConfigurationObject GetInterpolatedConfiguration(SKPoint target) {
@@ -122,6 +180,22 @@ namespace TuggingController {
                 C3 = this.Configurations.X1.C3 * coor.U + this.Configurations.X2.C3 * coor.V + this.Configurations.X3.C3 * coor.W,
                 C4 = this.Configurations.X1.C4 * coor.U + this.Configurations.X2.C4 * coor.V + this.Configurations.X3.C4 * coor.W,
             };
+        }
+
+        public ConfigurationObject GetInterpolatedConfiguration_v1(SKPoint target) {
+            if (this.IsSet) {
+                BarycentricCoordinate coor = this.GetBarycentricCoordinate_v1(target);
+
+                return new ConfigurationObject() {
+                    C1 = this.Configurations_v1.X1.C1 * coor.U + this.Configurations_v1.X2.C1 * coor.V + this.Configurations_v1.X3.C1 * coor.W,
+                    C2 = this.Configurations_v1.X1.C2 * coor.U + this.Configurations_v1.X2.C2 * coor.V + this.Configurations_v1.X3.C2 * coor.W,
+                    C3 = this.Configurations_v1.X1.C3 * coor.U + this.Configurations_v1.X2.C3 * coor.V + this.Configurations_v1.X3.C3 * coor.W,
+                    C4 = this.Configurations_v1.X1.C4 * coor.U + this.Configurations_v1.X2.C4 * coor.V + this.Configurations_v1.X3.C4 * coor.W,
+                };
+            }
+            else {
+                return null;
+            }
         }
 
         public void CreateSimplex(SKPoint[] vertices) {
@@ -136,12 +210,22 @@ namespace TuggingController {
             this.Configurations[idx] = new ConfigurationObject(config);
         }
         public void CreatePair(SKPoint control, SKPoint[] configuration) {
+            //this.States_v1.Add()
             this.States.Add(control);
             this.Configurations.Add(new ConfigurationObject(configuration));
+        }
 
-            //if (this.Configurations.Count == 3) {
-                
-            //}
+        public void CreatePair_v1(Entry entry, string vertexName) {
+            this.States_v1[vertexName] = entry;
+            this.Configurations_v1[vertexName] = new ConfigurationObject(entry.PairedConfig);
+            //this.Configurations.Add(new ConfigurationObject(entry.PairedConfig));
+
+            if (this.States_v1.Values.Any(e => e == null)) {
+                this.IsSet = false;
+            }
+            else {
+                this.IsSet = true;
+            }
         }
 
         public static BarycentricCoordinate GetBarycentricCoordinate(SKPoint target, Simplex3I simplex) {
@@ -210,6 +294,37 @@ namespace TuggingController {
             };
         }
 
+        public BarycentricCoordinate GetBarycentricCoordinate_v1(SKPoint target) {
+            var a1 = GetTriangleArea(new SKPoint[] {
+                States_v1.V2, States_v1.V3, target
+            }, true);
+            var a2 = GetTriangleArea(new SKPoint[] {
+                States_v1.V3, States_v1.V1, target
+            }, true);
+            var a3 = GetTriangleArea(new SKPoint[] {
+                States_v1.V1, States_v1.V2, target
+            }, true);
+
+            var a = GetTriangleArea(new SKPoint[] {
+                States_v1.V1, States_v1.V2, States_v1.V3
+            }, true);
+
+            var u = a1 / a;
+            var v = a2 / a;
+            var w = a3 / a;
+
+            //var u = a1 / a > 1.0f ? 0.0f : a1 / a;
+            //var v = a2 / a > 1.0f ? 0.0f : a2 / a;
+            //var w = a3 / a > 1.0f ? 0.0f : a3 / a;
+
+
+            return new BarycentricCoordinate {
+                U = u,
+                V = v,
+                W = w
+            };
+        }
+
         // https://en.wikipedia.org/wiki/Shoelace_formula
         private static float GetTriangleArea(SKPoint[] vertices, bool isSigned) {
             Logger logger = LogManager.GetCurrentClassLogger();
@@ -242,9 +357,12 @@ namespace TuggingController {
         }
     }
 
-    public class Complices : List<SimplicialComplex> {
-        public Complices() : base() { }
+    public class ComplexCollection : List<SimplicialComplex> {
+        public ComplexCollection() : base() { }
     }
+    //public class Complices : List<SimplicialComplex> {
+    //    public Complices() : base() { }
+    //}
 
     public struct Triangle2I {
         public Vector2 A;
