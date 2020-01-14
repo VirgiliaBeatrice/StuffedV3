@@ -388,7 +388,8 @@ namespace TuggingController {
 
                     if (collection.Length != 0) {
                         var result = collection[0].Simplex.GetInterpolatedConfiguration_v1(this.Chart.TestPoint.Value);
-                        this.ConfigurationCanvas.ControlPoints = result.ToSKPoint();
+                        if (result != null)
+                            this.ConfigurationCanvas.ControlPoints = result.ToSKPoint();
                         //Logger.Debug("{0} {1} {2} {3}", result.C1, result.C2, result.C3, result.C4);
                     }
                     //Logger.Debug("Dragging.");
