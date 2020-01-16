@@ -384,27 +384,7 @@ namespace TuggingController {
         public DataReceivedHandler DataReceived;
         public string ReceivedData = "";
 
-        public Triangulation() {
-            //Logger.Debug("CWD: {0}", System.IO.Directory.GetCurrentDirectory());
-            //var taskInfo = new ProcessStartInfo {
-            //    FileName = "rbox.exe",
-            //    Arguments = "10 D2",
-            //    CreateNoWindow = true,
-            //    RedirectStandardInput = true,
-            //    RedirectStandardError = true,
-            //    RedirectStandardOutput = true,
-            //    UseShellExecute = false
-            //};
-
-
-            //Logger.Debug("Start a new process for test purpose.");
-            //this.Task = new Process();
-            //this.Task.StartInfo = taskInfo;
-            //this.Task.OutputDataReceived += CMD_DataReceived;
-            //this.Task.EnableRaisingEvents = true;
-            //this.Task.Exited += CMD_ProcessExited;
-
-        }
+        public Triangulation() { }
 
         public void RunRbox() {
             var taskInfo = new ProcessStartInfo {

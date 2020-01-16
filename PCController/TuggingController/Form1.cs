@@ -14,7 +14,7 @@ using System.Windows.Forms;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using NLog;
-
+using LA = MathNet.Numerics.LinearAlgebra;
 
 namespace TuggingController {
     public partial class Form1 : Form {
@@ -619,7 +619,7 @@ namespace TuggingController {
         public float Margin { get; set; } = 80;
         public float Padding;
         public float LabelTextSize { get; set; } = 16;
-        public SKRect chartArea;
+        public SKRect chartArea { get; set; }
         protected SKRect frameArea;
         public bool forceUpdateScale { get; set; } = true;
         public bool Hovered { get; set; } = false;
@@ -1120,7 +1120,7 @@ namespace TuggingController {
                 this.Entries.ForEach(e => e.Draw(this.Canvas));
             }
 
-            this.ConvexHull.Draw(this.Canvas);
+            this.ConvexHull.Draw(this.Canvas, this.chartArea);
         }
 
         //protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
@@ -1341,6 +1341,9 @@ namespace TuggingController {
         }
 
         public override void Draw(SKCanvas canvas) {
+            throw new NotImplementedException();
+        }
+        public void Draw(SKCanvas canvas, SKRect area) {
 
             if (this.Extremes.Count < 3)
                 return;
@@ -1368,6 +1371,7 @@ namespace TuggingController {
             path.LineTo(gExtremes[0]);
 
             canvas.DrawPath(path, strokePaint);
+            SkiaHelper.DrawRay(canvas, new SkiaHelper.SKRay() { Start = this.Extremes[0].GlobalLocation, Direction = SKPoint.Normalize(new SKPoint(1, 1)) }, area);
         }
     }
 
@@ -1446,21 +1450,7 @@ namespace TuggingController {
 
             //this.Vertices.ForEach(e => { if (e.PairedConfig != null) { this.Simplex.CreatePair_v1(e)}; });
         }
-        //public bool CreatePair(Entry entry, SKPoint[] config) {
-        //    this.Simplex.CreatePair_v1(entry, config);
 
-        //    return this.Simplex.IsSet;
-        //}
-
-
-        //public bool IsInside(SKPoint target) {
-        //    var coor = SimplicialComplex.GetBarycentricCoordinate(target, new SimplicialComplex.Simplex3I { V1 = Vertices[0].Value, V2 = Vertices[1].Value, V3 = Vertices[2].Value });
-
-        //    this.IsHovered = coor.IsInside;
-
-        //    //Logger.Debug("Triangle: {0}", string.Join(",", this.Vertices.Select(v => v.ToString())));
-        //    return coor.IsInside;
-        //}
         public override void Draw(SKCanvas canvas) {
             var fillPaint = new SKPaint {
                 IsAntialias = true,
@@ -1475,9 +1465,7 @@ namespace TuggingController {
                 StrokeWidth = 2
             };
             var path = new SKPath();
-            //SKPoint[] gVertices = this.Scale.MapPoints(this.Vertices.Select(e => e.Value).ToArray());
             SKPoint[] gVertices = this.Vertices.ToGlobalLocations();
-            //gVertices = this.Transform.MapPoints(gVertices);
 
             path.MoveTo(gVertices[0]);
             path.LineTo(gVertices[1]);
@@ -2108,6 +2096,7 @@ namespace TuggingController {
 
     }
 
+
     public class SkiaHelper {
         public static decimal CeilingOrFloor(decimal dec) {
             return dec < 0 ? decimal.Floor(dec) : decimal.Ceiling(dec);
@@ -2169,10 +2158,116 @@ namespace TuggingController {
             arrowPath.LineTo(lArrow);
             arrowPath.MoveTo(end);
             arrowPath.LineTo(rArrow);
-            
+
             arrowPath.Transform(rotMat);
             linePath.Transform(transform);
             canvas.DrawPath(arrowPath, paint);
+        }
+        public class SKRay : SKLine {
+            public bool IsInLine(float targetT) {
+                return targetT >= 0 & targetT != float.PositiveInfinity;
+            }
+
+            public SKPoint GetIntersection(float targetT) {
+                return this.Start + SKPointMultiply(this.Direction, targetT);
+            }
+        }
+
+        public class SKLineSegment : SKLine {
+            public SKPoint End { get; set; }
+            public override SKPoint Direction {
+                get {
+                    return new SKPoint() {
+                        X = (this.End - this.Start).X / (this.End - this.Start).Length,
+                        Y = (this.End - this.Start).Y / (this.End - this.Start).Length,
+                    };
+                }
+            }
+
+            public float T {
+                get {
+                    return (this.End - this.Start).Length;
+                }
+            }
+
+            public bool IsInLine(float targetT) {
+                return targetT <= this.T & targetT >= 0;
+            }
+        }
+
+        public class SKLine {
+            public SKPoint Start { get; set; }
+            public virtual SKPoint Direction { get; set; }
+
+            //public virtual bool IsInLine(SKPoint target) {
+
+            //}
+        }
+
+        public static LA.Matrix<float> CheckIsIntersected(SKLine line1, SKLine line2) {
+            
+            // Line Representation: line = p + a * v
+            // Solve p1 + a1 * v1 = p2 + a2 * v2
+
+            LA.Matrix<float> A = LA.Matrix<float>.Build.DenseOfArray(
+                new float[,] {
+                    { line1.Direction.X, - line2.Direction.X },
+                    { line1.Direction.Y, - line2.Direction.Y }});
+            LA.Matrix<float> b = LA.Matrix<float>.Build.DenseOfArray(
+                new float[,] {
+                    { line2.Start.X - line1.Start.X },
+                    { line2.Start.Y - line1.Start.Y }});
+            LA.Matrix<float> x = A.Solve(b);
+
+            //Console.WriteLine(x.ToMatrixString());
+            return x;
+        }
+
+        public static SKPoint SKPointMultiply(SKPoint factor1, float factor2) {
+            return new SKPoint() { X = factor1.X * factor2, Y = factor1.Y * factor2 };
+        }
+
+        public static void DrawRay(SKCanvas canvas, SKRay ray, SKRect area) {
+            SKPoint LT = new SKPoint() { X = area.Left, Y = area.Top };
+            SKPoint LB = new SKPoint() { X = area.Left, Y = area.Bottom };
+            SKPoint RT = new SKPoint() { X = area.Right, Y = area.Top };
+            SKPoint RB = new SKPoint() { X = area.Right, Y = area.Bottom };
+
+            SKLineSegment[] lineSegments = new SKLineSegment[] {
+                new SKLineSegment() {
+                    Start = LT,
+                    End = LB
+                },
+                new SKLineSegment() {
+                    Start = LB,
+                    End = RB
+                },
+                new SKLineSegment() {
+                    Start = RB,
+                    End = RT
+                },
+                new SKLineSegment() {
+                    Start = RT,
+                    End = LT
+                }};
+
+            SKPoint intersection = new SKPoint();
+
+            for (int idx = 0; idx < lineSegments.Length; idx++) {
+                LA.Matrix<float> T = CheckIsIntersected(ray, lineSegments[idx]);
+                if (ray.IsInLine(T[0, 0]) & lineSegments[idx].IsInLine(T[1, 0])) {
+                    intersection = ray.GetIntersection(T[0, 0]);
+                }
+            }
+
+            SKPaint paint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Blue,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2,
+            };
+
+            canvas.DrawLine(ray.Start, intersection, paint);
         }
     }
 }
