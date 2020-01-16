@@ -429,8 +429,8 @@ namespace TuggingController {
         //TODO: Command process
         public void RunConvexHull() {
             var taskInfo = new ProcessStartInfo {
-                FileName = "qdelaunay",
-                Arguments = "QJ i TI data.txt",
+                FileName = "qconvex",
+                Arguments = "QJ Fx TI data.txt",
                 CreateNoWindow = true,
                 //RedirectStandardInput = true,
                 RedirectStandardError = true,
@@ -439,7 +439,7 @@ namespace TuggingController {
             };
 
 
-            Logger.Debug("Start a new process for test delaunay.");
+            Logger.Debug("Start a new process for computing Convex Hull.");
             this.Task = new Process();
             this.Task.StartInfo = taskInfo;
             this.Task.OutputDataReceived += CMD_DataReceived;

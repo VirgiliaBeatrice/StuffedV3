@@ -111,6 +111,9 @@ namespace TuggingController {
                 case Keys.Escape:
                     this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Control;
                     return true;
+                case Keys.C:
+                    this.RunConvexHullTask();
+                    return true;
             }
 
             return base.ProcessCmdKey(ref msg, keyData);
@@ -214,6 +217,18 @@ namespace TuggingController {
                 this.Chart.Triangulate(triangles);
                 TuggingController.Invalidate();
             }
+            else if (fileName == "qconvex") {
+                List<int> extremeIndexes = new List<int>();
+
+                for (int idx = 1; idx < lines.Length; idx++) {
+                    extremeIndexes.Add(Convert.ToInt32(lines[idx]));
+                }
+
+                //Logger.Debug(extremeIndexes);
+                this.Chart.ConvexHull.SetExtremes(extremeIndexes.Select(idx => this.Chart.Entries[idx]));
+
+                TuggingController.Invalidate();
+            }
         }
         private void Form1_SizeChanged(object sender, EventArgs e) {
             Point mid = new Point {
@@ -265,6 +280,13 @@ namespace TuggingController {
             this.Tri.RunDelaunay();
             this.Tri.StartTask();
         }
+
+        private void RunConvexHullTask() {
+            // Bug: Old data.txt will cause exception.
+            this.Tri.RunConvexHull();
+            this.Tri.StartTask();
+        }
+
         private void skControl1_MouseUp(object sender, MouseEventArgs e) {
             switch (e.Button) {
                 case MouseButtons.Left:
@@ -580,6 +602,7 @@ namespace TuggingController {
         public List<Axis> Axes { get; set; } = new List<Axis>();
         public EntryCollection Entries { get; set; } = new EntryCollection();
         public TriangleCollection Triangles { get; set; } = new TriangleCollection();
+        public ConvexHull ConvexHull { get; set; } = new ConvexHull();
         public TestPoint TestPoint { get; set; } = new TestPoint();
         public SKRect RangeOfValue { get; set; }
         public SKRect RangeOfInflatedValue { get; set; }
@@ -1096,6 +1119,8 @@ namespace TuggingController {
             if (this.Entries.Count > 0) {
                 this.Entries.ForEach(e => e.Draw(this.Canvas));
             }
+
+            this.ConvexHull.Draw(this.Canvas);
         }
 
         //protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
@@ -1291,7 +1316,60 @@ namespace TuggingController {
         void UpdateScale(SKMatrix scale);
     }
 
+    public class ExtremeCollection : List<Entry> {
+        public ExtremeCollection(Entry[] extremes) {
+            this.AddRange(extremes);
+        }
 
+        public SKPoint[] ToGlobalLocations() {
+            return this.Select(e => e.GlobalLocation).ToArray();
+        }
+    }
+
+    public class ConvexHull : ScalableCanvasObject {
+
+        public ExtremeCollection Extremes;
+        public ConvexHull() : this(Array.Empty<Entry>()) { }
+        public ConvexHull(Entry[] extremes): this(extremes, new SKPoint(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
+        public ConvexHull(Entry[] extremes, SKPoint location, SKMatrix transform, SKMatrix scale) : base(location, transform, scale) {
+            this.Extremes = new ExtremeCollection(extremes);
+        }
+
+        public void SetExtremes(IEnumerable<Entry> extremes) {
+            this.Extremes.Clear();
+            this.Extremes.AddRange(extremes);
+        }
+
+        public override void Draw(SKCanvas canvas) {
+
+            if (this.Extremes.Count < 3)
+                return;
+            //var fillPaint = new SKPaint {
+            //    IsAntialias = true,
+            //    //Color = SKColors.ForestGreen,
+            //    Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.3f),
+            //    Style = SKPaintStyle.Fill
+            //};
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Purple,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 1
+            };
+            var path = new SKPath();
+            SKPoint[] gExtremes = this.Extremes.ToGlobalLocations();
+
+            path.MoveTo(gExtremes[0]);
+
+            for (int idx = 1; idx < gExtremes.Length; idx++) {
+                path.LineTo(gExtremes[idx]);
+            }
+
+            path.LineTo(gExtremes[0]);
+
+            canvas.DrawPath(path, strokePaint);
+        }
+    }
 
     public class Triangle : ScalableCanvasObject {
         public bool IsHovered { get; set; } = false;
@@ -1440,6 +1518,7 @@ namespace TuggingController {
             this.Scale = scale;
         }
     }
+
     public class TestPoint : ChartObject {
         public bool IsDisplayed { get; set; } = false;
         public bool isHovered { get; set; } = false;
