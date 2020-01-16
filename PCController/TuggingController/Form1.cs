@@ -1317,6 +1317,7 @@ namespace TuggingController {
     }
 
     public class ExtremeCollection : List<Entry> {
+        public ExtremeCollection() : base() { }
         public ExtremeCollection(Entry[] extremes) {
             this.AddRange(extremes);
         }
@@ -1324,22 +1325,85 @@ namespace TuggingController {
         public SKPoint[] ToGlobalLocations() {
             return this.Select(e => e.GlobalLocation).ToArray();
         }
+
+        public Entry PrevElement(int idx) {
+            return this[idx - 1 < 0 ? this.Count - 1 : idx - 1];
+        }
+        public Entry NextElement(int idx) {
+            return this[idx + 1 > this.Count - 1 ? 0 : idx + 1];
+        }
     }
 
     public class ConvexHull : ScalableCanvasObject {
 
-        public ExtremeCollection Extremes;
+        public ExtremeCollection Extremes { get; set; } = new ExtremeCollection();
+        public SKPoint[] Centroids {
+            get {
+                return this.Extremes.Select((e, idx) => {
+                    var tmp = new SKPoint[] {
+                        this.Extremes.PrevElement(idx).GlobalLocation,
+                        e.GlobalLocation,
+                        this.Extremes.NextElement(idx).GlobalLocation
+                    };
+                    return this.GetCentroid(tmp);
+                }).ToArray();
+            }
+        }
+
+        public SkiaHelper.SKLineSegment[] Edges => this.Extremes.Select(
+                    (e, idx) => {
+                        return new SkiaHelper.SKLineSegment() { Start = e.GlobalLocation, End = this.Extremes.NextElement(idx).GlobalLocation };
+                    }).ToArray();
+
         public ConvexHull() : this(Array.Empty<Entry>()) { }
         public ConvexHull(Entry[] extremes): this(extremes, new SKPoint(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
         public ConvexHull(Entry[] extremes, SKPoint location, SKMatrix transform, SKMatrix scale) : base(location, transform, scale) {
             this.Extremes = new ExtremeCollection(extremes);
         }
-
+        
         public void SetExtremes(IEnumerable<Entry> extremes) {
             this.Extremes.Clear();
             this.Extremes.AddRange(extremes);
         }
 
+        private SKPoint GetCentroid(SKPoint[] vertices) {
+            return new SKPoint() {
+                X = (vertices[0].X + vertices[1].X + vertices[2].X) / 3.0f,
+                Y = (vertices[0].Y + vertices[1].Y + vertices[2].Y) / 3.0f
+            };
+        }
+
+        private void DrawRay(SKCanvas canvas, SKPoint centroid, SKPoint extreme, SKRect area) {
+            SKPaint rayPaint = new SKPaint {
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                Color = SKColors.MediumVioletRed,
+                StrokeWidth = 2,
+                StrokeCap = SKStrokeCap.Butt,
+                PathEffect = SKPathEffect.CreateDash(new float[] { 10.0f, 10.0f }, 10)
+            };
+
+            SkiaHelper.DrawRay(canvas, new SkiaHelper.SKRay() { Start = centroid, Direction = SKPoint.Normalize(extreme - centroid) }, area, rayPaint);
+        }
+
+        private void DrawCentroid(SKCanvas canvas, SKPoint centroid) {
+            float radius = 2;
+            var fillPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DarkRed, 0.8f),
+                Style = SKPaintStyle.Fill
+            };
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.MediumVioletRed,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 1
+            };
+
+            // Draw entry shape
+            canvas.DrawCircle(centroid, radius, fillPaint);
+            canvas.DrawCircle(centroid, radius, strokePaint);
+        }
         public override void Draw(SKCanvas canvas) {
             throw new NotImplementedException();
         }
@@ -1371,7 +1435,13 @@ namespace TuggingController {
             path.LineTo(gExtremes[0]);
 
             canvas.DrawPath(path, strokePaint);
-            SkiaHelper.DrawRay(canvas, new SkiaHelper.SKRay() { Start = this.Extremes[0].GlobalLocation, Direction = SKPoint.Normalize(new SKPoint(1, 1)) }, area);
+            //SkiaHelper.DrawRay(canvas, new SkiaHelper.SKRay() { Start = this.Extremes[0].GlobalLocation, Direction = SKPoint.Normalize(new SKPoint(1, 1)) }, area);
+            this.Centroids.ToList().ForEach(c => this.DrawCentroid(canvas, c));
+
+            for (int idx = 0; idx < this.Extremes.Count; idx ++) {
+                this.DrawRay(canvas, this.Centroids[idx], this.Extremes[idx].GlobalLocation, area);
+            }
+
         }
     }
 
@@ -2227,7 +2297,7 @@ namespace TuggingController {
             return new SKPoint() { X = factor1.X * factor2, Y = factor1.Y * factor2 };
         }
 
-        public static void DrawRay(SKCanvas canvas, SKRay ray, SKRect area) {
+        public static void DrawRay(SKCanvas canvas, SKRay ray, SKRect area, SKPaint paint) {
             SKPoint LT = new SKPoint() { X = area.Left, Y = area.Top };
             SKPoint LB = new SKPoint() { X = area.Left, Y = area.Bottom };
             SKPoint RT = new SKPoint() { X = area.Right, Y = area.Top };
@@ -2260,12 +2330,14 @@ namespace TuggingController {
                 }
             }
 
-            SKPaint paint = new SKPaint {
-                IsAntialias = true,
-                Color = SKColors.Blue,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2,
-            };
+            if (paint == null) {
+                paint = new SKPaint {
+                    IsAntialias = true,
+                    Color = SKColors.Blue,
+                    Style = SKPaintStyle.Stroke,
+                    StrokeWidth = 2,
+                };
+            }
 
             canvas.DrawLine(ray.Start, intersection, paint);
         }
