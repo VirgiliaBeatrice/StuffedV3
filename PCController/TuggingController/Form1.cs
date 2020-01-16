@@ -1373,11 +1373,11 @@ namespace TuggingController {
             };
         }
 
-        private void DrawRay(SKCanvas canvas, SKPoint centroid, SKPoint extreme, SKRect area) {
+        private void DrawRay(SKCanvas canvas, SKPoint centroid, SKPoint extreme, SKRect area, byte offset) {
             SKPaint rayPaint = new SKPaint {
                 IsAntialias = true,
                 Style = SKPaintStyle.Stroke,
-                Color = SKColors.MediumVioletRed,
+                Color = new SKColor((byte) (0xFF), (byte)(0x00 + offset), (byte)(0x00 + offset * 8)),
                 StrokeWidth = 2,
                 StrokeCap = SKStrokeCap.Butt,
                 PathEffect = SKPathEffect.CreateDash(new float[] { 10.0f, 10.0f }, 10)
@@ -1439,7 +1439,7 @@ namespace TuggingController {
             this.Centroids.ToList().ForEach(c => this.DrawCentroid(canvas, c));
 
             for (int idx = 0; idx < this.Extremes.Count; idx ++) {
-                this.DrawRay(canvas, this.Centroids[idx], this.Extremes[idx].GlobalLocation, area);
+                this.DrawRay(canvas, this.Centroids[idx], this.Extremes[idx].GlobalLocation, area, (byte) (idx * 10));
             }
 
         }
