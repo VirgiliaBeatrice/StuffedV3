@@ -1592,7 +1592,9 @@ namespace TuggingController {
 
         public Triangle(Entry[] vertices) : this(vertices, new int[]{ 0, 1, 2 }, new SKPoint(0, 0), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
-        public Triangle(Entry[] vertices, int[] vertexIndexes, SKMatrix scale, SKMatrix transform) : this(vertices, vertexIndexes, new SKPoint(0, 0), scale, transform) { }
+        public Triangle(Entry[] vertices, int[] vertexIndexes, SKMatrix scale, SKMatrix transform) : this(vertices, vertexIndexes, new SKPoint(0, 0), scale, transform) {
+            this.UpdateSimplexState();
+        }
         //public Triangle(SKPoint[] vertices, SKPoint location, SKMatrix scale, SKMatrix transform): base(location, transform) {
         //    this.Scale = scale;
         //    this.Vertices = vertices;
@@ -1637,6 +1639,7 @@ namespace TuggingController {
 
             return barycentricCoordinate.IsInside ? this : null;
         }
+
 
         public void UpdateSimplexState() {
             //this.Simplex.CreatePair_v1(entry);
