@@ -114,6 +114,9 @@ namespace TuggingController {
                 case Keys.C:
                     this.RunConvexHullTask();
                     return true;
+                case Keys.T:
+                    this.RunDelaunayNTask();
+                    return true;
             }
 
             return base.ProcessCmdKey(ref msg, keyData);
@@ -225,9 +228,12 @@ namespace TuggingController {
                 }
 
                 //Logger.Debug(extremeIndexes);
-                this.Chart.ConvexHull.SetExtremes(extremeIndexes.Select(idx => this.Chart.Entries[idx]));
-
+                this.Chart.ConvexHull.SetExtremes(extremeIndexes.Select(idx => new Extreme() { Entry = this.Chart.Entries[idx], Index = idx }));
+                this.Chart.ConvexHull.Triangles = this.Chart.Triangles;
                 TuggingController.Invalidate();
+            }
+            else if (fileName == "qdelaunayN") {
+                Logger.Debug(data);
             }
         }
         private void Form1_SizeChanged(object sender, EventArgs e) {
@@ -284,6 +290,11 @@ namespace TuggingController {
         private void RunConvexHullTask() {
             // Bug: Old data.txt will cause exception.
             this.Tri.RunConvexHull();
+            this.Tri.StartTask();
+        }
+
+        private void RunDelaunayNTask() {
+            this.Tri.RunDelaunayNeighbor();
             this.Tri.StartTask();
         }
 
@@ -1316,52 +1327,171 @@ namespace TuggingController {
         void UpdateScale(SKMatrix scale);
     }
 
-    public class ExtremeCollection : List<Entry> {
+    public struct Extreme {
+        public Entry Entry;
+        public int Index;
+    }
+
+    public class ExtremeCollection : List<Extreme> {
         public ExtremeCollection() : base() { }
-        public ExtremeCollection(Entry[] extremes) {
+        public ExtremeCollection(Extreme[] extremes) {
             this.AddRange(extremes);
         }
 
         public SKPoint[] ToGlobalLocations() {
-            return this.Select(e => e.GlobalLocation).ToArray();
+            return this.Select(e => e.Entry.GlobalLocation).ToArray();
         }
 
-        public Entry PrevElement(int idx) {
+        public Extreme PrevElement(int idx) {
             return this[idx - 1 < 0 ? this.Count - 1 : idx - 1];
         }
-        public Entry NextElement(int idx) {
+        public Extreme NextElement(int idx) {
             return this[idx + 1 > this.Count - 1 ? 0 : idx + 1];
         }
     }
 
-    public class ConvexHull : ScalableCanvasObject {
+    public class Polygon {
+        public SKPoint[] Vertices { get; set; }
+        public Polygon() { }
 
-        public ExtremeCollection Extremes { get; set; } = new ExtremeCollection();
-        public SKPoint[] Centroids {
+        public static bool IsPointInPolygon(Point p, Point[] polygon) {
+            double minX = polygon[0].X;
+            double maxX = polygon[0].X;
+            double minY = polygon[0].Y;
+            double maxY = polygon[0].Y;
+            for (int i = 1; i < polygon.Length; i++) {
+                Point q = polygon[i];
+                minX = Math.Min(q.X, minX);
+                maxX = Math.Max(q.X, maxX);
+                minY = Math.Min(q.Y, minY);
+                maxY = Math.Max(q.Y, maxY);
+            }
+
+            if (p.X < minX || p.X > maxX || p.Y < minY || p.Y > maxY) {
+                return false;
+            }
+
+            // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+            bool inside = false;
+            for (int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++) {
+                if ((polygon[i].Y > p.Y) != (polygon[j].Y > p.Y) &&
+                     p.X < (polygon[j].X - polygon[i].X) * (p.Y - polygon[i].Y) / (polygon[j].Y - polygon[i].Y) + polygon[i].X) {
+                    inside = !inside;
+                }
+            }
+
+            return inside;
+        }
+    }
+
+    public class Edge {
+        public Entry Start { get; set; }
+        public SKPoint centroidOfStart { get; set; }
+        public Entry End { get; set; }
+        public SKPoint centroidOfEnd { get; set; }
+        public SKRect Area { get; set; }
+        public Polygon OuterZone {
             get {
-                return this.Extremes.Select((e, idx) => {
-                    var tmp = new SKPoint[] {
-                        this.Extremes.PrevElement(idx).GlobalLocation,
-                        e.GlobalLocation,
-                        this.Extremes.NextElement(idx).GlobalLocation
+                var (verticesOfArea, lineSegments) = SkiaHelper.GetAreaLineSegments(this.Area);
+                //ccw
+                SkiaHelper.SKRay endRay = new SkiaHelper.SKRay() {
+                    Start = this.End.GlobalLocation, Direction = centroidOfEnd };
+                SKPoint intersectionOfEnd = new SKPoint();
+                int intersectionIdxOfEnd = 0;
+                for (int idx = 0; idx < lineSegments.Length; idx ++) {
+                    LA.Matrix<float> T = SkiaHelper.CheckIsIntersected(endRay, lineSegments[idx]);
+                    if (endRay.IsInLine(T[0, 0]) & lineSegments[idx].IsInLine(T[1, 0])) {
+                        intersectionOfEnd = endRay.GetIntersection(T[0, 0]);
+                        intersectionIdxOfEnd = idx;
+                    }
+                }
+
+                SkiaHelper.SKRay startRay = new SkiaHelper.SKRay() {
+                    Start = this.Start.GlobalLocation,
+                    Direction = centroidOfStart
+                };
+                SKPoint intersectionOfStart = new SKPoint();
+                int intersectionIdxOfStart = 0;
+
+                for (int idx = 0; idx < lineSegments.Length; idx++) {
+                    int offset = intersectionIdxOfEnd + idx >= lineSegments.Length ? intersectionIdxOfEnd + idx - lineSegments.Length : intersectionIdxOfEnd + idx;
+                    LA.Matrix<float> T = SkiaHelper.CheckIsIntersected(startRay, lineSegments[offset]);
+                    if (startRay.IsInLine(T[0, 0]) & lineSegments[offset].IsInLine(T[1, 0])) {
+                        intersectionOfStart = startRay.GetIntersection(T[0, 0]);
+                        intersectionIdxOfStart = offset;
+                    }
+                }
+
+                SKPoint[] vertices = Array.Empty<SKPoint>();
+
+                if (intersectionIdxOfEnd == intersectionIdxOfStart) {
+                    vertices = new SKPoint[] {
+                        endRay.Start,
+                        intersectionOfEnd,
+                        intersectionOfStart,
+                        startRay.Start
                     };
-                    return this.GetCentroid(tmp);
-                }).ToArray();
+                }
+                else {
+                    vertices = new SKPoint[] {
+                        endRay.Start,
+                        intersectionOfEnd,
+                    };
+                }
+                return null;
             }
         }
+        public Edge() { }
 
-        public SkiaHelper.SKLineSegment[] Edges => this.Extremes.Select(
-                    (e, idx) => {
-                        return new SkiaHelper.SKLineSegment() { Start = e.GlobalLocation, End = this.Extremes.NextElement(idx).GlobalLocation };
-                    }).ToArray();
+        
+    }
 
-        public ConvexHull() : this(Array.Empty<Entry>()) { }
-        public ConvexHull(Entry[] extremes): this(extremes, new SKPoint(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
-        public ConvexHull(Entry[] extremes, SKPoint location, SKMatrix transform, SKMatrix scale) : base(location, transform, scale) {
+    public class ConvexHull : ScalableCanvasObject {
+
+        public TriangleCollection Triangles { get; set; }
+        public ExtremeCollection Extremes { get; set; } = new ExtremeCollection();
+        //public SKPoint[] Centroids {
+        //    get {
+        //        return this.Extremes.Select((e, idx) => {
+        //            var tmp = new SKPoint[] {
+        //                this.Extremes.PrevElement(idx).GlobalLocation,
+        //                e.GlobalLocation,
+        //                this.Extremes.NextElement(idx).GlobalLocation
+        //            };
+        //            return this.GetCentroid(tmp);
+        //        }).ToArray();
+        //    }
+        //}
+
+        //public SkiaHelper.SKLineSegment[] Edges => this.Extremes.Select(
+        //            (e, idx) => {
+        //                return new SkiaHelper.SKLineSegment() { Start = e.GlobalLocation, End = this.Extremes.NextElement(idx).GlobalLocation };
+        //            }).ToArray();
+
+        public ConvexHull() : this(Array.Empty<Extreme>()) { }
+        public ConvexHull(Extreme[] extremes): this(extremes, new SKPoint(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
+        public ConvexHull(Extreme[] extremes, SKPoint location, SKMatrix transform, SKMatrix scale) : base(location, transform, scale) {
             this.Extremes = new ExtremeCollection(extremes);
         }
         
-        public void SetExtremes(IEnumerable<Entry> extremes) {
+        private void GetNeighborTriangles() {
+            for (int idx = 0; idx < this.Extremes.Count; idx++) {
+                Triangle tri1 = this.Triangles.Where(tri => tri.IsVertex(this.Extremes[idx].Index, this.Extremes.PrevElement(idx).Index) != null)[0];
+                Triangle tri2 = this.Triangles.Where(tri => tri.IsVertex(this.Extremes[idx].Index, this.Extremes.NextElement(idx).Index) != null)[0];
+
+                if (tri1 == tri2) {
+                    Logger.Debug("{0} - Single extreme.", this.Extremes[idx].Index);
+                }
+                else if (tri1.VertexIndexes.Where(i => !new int[] { this.Extremes[idx].Index, this.Extremes.PrevElement(idx).Index }.Contains(i)).ToArray()[0] == tri2.VertexIndexes.Where(i => !new int[] { this.Extremes[idx].Index, this.Extremes.NextElement(idx).Index }.Contains(i)).ToArray()[0]) {
+                    Logger.Debug("{0} - Two triangle One Extreme.", this.Extremes[idx].Index);
+                }
+                else {
+                    Logger.Debug("{0} - More than 2 triangles 1 extreme", this.Extremes[idx].Index);
+                }
+            }
+        }
+
+        public void SetExtremes(IEnumerable<Extreme> extremes) {
             this.Extremes.Clear();
             this.Extremes.AddRange(extremes);
         }
@@ -1435,12 +1565,13 @@ namespace TuggingController {
             path.LineTo(gExtremes[0]);
 
             canvas.DrawPath(path, strokePaint);
+            this.GetNeighborTriangles();
             //SkiaHelper.DrawRay(canvas, new SkiaHelper.SKRay() { Start = this.Extremes[0].GlobalLocation, Direction = SKPoint.Normalize(new SKPoint(1, 1)) }, area);
-            this.Centroids.ToList().ForEach(c => this.DrawCentroid(canvas, c));
+            //this.Centroids.ToList().ForEach(c => this.DrawCentroid(canvas, c));
 
-            for (int idx = 0; idx < this.Extremes.Count; idx ++) {
-                this.DrawRay(canvas, this.Centroids[idx], this.Extremes[idx].GlobalLocation, area, (byte) (idx * 10));
-            }
+            //for (int idx = 0; idx < this.Extremes.Count; idx ++) {
+            //    this.DrawRay(canvas, this.Centroids[idx], this.Extremes[idx].GlobalLocation, area, (byte) (idx * 10));
+            //}
 
         }
     }
@@ -1475,6 +1606,7 @@ namespace TuggingController {
 
         public Triangle IsVertex(int targetIdx) => this.Vertices.Any(targetIdx).HasValue ? this : null;
 
+        public Triangle IsVertex(int i1, int i2) => this.Vertices.Any(i1).HasValue & this.Vertices.Any(i2).HasValue ? this : null;
 
         public Triangle IsInsideFromGlobalLocation(SKPoint gTarget) => this.IsInside_v1(gTarget, PointType.Global);
         public Triangle IsInsideFromLocation(SKPoint lTarget) => this.IsInside_v1(lTarget, PointType.Local);
@@ -2275,7 +2407,7 @@ namespace TuggingController {
         }
 
         public static LA.Matrix<float> CheckIsIntersected(SKLine line1, SKLine line2) {
-            
+
             // Line Representation: line = p + a * v
             // Solve p1 + a1 * v1 = p2 + a2 * v2
 
@@ -2297,6 +2429,32 @@ namespace TuggingController {
             return new SKPoint() { X = factor1.X * factor2, Y = factor1.Y * factor2 };
         }
 
+        public static (SKPoint[], SKLineSegment[]) GetAreaLineSegments(SKRect area) {
+            SKPoint LT = new SKPoint() { X = area.Left, Y = area.Top };
+            SKPoint LB = new SKPoint() { X = area.Left, Y = area.Bottom };
+            SKPoint RT = new SKPoint() { X = area.Right, Y = area.Top };
+            SKPoint RB = new SKPoint() { X = area.Right, Y = area.Bottom };
+
+            SKLineSegment[] lineSegments = new SKLineSegment[] {
+                new SKLineSegment() {
+                    Start = LT,
+                    End = LB
+                },
+                new SKLineSegment() {
+                    Start = LB,
+                    End = RB
+                },
+                new SKLineSegment() {
+                    Start = RB,
+                    End = RT
+                },
+                new SKLineSegment() {
+                    Start = RT,
+                    End = LT
+                }};
+
+            return (new SKPoint[] { LT, LB, RT, RB }, lineSegments);
+        }
         public static void DrawRay(SKCanvas canvas, SKRay ray, SKRect area, SKPaint paint) {
             SKPoint LT = new SKPoint() { X = area.Left, Y = area.Top };
             SKPoint LB = new SKPoint() { X = area.Left, Y = area.Bottom };

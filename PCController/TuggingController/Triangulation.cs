@@ -383,6 +383,7 @@ namespace TuggingController {
         private readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public DataReceivedHandler DataReceived;
         public string ReceivedData = "";
+        public string TAG = "";
 
         public Triangulation() { }
 
@@ -404,6 +405,8 @@ namespace TuggingController {
             this.Task.OutputDataReceived += CMD_DataReceived;
             this.Task.EnableRaisingEvents = true;
             this.Task.Exited += CMD_ProcessExited;
+
+
         }
 
         //TODO: Command process
@@ -450,6 +453,30 @@ namespace TuggingController {
             this.Task.Exited += CMD_ProcessExited;
         }
 
+        public void RunDelaunayNeighbor() {
+            //Logger.Debug(input);
+            var taskInfo = new ProcessStartInfo {
+                FileName = "qdelaunay",
+                Arguments = "QJ TI data.txt Fx",
+                CreateNoWindow = true,
+                //RedirectStandardInput = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+            };
+
+
+            Logger.Debug("Start a new process for test delaunay neighbor.");
+            this.Task = new Process();
+            this.Task.StartInfo = taskInfo;
+            this.Task.OutputDataReceived += CMD_DataReceived;
+            this.Task.ErrorDataReceived += CMD_ErrorReceived;
+            this.Task.EnableRaisingEvents = true;
+            this.Task.Exited += CMD_ProcessExited;
+            this.TAG = "N";
+
+        }
+
         public void CMD_DataReceived(object sender, DataReceivedEventArgs e) {
             //Console.WriteLine("Output from other process.");
             //Console.WriteLine(e.Data);
@@ -469,10 +496,11 @@ namespace TuggingController {
         }
 
         public void CMD_ProcessExited(object sender, EventArgs e) {
-            this.DataReceived(this.Task.StartInfo.FileName, this.ReceivedData);
+            this.DataReceived(this.Task.StartInfo.FileName + this.TAG, this.ReceivedData);
             ReceivedData = "";
             Console.WriteLine("Stopped process ID = 0x{0:X}.", this.Task.Id);
             this.Task = null;
+            this.TAG = "";
         }
     }
 
