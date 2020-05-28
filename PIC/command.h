@@ -10,8 +10,10 @@ bool uartExecCommand();
 typedef void ExecCommand();
 
 #ifdef WROOM
-void ExecCmd(void* cmd, int len);
-void ExecRet(void* ret, int len);
+void ExecCmd();
+void ExecRet();
+extern CommandPacket command;
+extern ReturnPacket retPacket;
 #endif
 
 

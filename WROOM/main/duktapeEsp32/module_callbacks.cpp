@@ -18,10 +18,10 @@ static void addNode(struct CallbackFunc* node) {
 }
 
 static uint8_t getTouchSensorId(struct CallbackFunc* node) {
-    return (node->touchSensorId << 1) >> 1;
+    return node->touchSensorId & 0b01111111;
 }
 static duk_bool_t getExceeds(struct CallbackFunc* node) {
-    return node->touchSensorId >> 7;
+    return (node->touchSensorId) >> 7;
 }
 
 ///////////////////////// API for JS //////////////////////////////////////

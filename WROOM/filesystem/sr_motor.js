@@ -234,7 +234,7 @@ var motor;
         TimeRelationship[TimeRelationship["with"] = 0] = "with";
         TimeRelationship[TimeRelationship["after"] = 1] = "after";
     })(TimeRelationship = motor_1.TimeRelationship || (motor_1.TimeRelationship = {}));
-    function playRelativeToTime(movement, relationship, refMovement, offset) {
+    function playRelativeToTime(movement, refMovement, relationship, offset) {
         switch (relationship) {
             case TimeRelationship.with: {
                 var timeOffset = offset;
@@ -277,4 +277,16 @@ var motor;
         }
     }
     motor_1.playRelativeToTime = playRelativeToTime;
+    function getDuration(movement) {
+        var duration = 0
+        for (var i = 0; i < movement.keyframes.length; i++) {
+            duration += movement.keyframes[i].period
+        }
+        return duration
+    }
+    motor_1.getDuration = getDuration;
+    function remainingCount(movement) {
+        return softrobot.movement.movementSender.getMovementCount(movement.movementId);
+    }
+    motor_1.remainingCount = remainingCount;
 })(motor || (motor = {}));

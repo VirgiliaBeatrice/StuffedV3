@@ -1,4 +1,4 @@
-#define RUNTICK_DEBUG
+//#define RUNTICK_DEBUG
 
 using System;
 using System.Windows.Forms;

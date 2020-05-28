@@ -9,5 +9,5 @@ public:
 	typedef Board<CommandPacketBD0, ReturnPacketBD0> base;
 	BoardDirect();
 	void WriteCmd(unsigned short commandId, BoardCmdBase& packet);
-	void ReadRet(unsigned short cmd, BoardRetBase& packet);
+	void ReadRet(unsigned short commandId, BoardRetBase& packet);
 };

@@ -36,6 +36,7 @@ extern "C" {
 #include "websocketServer/ws_fs.h"
 #include "espfs.h"
 #include "espfsStream.h"
+#include "esp32/ulp.h"
 
 #include "../duktapeEsp32/include/logging.h"
 LOG_TAG("Monitor");
@@ -168,6 +169,34 @@ class MCEraseNvs: public MonitorCommandBase{
     }
 } mcEraseNvs;
 
+class MCReset: public MonitorCommandBase{
+    const char* Desc(){ return "R Reset by software / Deep sleep / call ulp_run(0)"; }
+    void Func(){
+        conPrintf("This command deep sleep or reset this program. Are you sure ? (U/D/Y/N)\n");
+        while(1){
+            int ch = getchNoWait();
+            if (ch == 'u' || ch == 'U'){
+				conPrintf("call 'ulp_run(0)'.\n");
+                ulp_run(0);
+            }else if (ch == 'd' || ch == 'D'){
+				conPrintf("deep sleep.\n");
+                esp_deep_sleep(1000*1000);  //  sleep time in us.
+                break;
+            }else if (ch == 'y' || ch == 'Y'){
+				conPrintf("reset.\n");
+#ifdef WROOM
+                esp_restart();
+#endif
+                break;
+            }else if(ch > 0){
+                conPrintf("canceled.\n");
+                break;
+            }
+        }
+    }
+} mcReset;
+
+
 inline void resumeControl(){
     motorDriver.bControl = true;
     resumeInterpolate();
@@ -292,6 +321,15 @@ class MCMotorAngleTest: public MonitorCommandBase{
 class MCShowMotorPos: public MonitorCommandBase{
     const char* Desc(){ return "P Show motor positions"; }
     void Func(){
+        conPrintf("K:\t");
+        for(int i=0; i<NMOTOR; ++i){ conPrintf("%d \t", pdParam.k[i]); } conPrintf("\n");
+        conPrintf("B:\t");
+        for(int i=0; i<NMOTOR; ++i){ conPrintf("%d \t", pdParam.b[i]); } conPrintf("\n");
+        conPrintf("A:\t");
+        for(int i=0; i<NMOTOR; ++i){ conPrintf("%d \t", pdParam.a[i]); } conPrintf("\n");
+        conPrintf("Torque:\t");
+        for(int i=0; i<NMOTOR; ++i){ conPrintf("%d~%d \t", torqueLimit.min[i], torqueLimit.max[i]); } conPrintf("\n");
+
         conPrintf("Off:\t");
         for(int i=0; i<allBoards.motorMap.size(); ++i){
             conPrintf("%d\t", (int) allBoards.motorOffset[i]);
@@ -769,11 +807,13 @@ public:
 extern "C" {
     #include "websocketServer/CoreDumpReader.h"
 }
+#include "websocketServer/OTA.h"
 class MCTest: public MonitorCommandBase {
     public:
     const char * Desc(){ return "H error handle";}
     void Func() {
         conPrintf(" a: produce error            s: read error                       d: mark error\n");
+        conPrintf(" o: start ota                c: connect wifi \n");
         switch (getchWait()) {
             case 'a':
                 assert(1 == 0);
@@ -788,6 +828,12 @@ class MCTest: public MonitorCommandBase {
                 break;
             case 'd':
                 markCoreDump();
+                break;
+            case 'o':
+                updateFirmware();
+                break;
+            case 'c':
+                // SRWiFi::wifi.connectAP("haselab_pi_G", "2human2human2");
                 break;
             default:
                 printf("Unsupported command \n");

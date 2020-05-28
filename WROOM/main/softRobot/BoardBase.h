@@ -1,11 +1,19 @@
 #pragma once
 
 #include "CommandWROOM.h"
+#ifdef SPRINGHEAD
+#include <springhead.h>
+using namespace Spr;
+#define NMOTOR 1
+#define NFORCE 1
+#define NTARGET 1
+#else
 #include "UTRef.h"
+#endif
 #include <vector>
 extern "C"{
 #include "../../../PIC/fixed.h"
-#include "../../../PIC/Control.h"
+#include "../../../PIC/control.h"
 }
 
 class BoardCmdBase{
@@ -29,7 +37,7 @@ public:
 };
 class BoardRetBase{
 public:
-	virtual ~BoardRetBase(){}
+	virtual ~BoardRetBase();
 	virtual void SetAll(ControlMode controlMode, unsigned char targetCountReadMin, unsigned char targetCountReadMax,
 		unsigned short tickMin, unsigned short tickMax, 
 		SDEC* pos, SDEC* vel, SDEC* current, SDEC* force, SDEC* touch)=0;
@@ -43,13 +51,24 @@ public:
 	virtual void SetForce(short f, int i)=0;
 	virtual void SetTouch(short t, int i)=0;
 	virtual void SetBoardInfo(int systemId, int nTarget, int nMotor, int nCurrent, int nForce, int nTouch)=0;
+	virtual void SetParamType(short type)=0; 
+	virtual void SetParamPD(short k, short b, int i)=0;
+	virtual void SetParamCurrent(short a, int i)=0;
+	virtual void SetParamHeat(short limit, short release, int i)=0;
+	virtual void SetParamTorque(short minimum, short maximum, int i)=0;
 };
 
+#ifdef SPRINGHEAD
+namespace Spr { class DRUARTMotorDriverImpl; }
+#endif
 struct RobotState;
 class UdpCmdPacket;
 class UdpRetPacket;
 class BoardBase:public UTRefCount{
 public:
+#ifdef SPRINGHEAD
+	Spr::DRUARTMotorDriverImpl* owner;
+#endif
 	static const char* Tag(){ return "Board"; };
 	const unsigned char * cmdPacketLen;
 	const unsigned char * retPacketLen;

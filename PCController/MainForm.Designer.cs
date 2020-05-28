@@ -30,7 +30,23 @@
         {
             this.components = new System.ComponentModel.Container();
             this.uartBin = new System.IO.Ports.SerialPort(this.components);
+            this.timer = new System.Windows.Forms.Timer(this.components);
+            this.openPose = new System.Windows.Forms.OpenFileDialog();
+            this.savePose = new System.Windows.Forms.SaveFileDialog();
+            this.splitContainerHoriz = new System.Windows.Forms.SplitContainer();
             this.tbControl = new System.Windows.Forms.TabControl();
+            this.tpMagnet = new System.Windows.Forms.TabPage();
+            this.pnMagnet = new System.Windows.Forms.Panel();
+            this.panel3 = new System.Windows.Forms.Panel();
+            this.btMeasure = new System.Windows.Forms.Button();
+            this.tpHaptic = new System.Windows.Forms.TabPage();
+            this.flHaptic = new System.Windows.Forms.FlowLayoutPanel();
+            this.panel6 = new System.Windows.Forms.Panel();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.btHapticStart = new System.Windows.Forms.Button();
+            this.udAmp = new System.Windows.Forms.NumericUpDown();
+            this.udDamp = new System.Windows.Forms.NumericUpDown();
             this.tpPos = new System.Windows.Forms.TabPage();
             this.flPos = new System.Windows.Forms.FlowLayoutPanel();
             this.panel2 = new System.Windows.Forms.Panel();
@@ -56,18 +72,38 @@
             this.flCurrent = new System.Windows.Forms.FlowLayoutPanel();
             this.tpParam = new System.Windows.Forms.TabPage();
             this.flParam = new System.Windows.Forms.FlowLayoutPanel();
-            this.timer = new System.Windows.Forms.Timer(this.components);
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.panel4 = new System.Windows.Forms.Panel();
+            this.btLoadSpidar = new System.Windows.Forms.Button();
+            this.btLoadNuibot = new System.Windows.Forms.Button();
+            this.btRecvPd = new System.Windows.Forms.Button();
+            this.btSendPd = new System.Windows.Forms.Button();
+            this.tpHeat = new System.Windows.Forms.TabPage();
+            this.flHeat = new System.Windows.Forms.FlowLayoutPanel();
+            this.panel5 = new System.Windows.Forms.Panel();
+            this.btLoadSpidarHeat = new System.Windows.Forms.Button();
+            this.btLoadNubotiHeat = new System.Windows.Forms.Button();
+            this.btRecvHeat = new System.Windows.Forms.Button();
+            this.btSendHeat = new System.Windows.Forms.Button();
+            this.splitContainerTop = new System.Windows.Forms.SplitContainer();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.btReset = new System.Windows.Forms.Button();
             this.cmbPortBin = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.btListBoards = new System.Windows.Forms.Button();
-            this.splitContainer2 = new System.Windows.Forms.SplitContainer();
+            this.splitContainerBottom = new System.Windows.Forms.SplitContainer();
             this.trBoards = new System.Windows.Forms.TreeView();
             this.txMsg = new System.Windows.Forms.TextBox();
-            this.openPose = new System.Windows.Forms.OpenFileDialog();
-            this.savePose = new System.Windows.Forms.SaveFileDialog();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerHoriz)).BeginInit();
+            this.splitContainerHoriz.Panel1.SuspendLayout();
+            this.splitContainerHoriz.Panel2.SuspendLayout();
+            this.splitContainerHoriz.SuspendLayout();
             this.tbControl.SuspendLayout();
+            this.tpMagnet.SuspendLayout();
+            this.panel3.SuspendLayout();
+            this.tpHaptic.SuspendLayout();
+            this.panel6.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.udAmp)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.udDamp)).BeginInit();
             this.tpPos.SuspendLayout();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.udkeyTime)).BeginInit();
@@ -77,30 +113,218 @@
             ((System.ComponentModel.ISupportInitialize)(this.track)).BeginInit();
             this.tpCurrent.SuspendLayout();
             this.tpParam.SuspendLayout();
-            this.splitContainer1.Panel1.SuspendLayout();
-            this.splitContainer1.Panel2.SuspendLayout();
-            this.splitContainer1.SuspendLayout();
+            this.panel4.SuspendLayout();
+            this.tpHeat.SuspendLayout();
+            this.panel5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerTop)).BeginInit();
+            this.splitContainerTop.Panel1.SuspendLayout();
+            this.splitContainerTop.Panel2.SuspendLayout();
+            this.splitContainerTop.SuspendLayout();
             this.panel1.SuspendLayout();
-            this.splitContainer2.Panel1.SuspendLayout();
-            this.splitContainer2.Panel2.SuspendLayout();
-            this.splitContainer2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerBottom)).BeginInit();
+            this.splitContainerBottom.Panel1.SuspendLayout();
+            this.splitContainerBottom.Panel2.SuspendLayout();
+            this.splitContainerBottom.SuspendLayout();
             this.SuspendLayout();
             // 
             // uartBin
             // 
             this.uartBin.BaudRate = 2000000;
             // 
+            // timer
+            // 
+            this.timer.Enabled = true;
+            this.timer.Tick += new System.EventHandler(this.timer_Tick);
+            // 
+            // openPose
+            // 
+            this.openPose.FileName = "pose.txt";
+            this.openPose.Filter = "姿勢ファイル|*.txt|姿勢CSV|*.csv|すべてのファイル|*.*";
+            this.openPose.FileOk += new System.ComponentModel.CancelEventHandler(this.openPose_FileOk);
+            // 
+            // savePose
+            // 
+            this.savePose.DefaultExt = "txt";
+            this.savePose.FileName = "pose.txt";
+            this.savePose.Filter = "姿勢ファイル|*.txt|姿勢ファイル(csv)|*.csv|すべてのファイル|*.*";
+            this.savePose.FileOk += new System.ComponentModel.CancelEventHandler(this.savePose_FileOk);
+            // 
+            // splitContainerHoriz
+            // 
+            this.splitContainerHoriz.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainerHoriz.Location = new System.Drawing.Point(0, 0);
+            this.splitContainerHoriz.Name = "splitContainerHoriz";
+            // 
+            // splitContainerHoriz.Panel1
+            // 
+            this.splitContainerHoriz.Panel1.Controls.Add(this.tbControl);
+            // 
+            // splitContainerHoriz.Panel2
+            // 
+            this.splitContainerHoriz.Panel2.Controls.Add(this.splitContainerTop);
+            this.splitContainerHoriz.Size = new System.Drawing.Size(984, 593);
+            this.splitContainerHoriz.SplitterDistance = 751;
+            this.splitContainerHoriz.TabIndex = 4;
+            // 
             // tbControl
             // 
+            this.tbControl.Controls.Add(this.tpMagnet);
+            this.tbControl.Controls.Add(this.tpHaptic);
             this.tbControl.Controls.Add(this.tpPos);
             this.tbControl.Controls.Add(this.tpCurrent);
             this.tbControl.Controls.Add(this.tpParam);
+            this.tbControl.Controls.Add(this.tpHeat);
             this.tbControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tbControl.Location = new System.Drawing.Point(0, 0);
             this.tbControl.Name = "tbControl";
             this.tbControl.SelectedIndex = 0;
-            this.tbControl.Size = new System.Drawing.Size(463, 464);
-            this.tbControl.TabIndex = 4;
+            this.tbControl.Size = new System.Drawing.Size(751, 593);
+            this.tbControl.TabIndex = 5;
+            // 
+            // tpMagnet
+            // 
+            this.tpMagnet.BackColor = System.Drawing.SystemColors.Control;
+            this.tpMagnet.Controls.Add(this.pnMagnet);
+            this.tpMagnet.Controls.Add(this.panel3);
+            this.tpMagnet.Location = new System.Drawing.Point(4, 25);
+            this.tpMagnet.Name = "tpMagnet";
+            this.tpMagnet.Padding = new System.Windows.Forms.Padding(3);
+            this.tpMagnet.Size = new System.Drawing.Size(743, 564);
+            this.tpMagnet.TabIndex = 5;
+            this.tpMagnet.Text = "Magnet";
+            // 
+            // pnMagnet
+            // 
+            this.pnMagnet.AutoScroll = true;
+            this.pnMagnet.AutoSize = true;
+            this.pnMagnet.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnMagnet.Location = new System.Drawing.Point(3, 35);
+            this.pnMagnet.Name = "pnMagnet";
+            this.pnMagnet.Size = new System.Drawing.Size(737, 526);
+            this.pnMagnet.TabIndex = 3;
+            this.pnMagnet.Resize += new System.EventHandler(this.pnMagnet_Resize);
+            // 
+            // panel3
+            // 
+            this.panel3.Controls.Add(this.btMeasure);
+            this.panel3.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel3.Location = new System.Drawing.Point(3, 3);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(737, 32);
+            this.panel3.TabIndex = 2;
+            // 
+            // btMeasure
+            // 
+            this.btMeasure.Location = new System.Drawing.Point(3, 3);
+            this.btMeasure.Name = "btMeasure";
+            this.btMeasure.Size = new System.Drawing.Size(75, 23);
+            this.btMeasure.TabIndex = 0;
+            this.btMeasure.Text = "Measure";
+            this.btMeasure.UseVisualStyleBackColor = true;
+            this.btMeasure.Click += new System.EventHandler(this.btMeasure_Click);
+            // 
+            // tpHaptic
+            // 
+            this.tpHaptic.Controls.Add(this.flHaptic);
+            this.tpHaptic.Controls.Add(this.panel6);
+            this.tpHaptic.Location = new System.Drawing.Point(4, 25);
+            this.tpHaptic.Name = "tpHaptic";
+            this.tpHaptic.Padding = new System.Windows.Forms.Padding(3);
+            this.tpHaptic.Size = new System.Drawing.Size(743, 564);
+            this.tpHaptic.TabIndex = 5;
+            this.tpHaptic.Text = "Haptic";
+            this.tpHaptic.UseVisualStyleBackColor = true;
+            // 
+            // flHaptic
+            // 
+            this.flHaptic.AutoScroll = true;
+            this.flHaptic.BackColor = System.Drawing.SystemColors.Window;
+            this.flHaptic.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flHaptic.Location = new System.Drawing.Point(3, 41);
+            this.flHaptic.Name = "flHaptic";
+            this.flHaptic.Size = new System.Drawing.Size(737, 520);
+            this.flHaptic.TabIndex = 1;
+            // 
+            // panel6
+            // 
+            this.panel6.Controls.Add(this.label5);
+            this.panel6.Controls.Add(this.label6);
+            this.panel6.Controls.Add(this.btHapticStart);
+            this.panel6.Controls.Add(this.udAmp);
+            this.panel6.Controls.Add(this.udDamp);
+            this.panel6.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel6.Location = new System.Drawing.Point(3, 3);
+            this.panel6.Name = "panel6";
+            this.panel6.Size = new System.Drawing.Size(737, 38);
+            this.panel6.TabIndex = 7;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(3, 10);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(97, 15);
+            this.label5.TabIndex = 5;
+            this.label5.Text = "Vibration Amp:";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(201, 10);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(45, 15);
+            this.label6.TabIndex = 6;
+            this.label6.Text = "Damp:";
+            // 
+            // btHapticStart
+            // 
+            this.btHapticStart.Location = new System.Drawing.Point(444, 2);
+            this.btHapticStart.Name = "btHapticStart";
+            this.btHapticStart.Size = new System.Drawing.Size(100, 34);
+            this.btHapticStart.TabIndex = 2;
+            this.btHapticStart.Text = "Start";
+            this.btHapticStart.UseVisualStyleBackColor = true;
+            this.btHapticStart.Click += new System.EventHandler(this.btHapticStart_Click);
+            // 
+            // udAmp
+            // 
+            this.udAmp.Location = new System.Drawing.Point(112, 8);
+            this.udAmp.Maximum = new decimal(new int[] {
+            150,
+            0,
+            0,
+            0});
+            this.udAmp.Name = "udAmp";
+            this.udAmp.Size = new System.Drawing.Size(78, 22);
+            this.udAmp.TabIndex = 3;
+            this.udAmp.Value = new decimal(new int[] {
+            30,
+            0,
+            0,
+            0});
+            // 
+            // udDamp
+            // 
+            this.udDamp.DecimalPlaces = 3;
+            this.udDamp.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            196608});
+            this.udDamp.Location = new System.Drawing.Point(254, 8);
+            this.udDamp.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.udDamp.Name = "udDamp";
+            this.udDamp.Size = new System.Drawing.Size(74, 22);
+            this.udDamp.TabIndex = 4;
+            this.udDamp.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
             // 
             // tpPos
             // 
@@ -111,7 +335,7 @@
             this.tpPos.Location = new System.Drawing.Point(4, 25);
             this.tpPos.Name = "tpPos";
             this.tpPos.Padding = new System.Windows.Forms.Padding(3);
-            this.tpPos.Size = new System.Drawing.Size(455, 435);
+            this.tpPos.Size = new System.Drawing.Size(743, 564);
             this.tpPos.TabIndex = 3;
             this.tpPos.Text = "Pos";
             this.tpPos.UseVisualStyleBackColor = true;
@@ -121,7 +345,7 @@
             this.flPos.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flPos.Location = new System.Drawing.Point(3, 98);
             this.flPos.Name = "flPos";
-            this.flPos.Size = new System.Drawing.Size(449, 334);
+            this.flPos.Size = new System.Drawing.Size(737, 463);
             this.flPos.TabIndex = 98;
             // 
             // panel2
@@ -145,7 +369,7 @@
             this.panel2.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel2.Location = new System.Drawing.Point(3, 42);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(449, 56);
+            this.panel2.Size = new System.Drawing.Size(737, 56);
             this.panel2.TabIndex = 99;
             // 
             // btCopy
@@ -363,7 +587,7 @@
             this.track.Margin = new System.Windows.Forms.Padding(0);
             this.track.Maximum = 10000;
             this.track.Name = "track";
-            this.track.Size = new System.Drawing.Size(449, 39);
+            this.track.Size = new System.Drawing.Size(737, 39);
             this.track.TabIndex = 1;
             this.track.TickStyle = System.Windows.Forms.TickStyle.None;
             this.track.ValueChanged += new System.EventHandler(this.track_ValueChanged);
@@ -374,7 +598,7 @@
             this.tpCurrent.Location = new System.Drawing.Point(4, 25);
             this.tpCurrent.Name = "tpCurrent";
             this.tpCurrent.Padding = new System.Windows.Forms.Padding(3);
-            this.tpCurrent.Size = new System.Drawing.Size(455, 435);
+            this.tpCurrent.Size = new System.Drawing.Size(743, 564);
             this.tpCurrent.TabIndex = 1;
             this.tpCurrent.Text = "Current";
             this.tpCurrent.UseVisualStyleBackColor = true;
@@ -384,66 +608,199 @@
             this.flCurrent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flCurrent.Location = new System.Drawing.Point(3, 3);
             this.flCurrent.Name = "flCurrent";
-            this.flCurrent.Size = new System.Drawing.Size(449, 429);
+            this.flCurrent.Size = new System.Drawing.Size(737, 558);
             this.flCurrent.TabIndex = 0;
             // 
             // tpParam
             // 
             this.tpParam.Controls.Add(this.flParam);
+            this.tpParam.Controls.Add(this.panel4);
             this.tpParam.Location = new System.Drawing.Point(4, 25);
             this.tpParam.Name = "tpParam";
             this.tpParam.Padding = new System.Windows.Forms.Padding(3);
-            this.tpParam.Size = new System.Drawing.Size(455, 435);
+            this.tpParam.Size = new System.Drawing.Size(743, 564);
             this.tpParam.TabIndex = 2;
             this.tpParam.Text = "Param";
             this.tpParam.UseVisualStyleBackColor = true;
             // 
             // flParam
             // 
+            this.flParam.AutoScroll = true;
             this.flParam.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flParam.Location = new System.Drawing.Point(3, 3);
+            this.flParam.ForeColor = System.Drawing.Color.CadetBlue;
+            this.flParam.Location = new System.Drawing.Point(3, 32);
             this.flParam.Name = "flParam";
-            this.flParam.Size = new System.Drawing.Size(449, 429);
+            this.flParam.Size = new System.Drawing.Size(737, 529);
             this.flParam.TabIndex = 0;
             // 
-            // timer
+            // panel4
             // 
-            this.timer.Enabled = true;
-            this.timer.Tick += new System.EventHandler(this.timer_Tick);
+            this.panel4.Controls.Add(this.btLoadSpidar);
+            this.panel4.Controls.Add(this.btLoadNuibot);
+            this.panel4.Controls.Add(this.btRecvPd);
+            this.panel4.Controls.Add(this.btSendPd);
+            this.panel4.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel4.Location = new System.Drawing.Point(3, 3);
+            this.panel4.Name = "panel4";
+            this.panel4.Size = new System.Drawing.Size(737, 29);
+            this.panel4.TabIndex = 3;
             // 
-            // splitContainer1
+            // btLoadSpidar
             // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.splitContainer1.Location = new System.Drawing.Point(463, 0);
-            this.splitContainer1.Name = "splitContainer1";
-            this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this.btLoadSpidar.Location = new System.Drawing.Point(615, 3);
+            this.btLoadSpidar.Name = "btLoadSpidar";
+            this.btLoadSpidar.Size = new System.Drawing.Size(119, 23);
+            this.btLoadSpidar.TabIndex = 4;
+            this.btLoadSpidar.Text = "Load SPIDAR";
+            this.btLoadSpidar.UseVisualStyleBackColor = true;
+            this.btLoadSpidar.Click += new System.EventHandler(this.btLoadSpidar_Click);
             // 
-            // splitContainer1.Panel1
+            // btLoadNuibot
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.panel1);
+            this.btLoadNuibot.Location = new System.Drawing.Point(497, 3);
+            this.btLoadNuibot.Name = "btLoadNuibot";
+            this.btLoadNuibot.Size = new System.Drawing.Size(112, 23);
+            this.btLoadNuibot.TabIndex = 3;
+            this.btLoadNuibot.Text = "Load Nuibot";
+            this.btLoadNuibot.UseVisualStyleBackColor = true;
+            this.btLoadNuibot.Click += new System.EventHandler(this.btLoadNuibot_Click);
             // 
-            // splitContainer1.Panel2
+            // btRecvPd
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.splitContainer2);
-            this.splitContainer1.Size = new System.Drawing.Size(127, 464);
-            this.splitContainer1.SplitterDistance = 232;
-            this.splitContainer1.TabIndex = 3;
+            this.btRecvPd.Location = new System.Drawing.Point(86, 3);
+            this.btRecvPd.Name = "btRecvPd";
+            this.btRecvPd.Size = new System.Drawing.Size(75, 23);
+            this.btRecvPd.TabIndex = 2;
+            this.btRecvPd.Text = "Receive";
+            this.btRecvPd.UseVisualStyleBackColor = true;
+            this.btRecvPd.Click += new System.EventHandler(this.btRecvPd_Click);
+            // 
+            // btSendPd
+            // 
+            this.btSendPd.Location = new System.Drawing.Point(5, 3);
+            this.btSendPd.Name = "btSendPd";
+            this.btSendPd.Size = new System.Drawing.Size(75, 23);
+            this.btSendPd.TabIndex = 1;
+            this.btSendPd.Text = "Send";
+            this.btSendPd.UseVisualStyleBackColor = true;
+            this.btSendPd.Click += new System.EventHandler(this.btSendPd_Click);
+            // 
+            // tpHeat
+            // 
+            this.tpHeat.Controls.Add(this.flHeat);
+            this.tpHeat.Controls.Add(this.panel5);
+            this.tpHeat.Location = new System.Drawing.Point(4, 25);
+            this.tpHeat.Name = "tpHeat";
+            this.tpHeat.Padding = new System.Windows.Forms.Padding(3);
+            this.tpHeat.Size = new System.Drawing.Size(743, 564);
+            this.tpHeat.TabIndex = 4;
+            this.tpHeat.Text = "Heat";
+            this.tpHeat.UseVisualStyleBackColor = true;
+            // 
+            // flHeat
+            // 
+            this.flHeat.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flHeat.Location = new System.Drawing.Point(3, 35);
+            this.flHeat.Name = "flHeat";
+            this.flHeat.Size = new System.Drawing.Size(737, 526);
+            this.flHeat.TabIndex = 3;
+            // 
+            // panel5
+            // 
+            this.panel5.Controls.Add(this.btLoadSpidarHeat);
+            this.panel5.Controls.Add(this.btLoadNubotiHeat);
+            this.panel5.Controls.Add(this.btRecvHeat);
+            this.panel5.Controls.Add(this.btSendHeat);
+            this.panel5.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel5.Location = new System.Drawing.Point(3, 3);
+            this.panel5.Name = "panel5";
+            this.panel5.Size = new System.Drawing.Size(737, 32);
+            this.panel5.TabIndex = 5;
+            // 
+            // btLoadSpidarHeat
+            // 
+            this.btLoadSpidarHeat.Location = new System.Drawing.Point(615, 6);
+            this.btLoadSpidarHeat.Name = "btLoadSpidarHeat";
+            this.btLoadSpidarHeat.Size = new System.Drawing.Size(119, 23);
+            this.btLoadSpidarHeat.TabIndex = 6;
+            this.btLoadSpidarHeat.Text = "Load SPIDAR";
+            this.btLoadSpidarHeat.UseVisualStyleBackColor = true;
+            this.btLoadSpidarHeat.Click += new System.EventHandler(this.btLoadSpidarHeat_Click);
+            // 
+            // btLoadNubotiHeat
+            // 
+            this.btLoadNubotiHeat.Location = new System.Drawing.Point(497, 6);
+            this.btLoadNubotiHeat.Name = "btLoadNubotiHeat";
+            this.btLoadNubotiHeat.Size = new System.Drawing.Size(112, 23);
+            this.btLoadNubotiHeat.TabIndex = 5;
+            this.btLoadNubotiHeat.Text = "Load Nuibot";
+            this.btLoadNubotiHeat.UseVisualStyleBackColor = true;
+            this.btLoadNubotiHeat.Click += new System.EventHandler(this.btLoadNubotiHeat_Click);
+            // 
+            // btRecvHeat
+            // 
+            this.btRecvHeat.Location = new System.Drawing.Point(87, 3);
+            this.btRecvHeat.Name = "btRecvHeat";
+            this.btRecvHeat.Size = new System.Drawing.Size(75, 23);
+            this.btRecvHeat.TabIndex = 4;
+            this.btRecvHeat.Text = "Receive";
+            this.btRecvHeat.UseVisualStyleBackColor = true;
+            this.btRecvHeat.Click += new System.EventHandler(this.btRecvHeat_Click);
+            // 
+            // btSendHeat
+            // 
+            this.btSendHeat.Location = new System.Drawing.Point(6, 3);
+            this.btSendHeat.Name = "btSendHeat";
+            this.btSendHeat.Size = new System.Drawing.Size(75, 23);
+            this.btSendHeat.TabIndex = 2;
+            this.btSendHeat.Text = "Send";
+            this.btSendHeat.UseVisualStyleBackColor = true;
+            this.btSendHeat.Click += new System.EventHandler(this.btSendHeat_Click);
+            // 
+            // splitContainerTop
+            // 
+            this.splitContainerTop.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainerTop.Location = new System.Drawing.Point(0, 0);
+            this.splitContainerTop.Name = "splitContainerTop";
+            this.splitContainerTop.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitContainerTop.Panel1
+            // 
+            this.splitContainerTop.Panel1.Controls.Add(this.panel1);
+            // 
+            // splitContainerTop.Panel2
+            // 
+            this.splitContainerTop.Panel2.Controls.Add(this.splitContainerBottom);
+            this.splitContainerTop.Size = new System.Drawing.Size(229, 593);
+            this.splitContainerTop.SplitterDistance = 136;
+            this.splitContainerTop.TabIndex = 4;
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.btReset);
             this.panel1.Controls.Add(this.cmbPortBin);
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.btListBoards);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(127, 232);
+            this.panel1.Size = new System.Drawing.Size(229, 136);
             this.panel1.TabIndex = 6;
+            // 
+            // btReset
+            // 
+            this.btReset.Location = new System.Drawing.Point(5, 81);
+            this.btReset.Name = "btReset";
+            this.btReset.Size = new System.Drawing.Size(121, 23);
+            this.btReset.TabIndex = 3;
+            this.btReset.Text = "Reset Motor";
+            this.btReset.UseVisualStyleBackColor = true;
+            this.btReset.Click += new System.EventHandler(this.btReset_Click);
             // 
             // cmbPortBin
             // 
             this.cmbPortBin.FormattingEnabled = true;
-            this.cmbPortBin.Location = new System.Drawing.Point(3, 25);
+            this.cmbPortBin.Location = new System.Drawing.Point(5, 23);
             this.cmbPortBin.Name = "cmbPortBin";
             this.cmbPortBin.Size = new System.Drawing.Size(121, 23);
             this.cmbPortBin.TabIndex = 0;
@@ -451,7 +808,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(3, 7);
+            this.label1.Location = new System.Drawing.Point(6, 6);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(82, 15);
             this.label1.TabIndex = 1;
@@ -459,7 +816,7 @@
             // 
             // btListBoards
             // 
-            this.btListBoards.Location = new System.Drawing.Point(3, 55);
+            this.btListBoards.Location = new System.Drawing.Point(5, 52);
             this.btListBoards.Name = "btListBoards";
             this.btListBoards.Size = new System.Drawing.Size(121, 23);
             this.btListBoards.TabIndex = 2;
@@ -467,23 +824,23 @@
             this.btListBoards.UseVisualStyleBackColor = true;
             this.btListBoards.Click += new System.EventHandler(this.btListBoards_Click);
             // 
-            // splitContainer2
+            // splitContainerBottom
             // 
-            this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer2.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer2.Name = "splitContainer2";
-            this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this.splitContainerBottom.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainerBottom.Location = new System.Drawing.Point(0, 0);
+            this.splitContainerBottom.Name = "splitContainerBottom";
+            this.splitContainerBottom.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
-            // splitContainer2.Panel1
+            // splitContainerBottom.Panel1
             // 
-            this.splitContainer2.Panel1.Controls.Add(this.trBoards);
+            this.splitContainerBottom.Panel1.Controls.Add(this.trBoards);
             // 
-            // splitContainer2.Panel2
+            // splitContainerBottom.Panel2
             // 
-            this.splitContainer2.Panel2.Controls.Add(this.txMsg);
-            this.splitContainer2.Size = new System.Drawing.Size(127, 228);
-            this.splitContainer2.SplitterDistance = 124;
-            this.splitContainer2.TabIndex = 5;
+            this.splitContainerBottom.Panel2.Controls.Add(this.txMsg);
+            this.splitContainerBottom.Size = new System.Drawing.Size(229, 453);
+            this.splitContainerBottom.SplitterDistance = 252;
+            this.splitContainerBottom.TabIndex = 5;
             // 
             // trBoards
             // 
@@ -491,7 +848,7 @@
             this.trBoards.LabelEdit = true;
             this.trBoards.Location = new System.Drawing.Point(0, 0);
             this.trBoards.Name = "trBoards";
-            this.trBoards.Size = new System.Drawing.Size(127, 124);
+            this.trBoards.Size = new System.Drawing.Size(229, 252);
             this.trBoards.TabIndex = 4;
             this.trBoards.BeforeLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.trBoards_BeforeLabelEdit);
             this.trBoards.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.trBoards_AfterLabelEdit);
@@ -503,32 +860,31 @@
             this.txMsg.Multiline = true;
             this.txMsg.Name = "txMsg";
             this.txMsg.ReadOnly = true;
-            this.txMsg.Size = new System.Drawing.Size(127, 100);
+            this.txMsg.Size = new System.Drawing.Size(229, 197);
             this.txMsg.TabIndex = 0;
-            // 
-            // openPose
-            // 
-            this.openPose.FileName = "pose.txt";
-            this.openPose.Filter = "姿勢ファイル|*.txt|姿勢CSV|*.csv|すべてのファイル|*.*";
-            this.openPose.FileOk += new System.ComponentModel.CancelEventHandler(this.openPose_FileOk);
-            // 
-            // savePose
-            // 
-            this.savePose.DefaultExt = "txt";
-            this.savePose.FileName = "pose.txt";
-            this.savePose.Filter = "姿勢ファイル|*.txt|姿勢ファイル(csv)|*.csv|すべてのファイル|*.*";
-            this.savePose.FileOk += new System.ComponentModel.CancelEventHandler(this.savePose_FileOk);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(590, 464);
-            this.Controls.Add(this.tbControl);
-            this.Controls.Add(this.splitContainer1);
+            this.ClientSize = new System.Drawing.Size(984, 593);
+            this.Controls.Add(this.splitContainerHoriz);
             this.Name = "MainForm";
             this.Text = "PCController";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.splitContainerHoriz.Panel1.ResumeLayout(false);
+            this.splitContainerHoriz.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerHoriz)).EndInit();
+            this.splitContainerHoriz.ResumeLayout(false);
             this.tbControl.ResumeLayout(false);
+            this.tpMagnet.ResumeLayout(false);
+            this.tpMagnet.PerformLayout();
+            this.panel3.ResumeLayout(false);
+            this.tpHaptic.ResumeLayout(false);
+            this.panel6.ResumeLayout(false);
+            this.panel6.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.udAmp)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.udDamp)).EndInit();
             this.tpPos.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
@@ -539,36 +895,40 @@
             ((System.ComponentModel.ISupportInitialize)(this.track)).EndInit();
             this.tpCurrent.ResumeLayout(false);
             this.tpParam.ResumeLayout(false);
-            this.splitContainer1.Panel1.ResumeLayout(false);
-            this.splitContainer1.Panel2.ResumeLayout(false);
-            this.splitContainer1.ResumeLayout(false);
+            this.panel4.ResumeLayout(false);
+            this.tpHeat.ResumeLayout(false);
+            this.panel5.ResumeLayout(false);
+            this.splitContainerTop.Panel1.ResumeLayout(false);
+            this.splitContainerTop.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerTop)).EndInit();
+            this.splitContainerTop.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
-            this.splitContainer2.Panel1.ResumeLayout(false);
-            this.splitContainer2.Panel2.ResumeLayout(false);
-            this.splitContainer2.Panel2.PerformLayout();
-            this.splitContainer2.ResumeLayout(false);
+            this.splitContainerBottom.Panel1.ResumeLayout(false);
+            this.splitContainerBottom.Panel2.ResumeLayout(false);
+            this.splitContainerBottom.Panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainerBottom)).EndInit();
+            this.splitContainerBottom.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         #endregion
         private System.IO.Ports.SerialPort uartBin;
-        private System.Windows.Forms.TabControl tbControl;
-        private System.Windows.Forms.TabPage tpCurrent;
-        private System.Windows.Forms.FlowLayoutPanel flCurrent;
         private System.Windows.Forms.Timer timer;
-        private System.Windows.Forms.TabPage tpParam;
-        private System.Windows.Forms.FlowLayoutPanel flParam;
-        private System.Windows.Forms.TabPage tpPos;
-        private System.Windows.Forms.Label laCurTime;
-        private System.Windows.Forms.TrackBar track;
-        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.OpenFileDialog openPose;
+        private System.Windows.Forms.SaveFileDialog savePose;
+        private System.Windows.Forms.SplitContainer splitContainerHoriz;
+        private System.Windows.Forms.SplitContainer splitContainerTop;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.ComboBox cmbPortBin;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btListBoards;
+        private System.Windows.Forms.SplitContainer splitContainerBottom;
         private System.Windows.Forms.TreeView trBoards;
+        private System.Windows.Forms.TextBox txMsg;
+        private System.Windows.Forms.TabControl tbControl;
+        private System.Windows.Forms.TabPage tpPos;
         private System.Windows.Forms.FlowLayoutPanel flPos;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Button btCopy;
@@ -587,10 +947,37 @@
         private System.Windows.Forms.Label lbCurTime;
         private System.Windows.Forms.CheckBox ckRun;
         private System.Windows.Forms.CheckBox ckRunOnce;
-        private System.Windows.Forms.OpenFileDialog openPose;
-        private System.Windows.Forms.SaveFileDialog savePose;
-        private System.Windows.Forms.SplitContainer splitContainer2;
-        private System.Windows.Forms.TextBox txMsg;
+        private System.Windows.Forms.Label laCurTime;
+        private System.Windows.Forms.TrackBar track;
+        private System.Windows.Forms.TabPage tpCurrent;
+        private System.Windows.Forms.FlowLayoutPanel flCurrent;
+        private System.Windows.Forms.TabPage tpParam;
+        private System.Windows.Forms.Button btRecvPd;
+        private System.Windows.Forms.Button btSendPd;
+        private System.Windows.Forms.FlowLayoutPanel flParam;
+        private System.Windows.Forms.TabPage tpHeat;
+        private System.Windows.Forms.Button btRecvHeat;
+        private System.Windows.Forms.Button btSendHeat;
+        private System.Windows.Forms.FlowLayoutPanel flHeat;
+        private System.Windows.Forms.TabPage tpMagnet;
+        private System.Windows.Forms.Button btMeasure;
+        private System.Windows.Forms.Panel panel3;
+        private System.Windows.Forms.Panel panel5;
+        private System.Windows.Forms.Panel panel4;
+        private System.Windows.Forms.Button btLoadSpidar;
+        private System.Windows.Forms.Button btLoadNuibot;
+        private System.Windows.Forms.Panel pnMagnet;
+        private System.Windows.Forms.TabPage tpHaptic;
+        private System.Windows.Forms.FlowLayoutPanel flHaptic;
+        private System.Windows.Forms.Button btHapticStart;
+        private System.Windows.Forms.Button btReset;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.NumericUpDown udDamp;
+        private System.Windows.Forms.NumericUpDown udAmp;
+        private System.Windows.Forms.Panel panel6;
+        private System.Windows.Forms.Button btLoadSpidarHeat;
+        private System.Windows.Forms.Button btLoadNubotiHeat;
     }
 }
 

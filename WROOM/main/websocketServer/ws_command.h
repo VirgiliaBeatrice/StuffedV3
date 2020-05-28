@@ -11,7 +11,8 @@ enum PacketId {
     PI_JSFILE = 1,
     PI_COMMAND = 2,
     PI_SETTINGS = 3,
-    PI_PINGPONG = 4
+    PI_PINGPONG = 4,
+    PI_OTA = 5
 };
 
 enum PacketSettingsId {
@@ -41,6 +42,12 @@ inline std::string getPacketIdStr(int id){
             return "PI_JSFILE";
         case PacketId::PI_COMMAND:
             return "PI_COMMAND";
+        case PacketId::PI_SETTINGS:
+            return "PI_SETTINGS";
+        case PacketId::PI_PINGPONG:
+            return "PI_PINGPONG";
+        case PacketId::PI_OTA:
+            return "PI_OTA";
         default:
             return "UNRECOGNIZED";
     }
@@ -55,7 +62,7 @@ inline std::string getPacketSettingsIdStr(int id){
             return "PSI_FIRMWARE_INFO";
         case PacketSettingsId::PSI_WRITE_NVS:
             return "PSI_WRITE_NVS";
-        case PacketSettingsId::PSI_READ_NVS:		
+        case PacketSettingsId::PSI_READ_NVS:
             return "PSI_READ_NVS";
         default:
             return "UNRECOGNIZED";

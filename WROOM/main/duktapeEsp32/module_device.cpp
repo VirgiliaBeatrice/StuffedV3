@@ -9,7 +9,7 @@ JSRobotState::JSRobotState(AllBoards& allBoards)  {
     motor.resize(allBoards.GetNTotalMotor(), template_motor_state);
     current.resize(allBoards.GetNTotalCurrent(), 0);
     force.resize(allBoards.GetNTotalForce(), 0);
-    touch.resize(allBoards.GetNTotalTouch(), 0);
+    touch.resize(allBoards.GetNTotalTouch(), -1);
 
     readSemaphore = xSemaphoreCreateMutex();
     writeSemaphore = xSemaphoreCreateMutex();

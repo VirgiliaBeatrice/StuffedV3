@@ -1,15 +1,9 @@
-﻿#define RUNTICK_DEBUG
+﻿//#define RUNTICK_DEBUG
 
 using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using System.Runtime.Serialization;
 using System.Xml;
@@ -29,22 +23,26 @@ namespace Robokey
 
         public MainForm()
         {
+            System.Diagnostics.Debug.Assert(CommandId.CI_NCOMMAND <= CommandId.CI_NCOMMAND_MAX);
             instance = this;
             InitializeComponent();
             udpComm = new UdpComm(this);
             udpComm.OnRobotFound += OnRobotFound;
             udpComm.OnUpdateRobotInfo += OnUpdateRobotInfo;
             udpComm.OnUpdateRobotState += OnUpdateRobotState;
+            udpComm.OnUpdateRobotParam += OnUpdateRobotParam;
             udpComm.OnMessageReceive += SetMessage;
             UpdateMotorPanel();
             udLoopTime_ValueChanged(udLoopTime, null);
             openPose.InitialDirectory = System.IO.Directory.GetCurrentDirectory();
             savePose.InitialDirectory = System.IO.Directory.GetCurrentDirectory();
         }
-
-        ~MainForm()
-        {
-            udpComm.Close();
+        protected override void OnClosed(EventArgs e) {
+            udpComm.owner = null;
+            udpComm.OnUpdateRobotInfo -= OnUpdateRobotInfo;
+            udpComm.OnUpdateRobotState -= OnUpdateRobotState;
+            udpComm.OnUpdateRobotParam -= OnUpdateRobotParam;
+            System.Threading.Thread.Sleep(100);
         }
         public void SetErrorMessage(string s)
         {
@@ -382,7 +380,16 @@ namespace Robokey
             lbRecvCount.Text = udpComm.recvCount.ToString();
             lbSendCount.Text = udpComm.sendQueue.commandCount.ToString();
             Timer tmRun = (Timer)sender;
-            if (ckRun.Checked)
+            
+            // check the length of sendQueue
+            if (udpComm.sendQueue.readAvail > 20)   //  if too much packets wait
+            {
+                //  Clear the send queue
+                udpComm.sendQueue.Clear();
+                System.Diagnostics.Debug.WriteLine("Too much commands (" + udpComm.sendQueue.readAvail + ") to send, clear them.");
+            }
+            //  Interpolate
+            if (ckRun.Checked && poses.Count >= 2)
             {
                 if (ckForce.Checked)
                 {
@@ -455,7 +462,7 @@ namespace Robokey
                      *  It always executed on the robot side and the robot send return packet for every requrest.
                      */  
                     if (bCheckCorInQueue) {
-                        if (udpComm.sendQueue.readAvail == 0)
+                        if (udpComm.sendQueue.nWait == 0)
                         {
                             bCheckCorInQueue = false;
                         }
@@ -479,19 +486,18 @@ namespace Robokey
                 UpdateCurTime(curTime += tmRun.Interval * (int)udStep.Value);
                 udpComm.SendPoseDirect(Interpolate(curTime) + motors.Offset());
 #endif
-                udpComm.SendPackets();
             }
             else if (ckForce.Checked) // !ckRun.Checked && ckForce.Checked
-            {
+            {   //  Force control without motion; Send jacobian.
                 short[][] jacob = GetForceControlJacob();
                 udpComm.SendPoseForceControl(Interpolate(curTime) + motors.Offset(), (ushort)runTimer.Interval, jacob);
-                udpComm.SendPackets();
             }
+            //  Read sensor
             if (ckSense.Checked)
             {
                 udpComm.SendSensor();
-                udpComm.SendPackets();
             }
+            udpComm.SendPackets();
         }
         short[][] GetForceControlJacob() {
             double[] mpos = new double[motors.Count];
@@ -569,7 +575,9 @@ namespace Robokey
         {
             if (btFindRobot.Text.CompareTo("Close") == 0)
             {
-                SaveSetting(udpComm.RobotInfo.macAddress);
+                //SaveSetting(udpComm.RobotInfo.macAddress);
+                udpComm.SendPoseDirect(Interpolate(curTime));
+                udpComm.SendPackets();
                 udpComm.Close();
                 btFindRobot.Text = "Find Robot";
                 laPort.Text = "Closed";
@@ -586,16 +594,18 @@ namespace Robokey
             udpComm.StopFindRobot();
             udpComm.SetAddress(bt.Text);
             laPort.Text = "IP " + udpComm.sendPoint.Address;
-            fpFoundRobot.Controls.Clear();
             btFindRobot.Text = "Close";
+            fpFoundRobot.Controls.Clear();
             Refresh();
-
             udpComm.Open();
             udpComm.SendSetIp();
             udpComm.SendGetBoardInfo();
+            udpComm.SendGetParam(SetParamType.PT_PD);           //  Request to set next type as PT_PD.
+            udpComm.SendGetParam(SetParamType.PT_CURRENT);      //  next = PT_CURRENT and get PT_PD.
+            udpComm.SendGetParam(SetParamType.PT_TORQUE_LIMIT); //  next = PT_TORQUE_LIMIT and get PT_CURRENT.
+            udpComm.SendGetParam(SetParamType.PT_PD);           //  PT_TORQUE_LIMIT will return on this request.
             udpComm.SendPackets();
         }
-
         internal void OnRobotFound(System.Net.IPAddress adr)
         {
             string astr = adr.ToString();
@@ -624,12 +634,12 @@ namespace Robokey
             //            if (!prevMacAddress.SequenceEqual(zeroMacAddress))
             if (motors.Count > 0)
             {
-                SaveSetting(prevMacAddress);
+                //SaveSetting(prevMacAddress);
             }
-            LoadSetting(udpComm.RobotInfo.macAddress);
+            //LoadSetting(udpComm.RobotInfo.macAddress);
             UpdateMotorPanel();
-            SendTorqueLimit();
-            SendPd();
+            //SendTorqueLimit();
+            //SendPd();
             udpComm.SendPoseDirect(Interpolate(curTime));
             udpComm.SendPackets();
         }
@@ -667,6 +677,18 @@ namespace Robokey
             udpComm.SendPackets();
         }
 
+        void OnUpdateRobotParam()
+        {
+            for (int i = 0; i < udpComm.RobotInfo.nMotor; ++i)
+            {
+                motors[i].torque.Minimum = udpComm.torqueMin[i];
+                motors[i].torque.Maximum = udpComm.torqueMax[i];
+                motors[i].pd.K = udpComm.paramK[i];
+                motors[i].pd.B = udpComm.paramB[i];
+                motors[i].pd.A = udpComm.paramA[i];
+            }
+
+        }
         void OnUpdateRobotState()
         {
             tbState.Text = "Motor:";
@@ -700,6 +722,7 @@ namespace Robokey
             }
         }
 
+        //  obsolute
         void SaveSetting(byte[] adr)
         {
             var serializer = new DataContractSerializer(motors.GetType());
@@ -726,7 +749,7 @@ namespace Robokey
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            SaveSetting(udpComm.RobotInfo.macAddress);
+            //SaveSetting(udpComm.RobotInfo.macAddress);
             udpComm.Close();
         }
 
@@ -766,6 +789,7 @@ namespace Robokey
             }
         }
 
+        //  obsolute
         void LoadSetting(byte[] adr)
         {
             string str = System.AppDomain.CurrentDomain.BaseDirectory;

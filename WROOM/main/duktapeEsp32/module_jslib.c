@@ -22,7 +22,7 @@ static duk_ret_t block_pause(duk_context* ctx){
     duk_int_t t = duk_get_int(ctx, -1);
 
     if(t<=0) return 0;
-    JSThread* th=NULL; 
+    JSThread* th=NULL;
     for(int i=0; i<NJSTHREADS; ++i){
         if (jsThreads[i].ctx == ctx){
             th = &jsThreads[i];
@@ -62,6 +62,13 @@ static duk_ret_t printStackRemain(duk_context* ctx){
 static duk_ret_t print(duk_context* ctx){
     const char* str = duk_get_string(ctx, -1);
     ESP_LOGI("PRINT", "%s", str);
+    duk_pop(ctx);
+
+    return 0;
+}
+
+static duk_ret_t printNumber(duk_context* ctx) {
+    ESP_LOGI("PRINT NUMBER", "%lf", (double)duk_get_number(ctx, -1));
     duk_pop(ctx);
 
     return 0;
@@ -162,6 +169,7 @@ duk_ret_t ModuleJSLib(duk_context *ctx){
     ADD_FUNCTION("print_heap",          printHeap,          1);
     ADD_FUNCTION("print_stack_remain",  printStackRemain,   1);
     ADD_FUNCTION("print",               print,              1);
+    ADD_FUNCTION("printNumber",         printNumber,        1);
     ADD_FUNCTION("pushEventQueue",      pushEventQueue,     1);
     return 0;
 }

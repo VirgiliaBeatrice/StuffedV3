@@ -34,10 +34,10 @@ It's written for use with httpd, but doesn't need to be used as such.
 static char tag[] = "espfs";
 
 
-static spi_flash_mmap_handle_t handle;
+static spi_flash_mmap_handle_t handle = NULL;
 static void *espFlashPtr = NULL;
-static size_t flashOffset;
-static size_t flashSize;
+size_t espFsFlashAddress;
+size_t espFsFlashSize;
 
 struct EspFsFile {
 	EspFsHeader *header;
@@ -50,18 +50,21 @@ struct EspFsFile {
 
 
 EspFsInitResult espFsInit(void *flashAddress, size_t size) {
-
-	spi_flash_init();
+	//	spi_flash_init();	document says that this is called at start up and never call from app.
 	if (size % (64*1024) != 0) {
 		ESP_LOGE(tag, "Size is not divisible by 64K.  Supplied was %d", size);
 		return ESPFS_INIT_RESULT_NO_IMAGE;
+	}
+	if (handle){
+		spi_flash_munmap(handle);
+		handle = 0;
 	}
 	esp_err_t rc = spi_flash_mmap((uint32_t) flashAddress, size, SPI_FLASH_MMAP_DATA, (const void **)&espFlashPtr, &handle);
 	if (rc != ESP_OK) {
 		ESP_LOGE(tag, "rc from spi_flash_mmap: %d", rc);
 	}
-	flashOffset = (size_t)flashAddress;
-	flashSize = size;
+	espFsFlashAddress = (size_t)flashAddress;
+	espFsFlashSize = size;
 
 	// check if there is valid header at address
 	EspFsHeader *testHeader = (EspFsHeader *)espFlashPtr;
@@ -88,12 +91,12 @@ int espFsFlags(EspFsFile *fh) {
 
 static bool remap(){
 	if (espFlashPtr == NULL) {
-		if (flashOffset == 0){
+		if (espFsFlashAddress == 0){
 			ESP_LOGE(tag, "Call espFsInit first!");
 			return false;
 		}else{
 			spi_flash_munmap(handle);
-			esp_err_t rc = spi_flash_mmap(flashOffset, flashSize, SPI_FLASH_MMAP_DATA, (const void **)&espFlashPtr, &handle);
+			esp_err_t rc = spi_flash_mmap(espFsFlashAddress, espFsFlashSize, SPI_FLASH_MMAP_DATA, (const void **)&espFlashPtr, &handle);
 			if (rc != ESP_OK) {
 				ESP_LOGE(tag, "rc from spi_flash_mmap: %d", rc);
 				return false;
@@ -208,7 +211,7 @@ size_t espFsAddCleanArea(const char* fname, int len){
 				}else{
 					ESP_LOGD(tag, "Find a file with the same name '%s' at 0x%x before '%s'. Rename it and skip.", fname, (int)flashAddress, faNext+sizeof(EspFsHeader));
 					//	rename the filename of this file into "".
-					const char* flashBase = (const char*)espFlashPtr - flashOffset;
+					const char* flashBase = (const char*)espFlashPtr - espFsFlashAddress;
 					char* name = flashAddress + sizeof(EspFsFile);
 					spi_flash_write(name-flashBase, "", 1);
 					bWriteHere = false;
@@ -216,7 +219,7 @@ size_t espFsAddCleanArea(const char* fname, int len){
 			}
 			if (bWriteHere){
 				//	Write the new file
-				const char* flashBase = (const char*)espFlashPtr - flashOffset;
+				const char* flashBase = (const char*)espFlashPtr - espFsFlashAddress;
 				const char* flashErase = (const char*)((unsigned)flashAddress & 0xFFFFF000);	//	4kB = 0x1000byte align
 				size_t keepLen = flashAddress - flashErase;
 				//ESP_LOGD(tag, "base=0x%x, erase=0x%x, eraseInPh=0x%x,  keep=%d", (int)flashBase, (int)flashErase, flashErase-flashBase, keepLen);

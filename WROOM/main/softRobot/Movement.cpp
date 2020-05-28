@@ -5,6 +5,10 @@ static const char* LOG_TAG = "Movement";
 
 typedef struct PausedMovementHead PausedMovementHead;
 
+////////////////////////////////////////// declaration //////////////////////////////////////////////////////////////
+static uint8_t getMovementId(uint16_t id);
+static uint8_t getKeyframeId(uint16_t id);
+
 ////////////////////////////////////////// data structure for interpolate ///////////////////////////////////////////
 
 static uint16_t movementTime = 0;                // current time in movement tick
@@ -81,6 +85,7 @@ void increaseMovementInfo(uint8_t movementId, uint8_t keyframeId, uint16_t perio
 			keyframeId,
 			period,
 			1,
+			1,
 			false
 		};
 		movementInfos.push_back(node);
@@ -90,11 +95,15 @@ void increaseMovementInfo(uint8_t movementId, uint8_t keyframeId, uint16_t perio
 			it->lastAddedKeyframeId = keyframeId;
 			it->remainKeyframeTime += period;
 			it->keyframeCount += 1;
+
+			// increase movement count
+			if (it->keyframeCount == 1) it->movementCount += 1;
+			else if (keyframeId == 0) it->movementCount += 1;
 		}
 	}
 }
 // decrease remainKeyframeTime & keyframeCount when a keyframe deleted
-void decreaseMovementInfo(uint8_t movementId, uint8_t keyframeId, uint16_t period) {
+void decreaseMovementInfo(uint8_t movementId, uint8_t keyframeId, uint16_t period, MotorKeyframeNode* const node) {
 	vector<MovementInfoNode>::iterator it = getMovementInfo(movementId);
 	if (it == movementInfos.end()) return;	// last keyframe have been deleted from one motor
 	if (it->keyframeCount == 1) {	// last keyframe of the movement
@@ -105,6 +114,18 @@ void decreaseMovementInfo(uint8_t movementId, uint8_t keyframeId, uint16_t perio
 			it->lastDeletedKeyframeId = keyframeId;
 			it->remainKeyframeTime -= period;
 			it->keyframeCount -= 1;
+
+			// decrease movement count
+			MotorKeyframeNode* nextMovementNode = node->next;
+			while (nextMovementNode && getMovementId(nextMovementNode->id) != movementId) {
+				nextMovementNode = nextMovementNode->next;
+			}
+			if (!nextMovementNode) {
+				it->movementCount = 0;
+			}
+			else if (getKeyframeId(nextMovementNode->id) <= keyframeId) {
+				it->movementCount -= 1;
+			}
 		}
 	}
 }
@@ -407,7 +428,7 @@ static void deleteNode(uint8_t motorId, MotorKeyframeNode* const node, bool reca
 	if (head.read == node) head.read = nodeBefore;
 
 	// alter movement info
-	decreaseMovementInfo(getMovementId(node->id), getKeyframeId(node->id), node->end - node->start);
+	decreaseMovementInfo(getMovementId(node->id), getKeyframeId(node->id), node->end - node->start, node);
 
 	// delete node
 	if (head.head == node) {
@@ -815,7 +836,7 @@ void initMovementDS() {
 	initMovementManager();
 }
 
-void onChangeControlMode(CommandId newCommand) {
+void onChangeControlMode(CommandId newCommand, const short* data) {
 	switch (newCommand) {
 		case CI_DIRECT:
 		case CI_CURRENT:
@@ -824,19 +845,21 @@ void onChangeControlMode(CommandId newCommand) {
 			newMovementControlMode = false;
 			break;
 		case CIU_MOVEMENT:
-			newMovementControlMode = true;
+			if((CommandIdMovement)(*(uint8_t*)data) != CI_M_QUERY) newMovementControlMode = true;		// only read data do not change control mode
 			break;
 		default:
 			return;
 	}
 	if (newMovementControlMode != movementControlMode) {
 		if (newMovementControlMode) {						// goto movementControlMode
+			ESP_LOGD(LOG_TAG, ">>> enter movement control mode");
 			resumeInterpolate();
 		}
 		else {												// quit movementControlMode
+			ESP_LOGD(LOG_TAG, "<<< quit movement control mode");
 			pauseInterpolate();
-			movementControlMode = newMovementControlMode;
 		}
+		movementControlMode = newMovementControlMode;
 	}
 }
 
@@ -894,8 +917,10 @@ MotorKeyframeNode* addKeyframe(MovementKeyframe& keyframe) {
 
 		// add default if ref failed in non strict mode
 		bool useFallback = !keyframe.strictMode;
+		bool tmpStrictMode = keyframe.strictMode;
 		keyframe.strictMode = true;
 		useFallback = useFallback && !canAddKeyframe(keyframe);
+		keyframe.strictMode = tmpStrictMode;
 
 		// add node
 		if (keyframe.refId == 0 || useFallback) addNodeDefault(keyframe.motorId[i], node, true);	// add after last node with same movement id
@@ -1122,7 +1147,7 @@ void queryInterpolateState(void* payload) {
 	}
 
 	// time pointer
-	pushPayloadNum<uint16_t>(payload, movementTime * MS_PER_MOVEMENT_TICK);
+	pushPayloadNum<uint16_t>(payload, movementTime);
 }
 
 /////////////////////////////////////////// api for execute and return packet ///////////////////////////////////////////////
@@ -1166,8 +1191,8 @@ void prepareRetAddKeyframe(const void* movement_command_data_rcv, void* movement
 	if (canAddKeyframe(keyframe)) {
 		struct MotorKeyframeNode* node = addKeyframe(keyframe);
 		success = 1;
-		startTime = node->start * MS_PER_MOVEMENT_TICK;
-		endTime = node->end * MS_PER_MOVEMENT_TICK;
+		startTime = node->start;
+		endTime = node->end;
 		printf("add keyframe \n");
 	}
 	pushPayload(movement_command_data_ret, &success, 1);

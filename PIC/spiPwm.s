@@ -1,4 +1,5 @@
 #include <xc.h>
+#include "spiPwmDefs.h"
     .globl    __vector_dispatch_38	#SPI2TX empty
     .section    .vector_38,code,keep
     .set nomips16
@@ -18,11 +19,19 @@ __vector_dispatch_38:
     .global addrSPI2BUF
     .global spiPwmWord1
     .global spiPwmWord2
+#ifdef SPIPWM128
+    .global spiPwmWord3
+    .global spiPwmWord4
+#endif
     .global spiPwmGpBackup
     spiPwmBase:
     addrSPI2BUF:	.space  4
     spiPwmWord1:	.space	4
     spiPwmWord2:	.space	4
+#ifdef SPIPWM128
+    spiPwmWord3:	.space	4
+    spiPwmWord4:	.space	4
+#endif
     spiPwmGpBackup:	.space  4
     spiPwmV0Backup:	.space  4    
     .text
@@ -44,6 +53,10 @@ _spiEmpty:
     # write pwm pattern to SPI2BUF.
     sw $k0, 0($gp)				
     sw $v0, 0($gp)				
+#ifdef SPIPWM128
+    lw $k0, (spiPwmWord3-spiPwmBase)($k1)	# set $k0 to spiPwmWord1
+    lw $v0, (spiPwmWord4-spiPwmBase)($k1)	# set $v0 to spiPwmWord2
+#endif
     sw $k0, 0($gp)
     sw $v0, 0($gp)
     li $v0, 0x40				# clear IFS

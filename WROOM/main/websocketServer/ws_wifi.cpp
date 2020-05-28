@@ -25,13 +25,13 @@ esp_err_t SRWifiEventHandler::staGotIp(system_event_sta_got_ip_t info) {
     LOGI("WiFi got IP as a station: %s", ip4addr_ntoa(&info.ip_info.ip));
     wifi->state = SRWiFi::WIFI_STA_GOT_IP;
     memcpy(&wifi->ipInfo, &info.ip_info, sizeof(wifi->ipInfo));
-    
+
     wifi_config_t wc;
 	esp_wifi_get_config(WIFI_IF_STA, &wc);
     int pos = -1;
     for(int i=0; i<SRWiFi::N_AP_RECORD_MAX; ++i){
         char ssidKey[] = "ssid0";
-        ssidKey[4] = '0' + i; 
+        ssidKey[4] = '0' + i;
         std::string ssid;
         SRWiFi::wifiNvs->get(ssidKey, ssid);
         if (ssid.compare((char*)wc.sta.ssid) == 0){
@@ -47,14 +47,14 @@ esp_err_t SRWifiEventHandler::staGotIp(system_event_sta_got_ip_t info) {
 
         for(int i=0; i<SRWiFi::N_AP_RECORD_MAX; ++i){
             char ssidKey[] = "ssid0";
-            ssidKey[4] = '0' + i; 
+            ssidKey[4] = '0' + i;
             std::string ssid;
             SRWiFi::wifiNvs->get(ssidKey, ssid);
             if (ssid.length() == 0){
                 pos = i;
                 break;
             }
-        }    
+        }
     }
     char ssidKey[] = "ssid0"; ssidKey[4] = '0' + pos;
     char passKey[] = "pass0"; passKey[4] = '0' + pos;
@@ -63,7 +63,7 @@ esp_err_t SRWifiEventHandler::staGotIp(system_event_sta_got_ip_t info) {
     SRWiFi::wifiNvs->set(ssidKey, std::string((char*)wc.sta.ssid));
     SRWiFi::wifiNvs->set(passKey, std::string((char*)wc.sta.password));
     SRWiFi::wifiNvs->commit();
-    
+
     SRWiFi::wifi.scannedAPs.clear();
     SRWiFi::wifi.scannedAPs.shrink_to_fit();
     return ESP_OK;
@@ -78,7 +78,7 @@ esp_err_t SRWifiEventHandler::staDisconnected(system_event_sta_disconnected_t in
         case WIFI_REASON_AUTH_FAIL:
             LOGD("Unable to connect to AP %s, work as AP now", info.ssid);
             break;
-    
+
         default:
             LOGD("Unknown sta disconnected event: %i, work as AP now", info.reason);
             break;

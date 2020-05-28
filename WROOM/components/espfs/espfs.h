@@ -27,6 +27,9 @@ void espFsDumpFiles();
 size_t espFsAddCleanArea(const char* fname, int len);
 bool espFsAddFile(const char* fname, const char* data, int len);
 
+extern size_t espFsFlashAddress;
+extern size_t espFsFlashSize;
+
 
 #ifdef __cplusplus
 }

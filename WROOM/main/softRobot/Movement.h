@@ -51,6 +51,7 @@ struct MovementInfoNode {
 	uint8_t lastAddedKeyframeId;	// index of last added keyframe of this movement
 	uint16_t remainKeyframeTime;	// FIXME not work well after pause movement, DONNOT USE // sum of time of remaining keyframes (in movement tick, NOT ms)
 	uint8_t keyframeCount;	// number of remaining keyframes
+	uint8_t movementCount;	// number of remaining movement instance
 	bool paused;			// true if the movement is currently paused
 };
 
@@ -106,7 +107,7 @@ void printMovementInfo();
 
 void initMovementDS();
 
-void onChangeControlMode(CommandId newCommand);
+void onChangeControlMode(CommandId newCommand, const short* data);
 
 /////////////////////////////////////////// api for command packet ///////////////////////////////////////////////
 

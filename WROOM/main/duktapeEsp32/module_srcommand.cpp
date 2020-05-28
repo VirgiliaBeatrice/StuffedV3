@@ -288,7 +288,7 @@ static void setMotorDirect() {
 
 static void setMotorParam(enum SetParamType type) {
     //  Prepare command
-	UdpCmdPacket* cmd = udpCom.PrepareCommand(CI_SETPARAM, CS_DUKTAPE);
+	UdpCmdPacket* cmd = udpCom.PrepareCommand(CI_SET_PARAM, CS_DUKTAPE);
     if (!cmd) {
         ESP_LOGE(tag, "setMotorParam: Failed to prepare command");
         return;
@@ -501,7 +501,7 @@ static duk_ret_t updateRemoteMotorState(duk_context* ctx) {
         flag = true;
     }
     duk_pop(ctx);
-    // Send CI_SETPARAM
+    // Send CI_SET_PARAM
     if (flag) setMotorParam(PT_PD);
 
     flag = false;
@@ -513,7 +513,7 @@ static duk_ret_t updateRemoteMotorState(duk_context* ctx) {
         flag = true;
     }
     duk_pop(ctx);
-    // Send CI_SETPARAM
+    // Send CI_SET_PARAM
     if(flag) setMotorParam(PT_CURRENT);
 
     flag = false;
@@ -533,7 +533,7 @@ static duk_ret_t updateRemoteMotorState(duk_context* ctx) {
         flag = true;
     }
     duk_pop(ctx);
-    // Send CI_SETPARAM
+    // Send CI_SET_PARAM
     if(flag) setMotorParam(PT_TORQUE_LIMIT);
 
     jsRobotState.write_unlock();
@@ -854,7 +854,7 @@ void onReceiveCISensor(UdpRetPacket& ret) {
     for (int i=0; i<allBoards.GetNTotalTouch(); i++) {
         newTouch.push_back(ret.GetTouch(i));
     }
-    onRcvTouchMessage(jsRobotState.touch, newTouch);
+    if(jsRobotState.touch.size() > 0 && jsRobotState.touch[0] >= 0) onRcvTouchMessage(jsRobotState.touch, newTouch);
 
     jsRobotState.write_lock();
 
@@ -1036,7 +1036,7 @@ void commandMessageHandler(UdpRetPacket& ret) {
 
             break;
         }
-        case CI_SETPARAM: {
+        case CI_SET_PARAM: {
             break;  // NOTE not needed for JS
 
             std::unordered_map<std::string, uint32_t>::const_iterator iter = callback_stash_keys.find("onReceiveCISetparam");

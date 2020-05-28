@@ -9,23 +9,28 @@ enum CommandId {
 	CI_CURRENT,             //6 Set currents as servo targets.
 	CI_INTERPOLATE,         //7 Send new frame for interpolation.
 	CI_FORCE_CONTROL,		//8	Position and force control with interpolation.
-	CI_SETPARAM,            //9 Set parameter.
+	CI_SET_PARAM,           //9 Set parameter.
     CI_RESET_SENSOR,        //10 Reset sensor.
+    CI_GET_PARAM,           //11 Get parameter. Note: There is one call delay on parameter type. 
     CI_NCOMMAND,
-    CIU_TEXT = CI_NCOMMAND,	//11 return text message: cmd, type, length, bytes
-	CIU_SET_IPADDRESS,		//12 Set ip address to return the packet
-    CIU_GET_IPADDRESS,      //13 Get ip address to return the packet
-    CIU_GET_SUBBOARD_INFO,  //14 Get sub board info
-	CIU_MOVEMENT,			//15 movement command
-
-	CIU_NCOMMAND,           //15 number of commands
+    CI_NCOMMAND_MAX=32,     //0 to 31 can be used for UART command, because command ID has 5 bits.
+    CIU_TEXT = CI_NCOMMAND_MAX,	
+                            //32 return text message: cmd, type, length, bytes
+	CIU_SET_IPADDRESS,		//33 Set ip address to return the packet
+    CIU_GET_IPADDRESS,      //34 Get ip address to return the packet
+    CIU_GET_SUBBOARD_INFO,  //35 Get sub board info
+	CIU_MOVEMENT,			//36 movement command
+	CIU_NCOMMAND,           //37 number of commands
 	CIU_NONE = -1           //  no command is in receiving state.
 };
 enum SetParamType{
-	PT_PD,
-    PT_CURRENT,
+	PT_PD,          //  PD param (k, b)
+    PT_CURRENT,     //  PD param (a)
 	PT_TORQUE_LIMIT,
 	PT_BOARD_ID,
+	PT_BAUDRATE,
+    PT_MOTOR_HEAT,
+    PT_MAGNET,      //  ADC values for magnetic field sensor
 };
 enum ResetSensorFlags {
 	RSF_NONE=0,

@@ -53,3 +53,9 @@ void logPrintfI(const char* format, ...){
 	vlogPrintf(LOG_LEVEL_INFO, format, va);
 	va_end(va);
 }
+void logPrintfD(const char* format, ...){
+	va_list va;
+    va_start(va, format);
+	vlogPrintf(LOG_LEVEL_DEBUG, format, va);
+	va_end(va);
+}

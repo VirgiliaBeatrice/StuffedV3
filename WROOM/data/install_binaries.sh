@@ -30,6 +30,6 @@ python $ESPTOOL  \
  0x1000   bootloader.bin \
  0x8000   partitions_singleapp.bin \
  0x10000  esp32-duktape.bin \
- 0x210000 spiffs.img \
- 0x300000 espfs.img
-  
+ 0x200000 spiffs.img \
+ 0x3d0000 espfs.img
+

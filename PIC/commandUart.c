@@ -19,11 +19,10 @@ void commandUartInit(){
 	CLEAR_IFS_UCRXIF;
 
 	//	timer to start TXC after receive command header
-	//	2M baud/10bit = 200kBps= 5us/byte. 3600/24M=150us
-	//PR1 = 3600;		//	150us
-	PR1 = 600;			//	25us
+	//	2M baud/10bit = 200kBps= 5us/byte. Wait 5 bytes = 25us = 600/24MHz
+    //  PR1 = (24MHz / baudrate) * 5 bytes 
+    PR1 = (24*1000*1000 / PNVDATA->baudrate[0]) * 5;    	//PR1 = 600; //	for 2MBPS, 25us
 }
-
 
 uint32_t timeRetCmd, timeTx;
 

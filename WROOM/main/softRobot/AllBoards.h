@@ -21,6 +21,7 @@ class BoardDirect;
 class UdpCmdPacket;
 class UdpRetPacket;
 
+//#define SAVE_ALL_MOTOR_PARAM_ON_WROOM	//	save on each board will be better and this option is obsolute.
 
 //
 class AllBoards{
@@ -35,6 +36,10 @@ public:
 	std::vector<DeviceMap> touchMap;
 	volatile int* motorPos;
 	short* motorOffset;
+#ifdef SAVE_ALL_MOTOR_PARAM_ON_WROOM
+	short* motorKba;
+#endif
+
 	UartForBoards* uart[NUART];
 	BoardDirect* boardDirect;
 	xTaskHandle taskExec;
@@ -59,7 +64,9 @@ public:
 
 	void LoadMotorPos();	//	load motor position afte enumerate boards
 	void SaveMotorPos();	//	save motor position to nvs
+#ifdef SAVE_ALL_MOTOR_PARAM_ON_WROOM
 	void LoadMotorParam();	//	load pd and a parameter for motors on BoardDirect.
     void SaveMotorParam();
+#endif
 };
 extern AllBoards allBoards;

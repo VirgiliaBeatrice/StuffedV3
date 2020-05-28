@@ -37,9 +37,12 @@ var _core = {
         internalJSLib.print_stack_remain(str);
     },
 
-    
+
     print: function(str) {
         internalJSLib.print(str);
+    },
+    printNumber: function(num) {
+        internalJSLib.printNumber(num);
     },
     pushEventQueue: function(func) {
         internalJSLib.pushEventQueue(func);

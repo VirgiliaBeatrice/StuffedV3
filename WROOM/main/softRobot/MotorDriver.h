@@ -54,5 +54,6 @@ public:
     void Init();
     void Pwm(int ch, SDEC duty);
     int GetAdcRaw(int ch);
+private:
 };
 extern MotorDriver motorDriver;

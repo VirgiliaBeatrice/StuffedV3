@@ -72,12 +72,15 @@ void setLogLevel(){
     //  Application
     esp_log_level_set("main", ESP_LOG_INFO);
     //  SoftRobot
-//  esp_log_level_set("sr_main", ESP_LOG_DEBUG);
+//    esp_log_level_set("sr_main", ESP_LOG_DEBUG);
 //  esp_log_level_set("Uart", ESP_LOG_DEBUG);
 //  esp_log_level_set("UdpCom", ESP_LOG_DEBUG);
 //  esp_log_level_set("AllB", ESP_LOG_DEBUG);
-//  esp_log_level_set("MotorDriver", ESP_LOG_DEBUG);
+//  esp_log_level_set("Board", ESP_LOG_DEBUG);
+//    esp_log_level_set("MotorDriver", ESP_LOG_DEBUG);
 //    esp_log_level_set("Movement", ESP_LOG_DEBUG);
+    esp_log_level_set("FileTransferWebSocketHandler", ESP_LOG_DEBUG);
+    esp_log_level_set("espfs", ESP_LOG_DEBUG);
 
     //  Web Server
     esp_log_level_set("Socket", ESP_LOG_INFO);
@@ -90,7 +93,7 @@ void setLogLevel(){
     esp_log_level_set("WiFi", ESP_LOG_INFO);
     esp_log_level_set("WiFiEventHandler", ESP_LOG_INFO);
     esp_log_level_set("ws_fs", ESP_LOG_INFO);
-    esp_log_level_set("ws_wifi", ESP_LOG_DEBUG);
+    //esp_log_level_set("ws_wifi", ESP_LOG_DEBUG);
     esp_log_level_set("ws_task", ESP_LOG_INFO);
     esp_log_level_set("ws_main", ESP_LOG_INFO);
     esp_log_level_set("ws_form", ESP_LOG_INFO);
@@ -153,16 +156,16 @@ extern "C" void app_main(){
     setLogLevel();
 
     //  Start soft robot controller
-    LOGI("Before softRobot_main()");
+    LOGI("Initialize soft robot...");
     softRobot_main();
 
+#if 1
 	//  Start file system (espFs)
-    int flashSize = 1024*1024;
-	espFsInit((void *)0x300000, flashSize);
+    int flashSize = 128 * 1024;
+	espFsInit((void *)0x3d0000, flashSize);
     //LOGI("after espFsInit heap size: %d", esp_get_free_heap_size());
 
     //  Start web server with web socket
-    LOGI("Before ws_main()");
     ws_main();
 
     //LOGI("after ws_main heap size: %d", esp_get_free_heap_size());
@@ -183,7 +186,7 @@ extern "C" void app_main(){
         LOGI("JS is NOT started.");
     }
 
-
+#endif
     //  start monitor
     Monitor::theMonitor.Init();
     Monitor::theMonitor.Run();  //  monitor start. never return;

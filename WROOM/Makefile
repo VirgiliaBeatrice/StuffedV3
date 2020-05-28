@@ -14,7 +14,7 @@ include $(IDF_PATH)/make/project.mk
 ship: images ship_build all
 	echo "+---------------+"
 	echo "| Building ship |"
-	echo "+---------------+"	
+	echo "+---------------+"
 	mkdir -p build/ship
 	cp build/Nuibot.bin build/ship
 	cp build/partitions_singleapp.bin build/ship
@@ -25,7 +25,7 @@ ship: images ship_build all
 	cd build/ship; tar -cvzf ../../esp32-duktape-$(shell date "+%Y-%m-%d").tar.gz .
 	echo "+---------+"
 	echo "| Results |"
-	echo "+---------+"	
+	echo "+---------+"
 	echo "Created output: esp32-duktape-$(shell date "+%Y-%m-%d").tar.gz"
 
 
@@ -48,13 +48,13 @@ images:
 	echo "| Building spiffs.img |"
 	echo "+---------------------+"
 	./bin/mkspiffs -c filesystem -b 4096 -p 256 -s 0x80000 build/spiffs.img
-	
+
 
 
 #
 #  Update duktape-esp32 from local source tree (from ../../duktape-esp32)
 #
-folders = main/duktapeEsp32 components/duktape components/espfs 
+folders = main/duktapeEsp32 components/duktape components/espfs
 duk32_update:
 	echo "Update duktape-esp32 from local source tree (../../duktape-esp32)"
 	rm -rf $(folders)
@@ -110,7 +110,7 @@ duktape_configure:
 #
 flashdata: images
 	echo "Flashing both ESPFS and SPIFFS to ESP32"
-	$(ESPTOOLPY_WRITE_FLASH) --compress 0x300000 build/espfs.img 0x210000 build/spiffs.img
+	$(ESPTOOLPY_WRITE_FLASH) --compress 0x3d0000 build/espfs.img 0x200000 build/spiffs.img
 #
 #  Build all, flash app & flash both ESPFS and SPIFFS to ESP32
 #

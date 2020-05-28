@@ -3,6 +3,7 @@
 #include "control.h"
 #include "boardType.h"
 #include "nvm.h"
+#include "uart.h"
 #include <string.h>
 #ifdef WROOM
 #include "../WROOM/main/SoftRobot/commandWROOM.h"
@@ -19,8 +20,7 @@ int retLen;
 extern SDEC getTouch(int i);
 #else
 static inline SDEC getTouch(int i){
-    assert(0);
-    exit(0);
+    PIC_LOGE("getTouch called");
 }
 #endif
 
@@ -89,34 +89,20 @@ void ecForceControl(){
 }
 void ecSetParam(){
     int i;
+    bool bSaveParam = false;
     switch(command.param.type){
     case PT_PD:
         for(i=0; i<NMOTOR; ++i){
             pdParam.k[i] = command.param.pd.k[i];
             pdParam.b[i] = command.param.pd.b[i];
         }
-        #ifdef PIC
-        {
-            NvData nvData;
-            NVMRead(&nvData);
-            nvData.param.k[i] = pdParam.k[i];
-            nvData.param.b[i] = pdParam.b[i];
-            NVMWrite(&nvData);
-        }
-        #endif
+        bSaveParam = true;
         break;
     case PT_CURRENT:
         for(i=0; i<NMOTOR; ++i){
             pdParam.a[i] = command.param.a[i];
         }
-        #ifdef PIC
-        {
-            NvData nvData;
-            NVMRead(&nvData);
-            nvData.param.a[i] = pdParam.a[i];
-            NVMWrite(&nvData);
-        }
-        #endif
+        bSaveParam = true;
         break;
     case PT_TORQUE_LIMIT:
         for(i=0; i<NMOTOR; ++i){
@@ -134,7 +120,28 @@ void ecSetParam(){
         if (boardId > 7) boardId = 7;
 #endif
         } break;
+    case PT_BAUDRATE:{
+#ifdef PIC
+        NvData nvData;
+        NVMRead(&nvData);
+        memcpy(nvData.baudrate, command.param.baudrate, sizeof(nvData.baudrate));
+        setBaudrate(UCBRG, nvData.baudrate[0]);
+        setBaudrate(UMBRG, nvData.baudrate[1]);
+        NVMWrite(&nvData);
+#endif
+        } break;
+    case PT_MOTOR_HEAT:{
+        for(i=0; i<NMOTOR; ++i){
+            motorHeatRelease[i] = command.param.heat.release[i];
+            motorHeatLimit[i] = command.param.heat.limit[i] * command.param.heat.release[i];
+        }
+        bSaveParam = true;
+        } break;
+    default:
+        PIC_LOGE("ecSetParam got wrong type %d", (int)command.param.type);
+        break;
     }
+    if (bSaveParam) saveMotorParam();
 }
 void ecResetSensor(){
     int i;
@@ -237,46 +244,109 @@ void rcForceControl(){
     controlSetMode(CM_FORCE_CONTROL);
 	returnInterpolateParam();
 }
+enum SetParamType getParamType = PT_PD;
+void ecGetParam(){
+    getParamType = command.param.type;
+}
+void rcGetParam(){
+#ifdef WROOM
+    PIC_LOGD("rcGetParam %d", getParamType);
+#endif
+    int i;
+    retPacket.param.type = getParamType;
+    switch(retPacket.param.type){
+    case PT_PD:
+        for(i=0; i<NMOTOR; ++i){
+            retPacket.param.pd.k[i] = pdParam.k[i];
+            retPacket.param.pd.b[i] = pdParam.b[i];
+#ifdef WROOM
+            PIC_LOGD("rcGetParam k=%d b=%d", pdParam.k[i], pdParam.b[i]);
+#endif
+        }
+        break;
+    case PT_CURRENT:
+        for(i=0; i<NMOTOR; ++i){
+            retPacket.param.a[i] = pdParam.a[i];
+        }
+        break;
+    case PT_TORQUE_LIMIT:
+        for(i=0; i<NMOTOR; ++i){
+            retPacket.param.torque.min[i] = torqueLimit.min[i];
+            retPacket.param.torque.max[i] = torqueLimit.max[i];
+        }
+        break;
+    case PT_BOARD_ID:
+#ifdef PIC
+        retPacket.param.boardId = PNVDATA->boardId;
+#else
+        retPacket.param.boardId = -1;
+#endif
+        break;
+    case PT_BAUDRATE:
+#ifdef PIC
+        getBaudrate(retPacket.param.baudrate[0], UCBRG);
+        getBaudrate(retPacket.param.baudrate[1], UMBRG);
+#else
+        retPacket.param.baudrate[0] = 0;
+        retPacket.param.baudrate[1] = 0;
+#endif
+        break;
+    case PT_MOTOR_HEAT:
+        for(i=0; i<NMOTOR; ++i){
+            if (motorHeatRelease[i] < 1) motorHeatRelease[i] = 1;
+            retPacket.param.heat.release[i] = motorHeatRelease[i];
+            retPacket.param.heat.limit[i] = motorHeatLimit[i] / motorHeatRelease[i];
+        }
+        break;
+    case PT_MAGNET:
+        for(i=0; i<NMOTOR; ++i){
+            retPacket.param.magnet.cos[i] = mcos[i];
+            retPacket.param.magnet.sin[i] = msin[i];
+        }
+        break;
+    default:
+        PIC_LOGE("rcGetParam got wrong type %d, set = %d", (int)getParamType, (int)command.param.type);
+        break;
+    }
+}
 
 ExecCommand* execCommand[CI_NCOMMAND] = {
 	ecNop,
-	ecNop,		//	board info
+	ecNop,          //	board info
 	ecSetCmdLen,
 	ecAll,
-    ecNop,
+    ecNop,          //  sensor
 	ecDirect,
 	ecCurrent,
-    ecInterpolate,	//	interpolate
-	ecForceControl,	//	force control
+    ecInterpolate,
+	ecForceControl,
     ecSetParam,
     ecResetSensor,
+    ecGetParam,
 };
 ExecCommand* returnCommand[CI_NCOMMAND] = {
     rcNop,
 	rcBoardInfo,
-    rcNop,
+    rcNop,          //  set cmdlen
     rcAll,
 	rcSensor,
     rcDirect,
     rcCurrent,
     rcInterpolate,
     rcForceControl,
-	rcNop,	//	setParam
-    rcNop,	//	resetSensor
+	rcNop,          //	set param
+    rcNop,          //	reset sensor
+    rcGetParam, 
 };
 
 #ifdef WROOM
-void ExecCmd(void* cmd, int len){
-	assert(sizeof(command) == len);
-	memcpy(&command, cmd, len);
+void ExecCmd(){
 	execCommand[command.commandId]();
     //logPrintf("MCID:%d\r\n", command.commandId);
 }
 void ExecRet(void* ret, int len){
 	retPacket.header = command.header;
 	returnCommand[retPacket.commandId]();
-	assert(sizeof(retPacket) == len);
-	memcpy(ret, &retPacket, len);
     //logPrintf("MRID:%d\r\n", command.commandId);
 }
 #endif

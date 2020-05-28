@@ -46,6 +46,7 @@ typedef unsigned int uint32_t;
 extern int logLevel;
 enum logLevelList{
 	LOG_LEVEL_NONE,
+	LOG_LEVEL_DEBUG,
 	LOG_LEVEL_INFO,
 	LOG_LEVEL_WARN,
 	LOG_LEVEL_ERROR,	
@@ -53,10 +54,12 @@ enum logLevelList{
 #define PIC_LOGE	logPrintfE
 #define PIC_LOGW	logPrintfW
 #define PIC_LOGI	logPrintfI
+#define PIC_LOGD	logPrintfD
 
 void logPrintfE(const char* fmt,  ...);
 void logPrintfW(const char* fmt,  ...);
 void logPrintfI(const char* fmt,  ...);
+void logPrintfD(const char* fmt,  ...);
 
 #ifdef _WIN32
 #ifdef __cplusplus

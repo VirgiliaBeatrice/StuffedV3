@@ -62,10 +62,10 @@ void UART2_Initialize(void)
     U2STA = 0x0;
 #if defined BOARD1_MOTORDRIVER
     // BaudRate = 3000000; Frequency = 24000000 Hz; BRG 1; 
-    U2BRG = 0x1;
+    setBaudrate(U2BRG, PNVDATA->baudrate[1]); //  for monitor
 #elif defined BOARD2_COMBINATION || defined BOARD3_SEPARATE || defined BOARD4
     // BaudRate = 2000000; Frequency = 24000000 Hz; BRG 2; 
-    U2BRG = 0x2;
+    setBaudrate(U2BRG, PNVDATA->baudrate[0]); //  for command
 #else
 #error
 #endif

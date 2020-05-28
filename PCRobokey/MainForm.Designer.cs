@@ -84,14 +84,14 @@
             this.panel3 = new System.Windows.Forms.Panel();
             this.btSendPD = new System.Windows.Forms.Button();
             this.tabLForce = new System.Windows.Forms.TabPage();
+            this.jeLeft = new Robokey.UCJacobianEditor();
             this.tabRForce = new System.Windows.Forms.TabPage();
+            this.jeRight = new Robokey.UCJacobianEditor();
             this.tabInfo = new System.Windows.Forms.TabControl();
             this.tpState = new System.Windows.Forms.TabPage();
             this.tbState = new System.Windows.Forms.TextBox();
             this.tpMessage = new System.Windows.Forms.TabPage();
             this.tbMessage = new System.Windows.Forms.TextBox();
-            this.jeLeft = new Robokey.UCJacobianEditor();
-            this.jeRight = new Robokey.UCJacobianEditor();
             ((System.ComponentModel.ISupportInitialize)(this.track)).BeginInit();
             this.panelCom.SuspendLayout();
             this.panel2.SuspendLayout();
@@ -776,6 +776,16 @@
             this.tabLForce.Text = "L Force";
             this.tabLForce.UseVisualStyleBackColor = true;
             // 
+            // jeLeft
+            // 
+            this.jeLeft.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.jeLeft.FileName = "forcesL.txt";
+            this.jeLeft.Location = new System.Drawing.Point(0, 0);
+            this.jeLeft.Margin = new System.Windows.Forms.Padding(2);
+            this.jeLeft.Name = "jeLeft";
+            this.jeLeft.Size = new System.Drawing.Size(521, 455);
+            this.jeLeft.TabIndex = 0;
+            // 
             // tabRForce
             // 
             this.tabRForce.Controls.Add(this.jeRight);
@@ -785,6 +795,16 @@
             this.tabRForce.TabIndex = 5;
             this.tabRForce.Text = "R Force";
             this.tabRForce.UseVisualStyleBackColor = true;
+            // 
+            // jeRight
+            // 
+            this.jeRight.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.jeRight.FileName = "forcesR.txt";
+            this.jeRight.Location = new System.Drawing.Point(0, 0);
+            this.jeRight.Margin = new System.Windows.Forms.Padding(2);
+            this.jeRight.Name = "jeRight";
+            this.jeRight.Size = new System.Drawing.Size(521, 455);
+            this.jeRight.TabIndex = 0;
             // 
             // tabInfo
             // 
@@ -849,26 +869,6 @@
             this.tbMessage.Size = new System.Drawing.Size(253, 451);
             this.tbMessage.TabIndex = 0;
             this.tbMessage.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbMessage_KeyPress);
-            // 
-            // jeLeft
-            // 
-            this.jeLeft.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.jeLeft.FileName = "forcesL.txt";
-            this.jeLeft.Location = new System.Drawing.Point(0, 0);
-            this.jeLeft.Margin = new System.Windows.Forms.Padding(2);
-            this.jeLeft.Name = "jeLeft";
-            this.jeLeft.Size = new System.Drawing.Size(521, 455);
-            this.jeLeft.TabIndex = 0;
-            // 
-            // jeRight
-            // 
-            this.jeRight.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.jeRight.FileName = "forcesR.txt";
-            this.jeRight.Location = new System.Drawing.Point(0, 0);
-            this.jeRight.Margin = new System.Windows.Forms.Padding(2);
-            this.jeRight.Name = "jeRight";
-            this.jeRight.Size = new System.Drawing.Size(521, 455);
-            this.jeRight.TabIndex = 0;
             // 
             // MainForm
             // 

@@ -137,6 +137,25 @@ public:
 		esp_read_mac((uint8_t*)(data+6), ESP_MAC_WIFI_STA);	// 6 bytes
 #endif
 	}
+	//	param
+	void SetParamType(short type){
+		data[0] = type;
+	}
+	void SetParamPD(short k, short b, int i){
+		data[1 + i] = k;
+		data[1 + allBoards.GetNTotalMotor() + i] = b;
+	}
+	void SetParamCurrent(short a, int i){
+		data[1 + i] = a;
+	}
+	void SetParamHeat(short limit, short release, int i){
+		data[1 + i] = limit;
+		data[1 + allBoards.GetNTotalMotor() + i] = release;
+	}
+	void SetParamTorque(short minimum, short maximum, int i){
+		data[1 + i] = minimum;
+		data[1 + allBoards.GetNTotalMotor() + i] = maximum;
+	}
 };
 
 #define NUDPCMDPACKETS	10
@@ -165,10 +184,6 @@ public:
 	UdpCmdPackets recvs;
 	unsigned short commandCount;
 	UdpRetPacket send;
-#if 0 
-	void ConnectWifi();
-	void OnWifi(system_event_t* event);
-#endif
 	void Init();
 	void Start();
 

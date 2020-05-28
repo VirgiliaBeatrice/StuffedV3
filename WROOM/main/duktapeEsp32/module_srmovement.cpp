@@ -153,11 +153,28 @@ void onSrMovementReceiveCIUMovement(const void *movementData) {
     }
 }
 
+// export function getMovementCount(movementId: number): number
+static duk_ret_t getMovementCount(duk_context* ctx) {
+    // ... movementId
+    uint8_t movementId = duk_get_int(ctx, -1);
+    duk_pop(ctx);
+
+    // ...
+    uint8_t res = 0;
+    vector<MovementInfoNode>::iterator iter = getMovementInfo(movementId);
+    if (iter != movementInfos.end()) res = iter->movementCount;
+    duk_push_int(ctx, res);
+    // ... res
+
+    return 1;
+}
+
 extern "C" duk_ret_t ModuleSRMovement(duk_context *ctx) {
     waitResponse = false;
 
     ADD_FUNCTION("send", send, 1);
     ADD_FUNCTION("isMovementState", isMovementState, 2);
+    ADD_FUNCTION("getMovementCount", getMovementCount, 1);
 
     return 0;
 }

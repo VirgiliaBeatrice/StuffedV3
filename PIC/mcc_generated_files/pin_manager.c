@@ -87,9 +87,9 @@ void PIN_MANAGER_Initialize(void)
     /****************************************************************************
      * Setting the Weak Pull Up and Weak Pull Down SFR(s)
      ***************************************************************************/
-    CNPDA = 0x0000;
+    CNPDA = 0x0008; //  RA3 = RP4 = SDO2 or LOW
     CNPDB = 0x0000;
-    CNPDC = 0x0000;
+    CNPDC = 0x0020; //  RC9 = RP19 = SDO2 or LOW
     CNPUA = 0x0000;
 #if defined BOARD1_MOTORDRIVER
     CNPUB = 0x4000;	//	RB14

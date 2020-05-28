@@ -1,8 +1,10 @@
 #pragma once
-#include "../../../PIC/env.h"
+#ifndef SPRINGHEAD
+#include "../WroomEnv.h"
+#endif
 
 #ifndef _COMMANDID_CS
-#include "../../../PCRoboKey/CommandId.cs"
+#include "../../../PCRobokey/commandId.cs"
 #define _COMMANDID_CS
 #endif
 
@@ -13,16 +15,13 @@ enum BD0_PARAM {
 	BD0_MODEL_NUMBER = -1,
 	BD0_NTARGET = 12,
 	BD0_NMOTOR = 3,
-#ifndef _WIN32
 	BD0_NCURRENT = 0,
 	BD0_NFORCE = 0,
-#else	// VC++ do not permit array of size 0.
-	BD0_NCURRENT = 1,	
-	BD0_NFORCE = 1,
-#endif
 	BD0_NTOUCH = 5,	//	Touch2 to Touch6
 };
-DEFINE_Packets(BD0)
+DEFINE_Packets(BD0, CT_0, CT_0, CT_N)
 
+#ifndef SPRINGHEAD
 CHOOSE_BoardInfo(BD0);
 #define BOARD_ID 0xFF 
+#endif

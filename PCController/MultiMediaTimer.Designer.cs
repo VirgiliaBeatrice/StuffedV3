@@ -1,4 +1,4 @@
-﻿namespace PCContrller
+﻿namespace PCController
 {
     partial class MMTimer
     {

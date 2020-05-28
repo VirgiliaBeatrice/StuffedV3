@@ -150,14 +150,18 @@ void selectMotor(){
 	printf("Select motor %d. pww is %d\r\n", motorCh, pwm[motorCh]);
 }
 void pwmUp(){
-	if (pwm[motorCh] < 10) pwm[motorCh] ++;
+//	if (pwm[motorCh] < 10) pwm[motorCh] ++;
+	if (pwm[motorCh] < SDEC_ONE) pwm[motorCh] ++;
 	printf("Set pwm %d to motor %d \r\n", pwm[motorCh], motorCh);
-	setPwm(motorCh, pwm[motorCh] * (SDEC_ONE/10));
+//	setPwm(motorCh, pwm[motorCh] * (SDEC_ONE/10));
+	setPwm(motorCh, pwm[motorCh]);
 }
 void pwmDown(){
-	if (pwm[motorCh] > -10) pwm[motorCh] --;
+//	if (pwm[motorCh] > -10) pwm[motorCh] --;
+	if (pwm[motorCh] > -SDEC_ONE) pwm[motorCh] --;
 	printf("Set pwm %d to motor %d \r\n", pwm[motorCh], motorCh);
-	setPwm(motorCh, pwm[motorCh] * (SDEC_ONE/10));
+//	setPwm(motorCh, pwm[motorCh] * (SDEC_ONE/10));
+	setPwm(motorCh, pwm[motorCh]);
 }
 static unsigned short useRx = 0;
 void enableRx(){
@@ -195,6 +199,34 @@ extern unsigned long spiPwmGpBackup;
 void printGp(){
     printf("spiPwmGpBackup = %x.\r\n", spiPwmGpBackup);
 }
+void nvmWriteTest(){
+    NvData data;
+    NVMRead(&data);
+    int i;
+    data.boardId ++;
+    if (data.boardId > 7) data.boardId = 1;
+    printf("Before Write:\r\n");
+    for(i=0; i<sizeof(data); ++i){
+        printf("%02x ", ((unsigned char*)&data)[i]);
+        if (i%16 == 15) printf("\r\n");
+        else if (i%8 == 7) printf(" ");
+    }
+    printf("\r\n");
+    i = NVMWrite(&data);
+    printf("NVMWrite() returns %d\r\n", i);
+}
+void nvmReadTest(){
+    NvData data;
+    int i;
+    NVMRead(&data);
+    printf("NVM Read:\r\n");
+    for(i=0; i<sizeof(data); ++i){
+        printf("%02x ", ((unsigned char*)&data)[i]);
+        if (i%16 == 15) printf("\r\n");
+        else if (i%8 == 7) printf(" ");
+    }
+    printf("\r\n");
+}
 struct MonitorFunc monitors[] = {
 	{'a', "Show all A/D value", showAD, true},
 	{'A', "Show A/D value in motor order", showADInMotorOrder, true},
@@ -209,6 +241,8 @@ struct MonitorFunc monitors[] = {
 	{'P', "Pwm up", pwmUp, false},
 	{'p', "Pwm down", pwmDown, false},
 	{'g', "Print GP", printGp, true},
+	{'w', "Write NVM", nvmWriteTest, false},
+	{'n', "Read NVM", nvmReadTest, false},
 	{'E', "End monitor", disableRx, false},
 };
 void showHelp(){

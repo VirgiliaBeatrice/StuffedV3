@@ -24,6 +24,7 @@ extern "C" {
 #include "ws_command.h"
 #include "ws_task.h"
 #include "ws_fs.h"
+#include "OTA.h"
 
 static char LOG_TAG[] = "ws_ws";
 
@@ -130,7 +131,7 @@ void wsOnMessageWs(WebSocketInputStreambuf* pWebSocketInputStreambuf, WebSocket*
             wsSend((void*)retBuffer, 4);
             free(retBuffer);
             retBuffer = NULL;
-            
+
             break;
         }
 
@@ -154,7 +155,7 @@ void wsOnMessageWs(WebSocketInputStreambuf* pWebSocketInputStreambuf, WebSocket*
                         ESP_LOGI(LOG_TAG, "quit offline mode, deleting jsfile task...");
                         wsDeleteJsfileTask();
                         //heap_trace_dump();
-                        //heap_trace_start(HEAP_TRACE_LEAKS);                        
+                        //heap_trace_start(HEAP_TRACE_LEAKS);
                     }else if(!wsIsJsfileTaskRunning()){ // switch to offline mode
                         ESP_LOGI(LOG_TAG, "before wsCreateJsfileTask heap size: %d", esp_get_free_heap_size());
                         ESP_LOGD(LOG_TAG, "switch to offline mode, start running jsfile task");
@@ -236,7 +237,7 @@ void wsOnMessageWs(WebSocketInputStreambuf* pWebSocketInputStreambuf, WebSocket*
                         }
                         case DT_STR: {
                             const char* val;
-                            //size_t val_len = 
+                            //size_t val_len =
                             popPayloadStr(payload, val);
                             nvs_set_str(nvsHandle, key, val);
                             ESP_LOGD(LOG_TAG, "set nvs str, key: %s, val: %s \n", key, val);
@@ -389,8 +390,20 @@ void wsOnMessageWs(WebSocketInputStreambuf* pWebSocketInputStreambuf, WebSocket*
             wsSend((void*)retBuffer, 2);
             free(retBuffer);
             retBuffer = NULL;
+            break;
         }
-    
+
+        case PacketId::PI_OTA: {
+            short* retBuffer = (short*)malloc(1 * sizeof(short));
+            *retBuffer = PacketId::PI_OTA;
+            wsSend((void*)retBuffer, 2);
+            free(retBuffer);
+            retBuffer = NULL;
+
+            updateFirmware();
+            break;
+        }
+
         default:
             break;
     }
@@ -405,7 +418,7 @@ void wsOnMessageWs(WebSocketInputStreambuf* pWebSocketInputStreambuf, WebSocket*
 void wsOnMessageSr(UdpRetPacket& ret) {
     ESP_LOGD(LOG_TAG, "+ SR Packet");
     printPacketCommand(ret.bytes + 2, ret.length);
-    
+
     if (ret.count == CS_WEBSOCKET) {
         // send packet to browser
         char* buf = (char*)malloc(ret.length+2);
@@ -508,7 +521,7 @@ void printPacket(const void* pBuffer, size_t len) {
             printPacketPingPong();
             break;
         }
-    
+
         default: {
             ESP_LOGD(LOG_TAG, "- PacketId: UNRECOGNIZED (%i)", pBufferI16[0]);
             break;

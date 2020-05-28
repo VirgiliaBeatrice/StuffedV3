@@ -1,12 +1,13 @@
 #include "env.h"
 #include "fixed.h"
 #include "control.h"
+#include "nvm.h"
 #include <assert.h>
 
 
 struct MotorState motorTarget, motorState;
 SDEC currentTarget[NMOTOR]; //  Current target sent from host.
-SDEC targetTorque[NMOTOR];  //  Previous target torque to fit the current to the target.
+SDEC targetPwm[NMOTOR];  //  Previous target torque to fit the current to the target.
 SDEC forceControlJK[NFORCE][NMOTOR];
 struct PdParam pdParam;
 struct TorqueLimit torqueLimit;
@@ -98,13 +99,13 @@ void updateMotorState(){
 			if (velRatio > SDEC_ONE) velRatio = SDEC_ONE;
 			SDEC deltaH = (long)velRatio * ratio / SDEC_ONE;
 			assert(deltaH >= 0);
-			motorHeat[i] += deltaH;				//	heating by motor
-			motorHeat[i] -= motorHeatRelease[i];	//	heat release to out air
+			motorHeat[i] += deltaH;                     //	heating by motor
+			motorHeat[i] -= motorHeatRelease[i];        //	heat release to out air
 			if (motorHeat[i] < 0) motorHeat[i] = 0;
 			torqueLimitHeat.max[i] = torqueLimit.max[i];
 			torqueLimitHeat.min[i] = torqueLimit.min[i];
 			if (motorHeat[i] > (motorHeatLimit[i] >> 2)){
-				SDEC ratio = (motorHeatLimit[i] - motorHeat[i]) * (SDEC_ONE*4/3) / motorHeatLimit[i];
+				SDEC ratio = (motorHeatLimit[i] - motorHeat[i]) / 3 * 4 / (motorHeatLimit[i] / SDEC_ONE);
 				if (ratio < 0) ratio = 0;
 				if (ratio > SDEC_ONE) ratio = SDEC_ONE; 
 				SDEC limit =  (SDEC)((long)(SDEC_ONE - motorHeatRelease[i]) * ratio / SDEC_ONE) + motorHeatRelease[i];
@@ -173,6 +174,7 @@ inline int truncate(int min, int val, int max){
     return val;
 }
 void currentControl(){
+    const SDEC DIFF_ZERO_LIMIT = SDEC_ONE / 16;
 	int i;
     SDEC diff;
     int sign;
@@ -186,21 +188,33 @@ void currentControl(){
         }else{
             sign = 0;
         }
-        diff = (diff * pdParam.a[i]) >> SDEC_BITS;
-        if (currentTarget[i] < 0) diff = -diff;
-        targetTorque[i] += diff;
-        if (sign > 0){
-            if (targetTorque[i] < 0) targetTorque[i] = 0;
-        }else if (sign < 0){
-            if (targetTorque[i] > 0) targetTorque[i] = 0;
-        }else{
-            targetTorque[i] = 0;
+        diff = ((int)diff * pdParam.a[i]) >> SDEC_BITS;
+        if (currentSense[i] < 2 && diff > DIFF_ZERO_LIMIT){
+            targetPwm[i] = 0;
+            diff = DIFF_ZERO_LIMIT;
         }
-		setPwmWithLimit(i, targetTorque[i]);
+        {
+            //  to avoid vibration, give some gap
+            short gap = (currentSense[i]>>4) + 1;
+            if (diff >= gap) diff -= gap;
+            else if (diff <= -gap) diff += gap;
+            else diff = 0;
+        }
+        targetPwm[i] += sign*diff;
+        if (sign > 0){
+            if (targetPwm[i] < 0) targetPwm[i] = 0;
+            else if (targetPwm[i] > SDEC_ONE) targetPwm[i] = SDEC_ONE;
+        }else if (sign < 0){
+            if (targetPwm[i] > 0) targetPwm[i] = 0;
+            else if (targetPwm[i] < -SDEC_ONE) targetPwm[i] = -SDEC_ONE;
+        }else{
+            targetPwm[i] = 0;
+        }
+		setPwmWithLimit(i, targetPwm[i]);
     }
 	for(; i < NMOTOR; ++i){
-        targetTorque[i] = currentTarget[i];
-		setPwmWithLimit(i, targetTorque[i]);        
+        targetPwm[i] = currentTarget[i];
+		setPwmWithLimit(i, targetPwm[i]);        
     }
 }
 
@@ -219,7 +233,7 @@ void targetsAddOrUpdate(SDEC* pos, short period, unsigned char tcw){
 	targetsForceControlAddOrUpdate(pos, NULL, period, tcw);
 }
 //	Update or add interpolate target with force control
-void targetsForceControlAddOrUpdate(SDEC* pos, SDEC JK[NFORCE][NMOTOR] ,short period, unsigned char tcw){
+void targetsForceControlAddOrUpdate(SDEC* pos, SDEC JK[NFORCE][NMOTOR], short period, unsigned char tcw){
 	char delta;					//	tcw - tcr	
 	unsigned char avail, tcr, read;
 	if (period == 0) return;	//	for vacancy check
@@ -390,21 +404,17 @@ void controlLoop(){
 }
 void controlInit(){
 	int i;
-	controlMode = CM_CURRENT;
+	controlMode = nextControlMode = CM_CURRENT;
 	for(i=0; i<NMOTOR; ++i){
 #ifdef USE_HEAT_LIMIT
 		motorVelMax[i] = MOTOR_VEL_MAX;
-		motorHeatLimit[i] = MOTOR_HEAT_LIMIT;
-		motorHeatRelease[i] = MOTOR_HEAT_RELEASE;
 #endif
-		pdParam.k[i] = SDEC_ONE;
-		pdParam.b[i] = (SDEC)(SDEC_ONE * 1.5);
-		pdParam.a[i] = (SDEC)(SDEC_ONE * 0.5);
 		torqueLimit.max[i] = SDEC_ONE;
 		torqueLimit.min[i] = -SDEC_ONE;
         currentTarget[i] = 0;
-        targetTorque[i] = 0;
+        targetPwm[i] = 0;
 	}
+	loadMotorParam();
 #ifdef PIC
 	controlInitPic();
 #endif

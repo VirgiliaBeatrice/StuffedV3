@@ -46,7 +46,10 @@ uint16_t TouchPads::Filtered(int i)
 {
     uint16_t value=0;
 #ifndef _WIN32
-    assert(i<pads.size());
+    if (i >= pads.size()){
+        ESP_LOGE("Touch", "Too large index %d is given to Filtered()", i);
+        return 0;
+    }
     assert(pads[i] < TOUCH_PAD_MAX);
 	esp_err_t e = touch_pad_read_filtered(pads[i], &value);
     if (e == ESP_OK) return value;

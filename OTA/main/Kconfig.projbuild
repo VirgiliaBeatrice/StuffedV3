@@ -1,0 +1,24 @@
+menu "Custom Configuration"
+
+config FIRMWARE_UPGRADE_URL
+    string "firmware upgrade url endpoint"
+    default "https://nuibot.haselab.net:5003/firmware/Nuibot.bin"
+    help
+        URL of server which hosts the firmware
+        image.
+
+config SPIFFS_UPGRADE_URL
+    string "spiffs upgrade url endpoint"
+    default "https://nuibot.haselab.net:5003/firmware/spiffs.img"
+    help
+        URL of server which hosts the firmware
+        image.
+
+config ESPFS_UPGRADE_URL
+    string "spiffs upgrade url endpoint"
+    default "https://nuibot.haselab.net:5003/firmware/espfs.img"
+    help
+        URL of server which hosts the firmware
+        image.
+
+endmenu

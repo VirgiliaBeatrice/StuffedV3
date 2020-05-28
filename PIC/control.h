@@ -4,19 +4,47 @@
 
 #include "env.h"
 #include "fixed.h"
+#ifndef SPRINGHEAD
 #include "command.h"
+#endif
+
 #ifdef __XC32
 #include "mcc_generated_files/mcc.h"
 #endif
 #include <assert.h>
 
-///	heat limit for motor
-#define MOTOR_HEAT_RELEASE	(SDEC)(0.5 * SDEC_ONE)  
-#define MOTOR_HEAT_LIMIT	(long)(20 * 10 * MOTOR_HEAT_RELEASE)	//	20sec * 10Hz
+///	motor contorl paramters
+//@{
+
+///	Heat limit
+#define MOTOR_HEAT_RELEASE	((SDEC)(0.5 * SDEC_ONE))                  //  0.5
+#define MOTOR_HEAT_LIMIT	(20 * 10 * MOTOR_HEAT_RELEASE)            //	20sec * 10Hz
 extern SDEC motorHeatRelease[NMOTOR];		//	heat release from motor / loop (10Hz)
 extern long motorHeatLimit[NMOTOR];			//	limit for heat amount of the motor
 extern long motorHeat[NMOTOR];				//	current heat amount
 extern SDEC lastRatio[NMOTOR];				//	pwm ratio actually applied to motor
+
+///	PD control and current control
+#define PDPARAM_K   SDEC_ONE
+#define PDPARAM_B   ((SDEC)(1.5*SDEC_ONE))
+#define PDPARAM_A   ((SDEC)(0.5*SDEC_ONE))
+struct PdParam{
+    SDEC k[NMOTOR];
+    SDEC b[NMOTOR];
+    SDEC a[NMOTOR];
+};
+extern struct PdParam pdParam;
+///	Torque limit
+struct TorqueLimit{
+    SDEC min[NMOTOR];
+    SDEC max[NMOTOR];
+};
+extern struct TorqueLimit torqueLimit;
+
+void saveMotorParam();
+void loadMotorParam();
+//@}
+
 
 //	device depended functions
 void readADC();								//	read adc and set it to mcos and msin
@@ -42,18 +70,6 @@ extern SDEC currentSense[NMOTOR];
 extern const SDEC mcosOffset[NAXIS];
 extern const SDEC msinOffset[NAXIS];
 
-struct PdParam{
-    SDEC k[NMOTOR];
-    SDEC b[NMOTOR];
-    SDEC a[NMOTOR];
-};
-extern struct PdParam pdParam;
-
-struct TorqueLimit{
-    SDEC min[NMOTOR];
-    SDEC max[NMOTOR];
-};
-extern struct TorqueLimit torqueLimit;
 
 struct Target{
 	short period;	//	period to reach this target.

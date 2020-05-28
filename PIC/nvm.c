@@ -10,9 +10,25 @@ struct NvPageData{
     NvData nvData;
     char nvFill[2048-sizeof(NvData)];
 }__attribute__((__packed__));
+
 const struct NvPageData __attribute__((address(NVPAGE))) theNvPage = {
     {
-        BOARD_ID
+        BOARD_ID,   //  boardID
+        {0,0,0},    //  pad
+        2000000, 3000000,    //  2MBPS for command, 3MBPS for monitor
+        {   //  PDParam
+            {PDPARAM_K, PDPARAM_K, PDPARAM_K, PDPARAM_K},   //k
+            {PDPARAM_B, PDPARAM_B, PDPARAM_B, PDPARAM_B},   //b
+            {PDPARAM_A, PDPARAM_A, PDPARAM_A, PDPARAM_A},   //a
+        },
+        {//  TorqueLimit
+            {-SDEC_ONE, -SDEC_ONE, -SDEC_ONE, -SDEC_ONE},   //  min
+            {SDEC_ONE, SDEC_ONE, SDEC_ONE, SDEC_ONE},       //  max   
+        },
+        {//  MotorHeatLimit       
+            {MOTOR_HEAT_LIMIT/MOTOR_HEAT_RELEASE, MOTOR_HEAT_LIMIT/MOTOR_HEAT_RELEASE, MOTOR_HEAT_LIMIT/MOTOR_HEAT_RELEASE, MOTOR_HEAT_LIMIT/MOTOR_HEAT_RELEASE},   //  SDEC limit
+            {MOTOR_HEAT_RELEASE, MOTOR_HEAT_RELEASE, MOTOR_HEAT_RELEASE, MOTOR_HEAT_RELEASE}    // SDEC release
+        },
     }
 };
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "boardType.h"
+#include "nvm.h"
 
 //	uart choice
 #if defined BOARD1_MOTORDRIVER
@@ -8,11 +9,13 @@
 #define UMSTAbits	U2STAbits
 #define UMTXREG	U2TXREG
 #define UMRXREG	U2RXREG
+#define UMBRG U2BRG
 
 #define UCSTA	U1STA
 #define UCSTAbits	U1STAbits
 #define UCTXREG	U1TXREG
 #define UCRXREG	U1RXREG
+#define UCBRG U1BRG
 #define IEC_UCRXIE	IEC0bits.U1RXIE
 #define IEC_UCTXIE	IEC0bits.U1TXIE
 #define IPC_UCTXIP	IPC6bits.U1TXIP
@@ -32,11 +35,13 @@
 #define UMSTAbits	U1STAbits
 #define UMTXREG	U1TXREG
 #define UMRXREG	U1RXREG
+#define UMBRG U1BRG
 
 #define UCSTA	U2STA
 #define UCSTAbits	U2STAbits
 #define UCTXREG	U2TXREG
 #define UCRXREG	U2RXREG
+#define UCBRG U2BRG
 #define IEC_UCRXIE	IEC1bits.U2RXIE
 #define IEC_UCTXIE	IEC1bits.U2TXIE
 #define IPC_UCTXIP	IPC10bits.U2TXIP
@@ -51,3 +56,6 @@
 #else
 #error
 #endif
+
+#define setBaudrate(r, b)   ((r) = ((6000000-1) / (b) ))
+#define getBaudrate(b, r)   ((b) = (6000000 / ((r)+1)))

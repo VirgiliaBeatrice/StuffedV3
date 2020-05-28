@@ -1,4 +1,7 @@
-﻿using System;
+﻿//#define SHOW_UDP_PACKET
+//#define UDP_NORETRY
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -6,7 +9,6 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 
-//  #define UDP_NORETRY
 
 namespace Robokey
 {
@@ -74,14 +76,19 @@ namespace Robokey
                 robotInfo = info;
                 pose = new Pose(robotInfo.nMotor);
                 velocity = new Pose(robotInfo.nMotor);
+                torqueMin = new short [robotInfo.nMotor];
+                torqueMax = new short[robotInfo.nMotor];
+                heatLimit = new short[robotInfo.nMotor];
+                heatRelease = new short[robotInfo.nMotor];
+                paramK = new short[robotInfo.nMotor];
+                paramB = new short[robotInfo.nMotor];
+                paramA = new short[robotInfo.nMotor];
+
                 current = new short[robotInfo.nCurrent];
                 force = new short[robotInfo.nForce];
                 touch = new short[robotInfo.nTouch];
                 nInterpolateTotal = robotInfo.nTarget;
-                if (OnUpdateRobotInfo != null)
-                {
-                    owner.Invoke(new UpdateRobotInfoHandlerType(OnUpdateRobotInfo), prevMacAddress);
-                }
+                if (owner != null) owner.Invoke(new UpdateRobotInfoHandlerType(OnUpdateRobotInfo), prevMacAddress);
             }
         }
         //  network
@@ -110,6 +117,14 @@ namespace Robokey
             CM_CURRENT,
             CM_FORCE
         };
+        //  robot param
+        public short[] torqueMin = null;
+        public short[] torqueMax = null;
+        public short[] heatLimit = null;
+        public short[] heatRelease = null;
+        public short[] paramK = null;
+        public short[] paramB = null;
+        public short[] paramA = null;
 
         private ControlMode _controlMode = ControlMode.CM_DIRECT;
         public ControlMode controlMode {
@@ -144,6 +159,7 @@ namespace Robokey
             volatile int sent = 0;
             public int writeAvail { get { return (read-1 + bufferLen - write) % bufferLen; } }
             public int readAvail { get { return (write + bufferLen - read) % bufferLen; } }
+            public int nWait { get { return (write + bufferLen - sent) % bufferLen; } }
             public int UpdateRead() {
                 int rv = (sent - read + bufferLen) % bufferLen;
                 read = sent;
@@ -328,11 +344,13 @@ namespace Robokey
             interpolateTickMin = ReadShort(ref cur, buf);
             interpolateTickMax = ReadShort(ref cur, buf);
         }
-        void CallUpdateRobotState() {
-            if (OnUpdateRobotState != null)
-            {
-                owner.Invoke(new UpdateRobotStateHandlerType(OnUpdateRobotState));
-            }
+        void CallUpdateRobotState()
+        {
+            if (owner != null) owner.Invoke(new UpdateRobotStateHandlerType(OnUpdateRobotState));
+        }
+        void CallUpdateRobotParam()
+        {
+            if (owner != null) owner.Invoke(new UpdateRobotStateHandlerType(OnUpdateRobotParam));
         }
         void ReadPeerIPAddress(ref int cur, byte[] buf)
         {
@@ -348,7 +366,7 @@ namespace Robokey
             {
                 try
                 {
-                    owner.Invoke(new MessageRecieveHandlerType(OnMessageReceive), type, msg);
+                    if (owner != null) owner.Invoke(new MessageRecieveHandlerType(OnMessageReceive), type, msg);
                 }catch (Exception ex){
                     System.Diagnostics.Debug.WriteLine("Exception:" + ex.ToString() + " in SetMessage()");
                 }
@@ -372,101 +390,96 @@ namespace Robokey
             {
             UdpComm uc = (UdpComm)(ar.AsyncState);
             byte[] receiveBytes;
-            try
+            if (uc.udp == null) return;
+            receiveBytes = uc.udp.EndReceive(ar, ref uc.recvPoint);
+            if (uc.recvPoint.Port != localBcPort)   //  In broad cast case, sent packet can be received. Must skip.
             {
-                if (uc.udp == null) return;
-                receiveBytes = uc.udp.EndReceive(ar, ref uc.recvPoint);
-                if (uc.recvPoint.Port != localBcPort)   //  In broad cast case, sent packet can be received. Must skip.
+                int cur = 0;
+                ushort length = 0;
+                ushort commandId = 0;
+                while (cur < receiveBytes.Length)
                 {
-                    int cur = 0;
-                    ushort length = 0;
-                    ushort commandId = 0;
-                    while (cur < receiveBytes.Length)
-                    {
-                        int start = cur;
-                        ReadHeader(ref length, ref recvCount, ref commandId, ref cur, receiveBytes);
-                        if (length+2 != receiveBytes.Length) {
-                            if (receiveBytes.Length < (length + 2) + 6) {   //  current packet(length+2) + next header(6)
-                                System.Diagnostics.Debug.WriteLine("Ct:" + recvCount + " Cmd:" + commandId + " received length:" + receiveBytes.Length + "  not match to the length in packet:" + (length+2));
-                            }
-                        }
-
-                        //System.Diagnostics.Debug.WriteLine("Receive cmd=" + commandId + "  count=" + recvCount + "  len="+length);
-                        if (log != null)
-                        {
-                            log.Write("L" + length + " C" + commandId);
-                            for (int i = cur; i < receiveBytes.Length; i += 2)
-                            {
-                                short s = (short)(receiveBytes[i] | (receiveBytes[i + 1] << 8));
-                                log.Write(" " + string.Format("{0,0:X4}", s));
-                            }
-                            log.Write("\r\n");
-                        }
-                        sendQueue.FreeTo(recvCount);
-                        switch ((CommandId)commandId)
-                        {
-                            case CommandId.CI_BOARD_INFO:
-                                ReadBoard(ref cur, receiveBytes);
-                                break;
-                            case CommandId.CI_DIRECT:
-                                ReadPose(ref cur, receiveBytes);
-                                cur += pose.values.Length * 2;
-                                CallUpdateRobotState();
-                                break;
-                            case CommandId.CI_INTERPOLATE:
-                            case CommandId.CI_FORCE_CONTROL:
-                                ReadPose(ref cur, receiveBytes);
-                                ReadTick(ref cur, receiveBytes);
-                                //System.Diagnostics.Debug.WriteLine("Receive CorMax:" + (int)interpolateTargetCountReadMax);
-                                CallUpdateRobotState();
-                                break;
-                            case CommandId.CI_SENSOR:
-                                ReadPose(ref cur, receiveBytes);
-                                ReadCurrent(ref cur, receiveBytes);
-                                ReadForce(ref cur, receiveBytes);
-                                ReadTouch(ref cur, receiveBytes);
-                                CallUpdateRobotState();
-                                break;
-                            case CommandId.CIU_GET_IPADDRESS:
-                                ReadPeerIPAddress(ref cur, receiveBytes);
-                                if (bFindRobot)
-                                {
-                                    lock (sendQueue)
-                                    {
-                                        sendQueue.Clear();
-                                        sendQueue.commandCount = recvCount;
-                                    }
-                                    if (OnRobotFound != null)
-                                    {
-                                        owner.Invoke(new RobotFindHandlerType(OnRobotFound), recvPoint.Address);
-                                    }
-                                }
-                                break;
-                            case CommandId.CIU_TEXT:
-                                ReadText(ref cur, receiveBytes);
-                                break;
-                            default:
-                                if (commandId >= (int)CommandId.CIU_NCOMMAND)
-                                {
-                                    string msg = "Invalid command " + commandId + " received";
-                                    SetMessage(-1, msg);
-                                }
-                                break;
-                        }
-                        if (cur != start + length + 2) {
-                            System.Diagnostics.Debug.WriteLine("Recv lengths not match !");
-                        }
-                        cur = start + length + 2;
+                    int start = cur;
+                    ReadHeader(ref length, ref recvCount, ref commandId, ref cur, receiveBytes);
+                    if (receiveBytes.Length < start + (length + 2)) {   //  current packet(length+2)
+                        System.Diagnostics.Debug.WriteLine("Ct:" + recvCount + " Cmd:" + commandId + " received length:" + receiveBytes.Length + "  not match to the length in packet:" + (length+2));
                     }
-                }
-                if (uc.udp != null)
-                {
-                    uc.udp.BeginReceive(OnReceive, ar.AsyncState);
+#if SHOW_UDP_PACKET
+                    System.Diagnostics.Debug.WriteLine("Receive cmd=" + commandId + "  count=" + recvCount + "  len="+length);
+#endif
+                    if (log != null)
+                    {
+                        log.Write("L" + length + " C" + commandId);
+                        for (int i = cur; i < receiveBytes.Length; i += 2)
+                        {
+                            short s = (short)(receiveBytes[i] | (receiveBytes[i + 1] << 8));
+                            log.Write(" " + string.Format("{0,0:X4}", s));
+                        }
+                        log.Write("\r\n");
+                    }
+                    sendQueue.FreeTo(recvCount);
+                    switch ((CommandId)commandId)
+                    {
+                        case CommandId.CI_BOARD_INFO:
+                            ReadBoard(ref cur, receiveBytes);
+                            break;
+                        case CommandId.CI_DIRECT:
+                            ReadPose(ref cur, receiveBytes);
+                            cur += pose.values.Length * 2;
+                            CallUpdateRobotState();
+                            break;
+                        case CommandId.CI_INTERPOLATE:
+                        case CommandId.CI_FORCE_CONTROL:
+                            ReadPose(ref cur, receiveBytes);
+                            ReadTick(ref cur, receiveBytes);
+                            //System.Diagnostics.Debug.WriteLine("Receive CorMax:" + (int)interpolateTargetCountReadMax);
+                            CallUpdateRobotState();
+                            break;
+                        case CommandId.CI_SENSOR:
+                            ReadPose(ref cur, receiveBytes);
+                            ReadCurrent(ref cur, receiveBytes);
+                            ReadForce(ref cur, receiveBytes);
+                            ReadTouch(ref cur, receiveBytes);
+                            CallUpdateRobotState();
+                            break;
+                        case CommandId.CI_GET_PARAM:
+                            OnReceiveGetParam(ref cur, receiveBytes);
+                            break;
+                        case CommandId.CIU_GET_IPADDRESS:
+                            ReadPeerIPAddress(ref cur, receiveBytes);
+                            if (bFindRobot)
+                            {
+                                lock (sendQueue)
+                                {
+                                    sendQueue.Clear();
+                                    sendQueue.commandCount = recvCount;
+                                }
+                                if (OnRobotFound != null)
+                                {
+                                    if (owner != null) owner.Invoke(new RobotFindHandlerType(OnRobotFound), recvPoint.Address);
+                                }
+                            }
+                            break;
+                        case CommandId.CIU_TEXT:
+                            ReadText(ref cur, receiveBytes);
+                            break;
+                        default:
+                            if (commandId >= (int)CommandId.CIU_NCOMMAND)
+                            {
+                                string msg = "Invalid command " + commandId + " received";
+                                SetMessage(-1, msg);
+                            }
+                            break;
+                    }
+                    if (cur != start + length + 2) {
+                        System.Diagnostics.Debug.WriteLine("Recv lengths not match !");
+                    }
+                    cur = start + length + 2;
                 }
             }
-            catch (Exception)
+            if (uc.udp != null)
             {
-                return;
+                uc.udp.BeginReceive(OnReceive, ar.AsyncState);
             }
         }
         public void Close()
@@ -500,6 +513,7 @@ namespace Robokey
             if (udp == null || sendPoint == null) return;
             sendQueue.UpdateRead();
             if (sendQueue.readAvail <= 0) return;
+            //            byte[] buf = new byte[1400];    //  MTU is less than 1500.
             byte[] buf = new byte[1400];    //  MTU is less than 1500.
             int pos = 0;
             for (int i = 0; i < sendQueue.readAvail; ++i)
@@ -597,11 +611,13 @@ namespace Robokey
             PutCommand(packet, p);
             if (period != 0) interpolateTargetCountWrite++;
         }
+
+        /// send/recv paramters
         public void SendParamCurrent(int nMotor, int[] a)
         {
             byte[] packet = new byte[1000];
             int p = 0;
-            WriteHeader((int)CommandId.CI_SETPARAM, ref p, packet);
+            WriteHeader((int)CommandId.CI_SET_PARAM, ref p, packet);
             WriteShort((int)SetParamType.PT_CURRENT, ref p, packet);
             for (int i = 0; i < nMotor; ++i)
             {
@@ -613,11 +629,51 @@ namespace Robokey
             }
             PutCommand(packet, p);
         }
+        public void SendGetParam(SetParamType pt)
+        {
+            byte[] packet = new byte[8];
+            int p = 0;
+            WriteHeader((int)CommandId.CI_GET_PARAM, ref p, packet);
+            WriteShort((int)pt, ref p, packet);
+            PutCommand(packet, p);
+        }
+        private void OnReceiveGetParam(ref int cur, byte[] receiveBytes){
+            SetParamType pt = (SetParamType)ReadShort(ref cur, receiveBytes);
+            switch (pt)
+            {
+                case SetParamType.PT_CURRENT:
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        paramA[i] = ReadShort(ref cur, receiveBytes);
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        ReadShort(ref cur, receiveBytes);
+                    break;
+                case SetParamType.PT_PD:
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        paramK[i] = ReadShort(ref cur, receiveBytes);
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        paramB[i] = ReadShort(ref cur, receiveBytes);
+                    break;
+                case SetParamType.PT_MOTOR_HEAT:
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        heatLimit[i] = ReadShort(ref cur, receiveBytes);
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        heatRelease[i] = ReadShort(ref cur, receiveBytes);
+                    break;
+                case SetParamType.PT_TORQUE_LIMIT:
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        torqueMin[i] = ReadShort(ref cur, receiveBytes);
+                    for (int i = 0; i < robotInfo.nMotor; ++i)
+                        torqueMax[i] = ReadShort(ref cur, receiveBytes);
+                    break;
+            }
+            CallUpdateRobotParam();
+        }
+
         public void SendParamPd(int nMotor, int[] k, int[] b)
         {
             byte[] packet = new byte[1000];
             int p = 0;
-            WriteHeader((int)CommandId.CI_SETPARAM, ref p, packet);
+            WriteHeader((int)CommandId.CI_SET_PARAM, ref p, packet);
             WriteShort((int)SetParamType.PT_PD, ref p, packet);
             for (int i = 0; i < nMotor; ++i)
             {
@@ -633,7 +689,7 @@ namespace Robokey
         {
             byte[] packet = new byte[1000];
             int p = 0;
-            WriteHeader((int)CommandId.CI_SETPARAM, ref p, packet);
+            WriteHeader((int)CommandId.CI_SET_PARAM, ref p, packet);
             WriteShort((int)SetParamType.PT_TORQUE_LIMIT, ref p, packet);
             for (int i = 0; i < nMotor; ++i)
             {
@@ -649,7 +705,7 @@ namespace Robokey
         {
             byte[] packet = new byte[1000];
             int p = 0;
-            WriteHeader((int)CommandId.CI_SETPARAM, ref p, packet);
+            WriteHeader((int)CommandId.CI_SET_PARAM, ref p, packet);
             WriteShort((int)SetParamType.PT_TORQUE_LIMIT, ref p, packet);
             //  padding
             int tmp = p;
@@ -735,5 +791,6 @@ namespace Robokey
         public event MessageRecieveHandlerType OnMessageReceive = null;
         public delegate void UpdateRobotStateHandlerType();
         public event UpdateRobotStateHandlerType OnUpdateRobotState = null;
+        public event UpdateRobotStateHandlerType OnUpdateRobotParam = null;
     }
 }

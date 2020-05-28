@@ -1,20 +1,36 @@
 #pragma once
 #include "BoardBase.h"
-#include "UdpCom.h"
 #include "esp_log.h"
+#ifndef SPRINGHEAD
+#include "UdpCom.h"
+#endif
+
+#ifdef SPRINGHEAD
+
+namespace Spr {
+	void DRUARTMotorDriverImplUpdateMotorPos(DRUARTMotorDriverImpl* owner, short mpos, int index);
+}
+#define updateMotorPos(mpos, index)		Spr::DRUARTMotorDriverImplUpdateMotorPos(owner, mpos, index)
+#define MOTOROFFSET(i)	0
+
+#else
 
 inline void updateMotorPos(SDEC mpos, char index){
 	SDEC diff = mpos - (SDEC)(allBoards.motorPos[(int)index]);
 	allBoards.motorPos[(int)index] += diff;
 }
 #define MOTOROFFSET(i)	allBoards.motorOffset[(int)motorMap[i]]
+
+#endif
+
+
 template <class CMD, class RET>
 class Board: public BoardBase{
 public:
 	typedef CMD CmdPacket;
 	typedef RET RetPacket;
 	CmdPacket cmd;						//	UART command packet for this board. 
-	volatile RET ret;				//	UART return packet for this board.
+	volatile RetPacket ret;				//	UART return packet for this board.
 	Board(int bid, const unsigned char * c, const unsigned char * r) {
 		cmd.boardId = bid;
 		cmdPacketLen = c;
@@ -96,7 +112,7 @@ public:
 				cmd.forceControl.targetCountWrite = packet.GetTargetCountWrite();
 			}
 			break;
-		case CI_SETPARAM:
+		case CI_SET_PARAM:
 			cmd.param.type = packet.GetParamType();
 			if (cmd.param.type == PT_PD){
 				for (int i = 0; i < GetNMotor(); ++i) {
@@ -119,13 +135,16 @@ public:
 			break;
 		case CI_SENSOR:
 			break;	//	nothing todo
+		case CI_GET_PARAM:
+			cmd.param.type = packet.GetParamType();
+			break;
 		default:
 			ESP_LOGE(Tag(), "WriteCmd(): Command Id error %d",  command);
 			assert(0);
 		}
 	}
-	void ReadRet(unsigned short cmd, BoardRetBase& packet) {
-		switch (cmd) {
+	void ReadRet(unsigned short cmdId, BoardRetBase& packet) {
+		switch (cmdId) {
 		case CI_ALL:
 			for (int i = 0; i < GetNMotor(); ++i) {
 				updateMotorPos(ret.all.pos[i] - MOTOROFFSET(i), motorMap[i]);
@@ -182,8 +201,40 @@ public:
 				packet.SetTouch(ret.sensor.touch[i], touchMap[i]);
 			}
 			break;
+		case CI_GET_PARAM:
+			packet.SetParamType(ret.param.type);
+			switch(ret.param.type){
+				case PT_PD:
+					for (int i = 0; i < GetNMotor(); ++i) {
+						packet.SetParamPD(ret.param.pd.k[i], ret.param.pd.b[i], motorMap[i]);
+						//ESP_LOGI(Tag(), "SetParamPD(%d, %d, at%d)", ret.param.pd.k[i], ret.param.pd.b[i], motorMap[i]);
+					}
+					break;
+				case PT_CURRENT:
+					for (int i = 0; i < GetNMotor(); ++i) {
+						packet.SetParamCurrent(ret.param.a[i], motorMap[i]);
+					}
+					break;
+				case PT_TORQUE_LIMIT:
+					for (int i = 0; i < GetNMotor(); ++i) {
+						packet.SetParamTorque(ret.param.torque.min[i], ret.param.torque.max[i], motorMap[i]);
+					}
+					break;
+				case PT_MOTOR_HEAT:
+					for (int i = 0; i < GetNMotor(); ++i) {
+						packet.SetParamHeat(ret.param.heat.limit[i], ret.param.heat.release[i], motorMap[i]);
+					}
+					break;
+				default:
+					ESP_LOGE(Tag(), "ReadRet(): CI_GET_PARAM type error %d", ret.param.type);
+					assert(0);
+					break;
+			}
+			break;
+		case CI_BOARD_INFO:
+			break;
 		default:
-			ESP_LOGE(Tag(), "ReadRet(): Command Id error %d", cmd);
+			ESP_LOGE(Tag(), "ReadRet(): Command Id error %d", cmdId);
 			assert(0);
 		}
 	}
