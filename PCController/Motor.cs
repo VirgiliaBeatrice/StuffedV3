@@ -261,8 +261,8 @@ namespace PCController
         }
         public void SetSpidarDefault()
         {
-            K = 10;
-            B = 30;
+            K = 100;
+            B = 50;
             A = 1024 / 2;
         }
         private void Init(){
