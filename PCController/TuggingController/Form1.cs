@@ -15,6 +15,9 @@ using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using NLog;
 using LA = MathNet.Numerics.LinearAlgebra;
+using Reparameterization;
+using Xamarin.Forms.Internals;
+using System.Configuration.Internal;
 
 namespace TuggingController {
     public partial class Form1 : Form {
@@ -346,9 +349,9 @@ namespace TuggingController {
 
                     //target!.isSelected = !target!.isSelected;
                     if (target != null) {
-                        bool prevState = target.isSelected;
+                        bool prevState = target.IsSelected;
                         this.Chart.Entries.ResetSelectedStates();
-                        target.isSelected = !prevState;
+                        target.IsSelected = !prevState;
                     }
                     //if (this.chart.isInZone(e.Location, 5, out Entry target)) {
                     //    target.isSelected = !target.isSelected;
@@ -411,18 +414,28 @@ namespace TuggingController {
                     this.Chart.TestPoint.UpdateFromGlobalLocation(targetLoc);
                     //Logger.Debug("{0} {1}", targetLoc.X, targetLoc.Y);
 
-                    //if (this.Mapping.Configurations.Count == 3) {
-                    //    var result = this.Mapping.GetInterpolatedConfiguration(this.Chart.TestPoint.Value);
-                    //    //Logger.Debug("Interpolated Config: {0}", result.ToSKPoint());
-                    //    this.ConfigurationCanvas.ControlPoints = result.ToSKPoint();
-                    //}
-
-                    Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_v1(targetLoc, PointType.Global) != null);
+                    //Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_v1(targetLoc, PointType.Global) != null);
+                    Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_Re(this.Chart.TestPoint.Value) != null);
 
                     if (collection.Length != 0) {
-                        var result = collection[0].Simplex.GetInterpolatedConfiguration_v1(this.Chart.TestPoint.Value);
-                        if (result != null)
-                            this.ConfigurationCanvas.ControlPoints = result.ToSKPoint();
+                        //var result = collection[0].Simplex.GetInterpolatedConfiguration_v1(this.Chart.TestPoint.Value);
+                        //if (result != null)
+                        //    this.ConfigurationCanvas.ControlPoints = result.ToSKPoint();
+
+                        var result = collection[0].Simplex_Re.GetInterpolatedConfigurationVector(Helper.ToVector(this.Chart.TestPoint.Value));
+
+                        if (result != null) {
+                            var rowArray = result.Vector.ToArray();
+                            var newControlPoints = new SKPoint[] {
+                                new SKPoint(rowArray[0], rowArray[1]),
+                                new SKPoint(rowArray[0 + 2], rowArray[1 + 2]),
+                                new SKPoint(rowArray[0 + 4], rowArray[1 + 4]),
+                                new SKPoint(rowArray[0 + 6], rowArray[1 + 6]),
+                            };
+
+                            this.ConfigurationCanvas.ControlPoints = newControlPoints;
+                        }
+
                         //Logger.Debug("{0} {1} {2} {3}", result.C1, result.C2, result.C3, result.C4);
                     }
                     //Logger.Debug("Dragging.");
@@ -501,22 +514,35 @@ namespace TuggingController {
         }
 
         private bool CreatePair() {
-            //var selectedEntry = this.chart.Entries.Where(e => e.isSelected).ToArray()[0];
+            
+            Entry[] targets = this.Chart.Entries.Where(e => e.IsSelected).ToArray();
 
-            Entry[] target = this.Chart.Entries.Where(e => e.isSelected).ToArray();
-
-            if (target.Length != 0) {
-                Entry selectedEntry = target[0];
+            if (targets.Length != 0) {
+                var selectedEntry = targets[0];
                 var currentConfiguration = this.ConfigurationCanvas.ControlPoints;
 
-                //this.Mapping.CreatePair(selectedEntry.Value, currentConfiguration);
                 // Attention!: Array should be cloned in case of assigning a reference.
                 selectedEntry.PairedConfig = (SKPoint[]) currentConfiguration.Clone();
-                this.Chart.Triangles.ForEach(tri => tri.UpdateSimplexState());
 
-                selectedEntry.isPaired = true;
-                selectedEntry.isSelected = false;
+                // [New Feature]: Testing
+                var currentConfigurationVector = ToConfigurationVector(currentConfiguration);
+                //selectedEntry.Pair = 
+                //this.Chart.Triangles
+                foreach(var tri in this.Chart.Triangles) {
+                    var idx = tri.Vertices.GetEntryList().IndexOf(selectedEntry);
 
+                    if (idx != -1) {
+                        tri.Simplex_Re[idx].Config = currentConfigurationVector;
+                        selectedEntry.Pair = tri.Simplex_Re[idx];
+                    }
+                }
+
+                //this.Chart.Triangles.ForEach(tri => tri.UpdateSimplexState());
+
+                selectedEntry.IsPaired = true;
+                selectedEntry.IsSelected = false;
+
+                // Refresh canvas
                 TuggingController.Invalidate();
 
                 return true;
@@ -524,6 +550,17 @@ namespace TuggingController {
             else {
                 return false;
             }
+        }
+
+        private ConfigurationVector ToConfigurationVector(SKPoint[] points) {
+            var tmp = points.Select(p => new float[] { p.X, p.Y });
+            var vectorElements = new List<float>();
+
+            foreach(var element in tmp) {
+                vectorElements.AddRange(element);
+            }
+
+            return new ConfigurationVector(vectorElements);
         }
 
         private void button2_Click(object sender, EventArgs e) {
@@ -534,15 +571,6 @@ namespace TuggingController {
 
         private void button1_Click(object sender, EventArgs ev) {
             this.CreatePair();
-            //var selectedEntry = this.chart.Entries.Where(e => e.isSelected).ToArray()[0];
-            //var currentConfiguration = this.configuration.ControlPoints;
-
-            //this.mapping.CreatePair(selectedEntry.Value, currentConfiguration);
-
-            //selectedEntry.isPaired = true;
-            //selectedEntry.isSelected = false;
-
-            //TuggingController.Invalidate();
         }
 
         private void button3_Click(object sender, EventArgs e) {
@@ -555,8 +583,8 @@ namespace TuggingController {
 
         public void UpdateScale(SKMatrix scale) => this.ForEach(e => e.UpdateScale(scale));
         public void UpdateTransform(SKMatrix transform) => this.ForEach(e => e.UpdateTransform(transform));
-        public void ResetHoverStates() => this.ForEach(e => e.isHovered = false);
-        public void ResetSelectedStates() => this.ForEach(e => e.isSelected = false);
+        public void ResetHoverStates() => this.ForEach(e => e.IsHovered = false);
+        public void ResetSelectedStates() => this.ForEach(e => e.IsSelected = false);
 
 
         public (Entry entry, float minValue) MinElement(Func<Entry, float> selector) {
@@ -848,9 +876,7 @@ namespace TuggingController {
         public PointChart() : base() {
 
         }
-        //public PointChart(Entry[] entries) {
-        //    this.Entries = new List<Entry>(entries);
-        //}
+
         private double DegreeToRadian(double degree) {
             return Math.PI * degree / 180.0;
         }
@@ -863,11 +889,6 @@ namespace TuggingController {
             };
             this.Triangulate(new List<int[]>() { new int[] { 0, 1, 2 } });
         }
-
-        //public void IsInTriangle(SKPoint target) {
-        //    var targetValue = this.Scale.MapPoint(this.Transform.MapPoint(target));
-        //    this.Triangles.ForEach(t => t.IsInside(targetValue));
-        //}
 
         public Triangle IsInTriangleArea(SKPoint pointerLocation) {
             //SKPoint value = this.Scale.MapPoint(this.Transform.MapPoint(SkiaHelper.ToSKPoint(pointerLocation)));
@@ -905,7 +926,7 @@ namespace TuggingController {
             Entry ret = candidate.minValue <= radius ? candidate.entry : null;
 
             if (ret != null) {
-                ret.isHovered = true;
+                ret.IsHovered = true;
             }
             return ret;
 
@@ -1272,15 +1293,18 @@ namespace TuggingController {
     }
 
     [Serializable]
-    public class TriVertexCollection : Dictionary<string, TriVertex> {
+    public class TriVertexCollection : List<TriVertex> {
         public TriVertexCollection(Entry[] entries, int[] indexes) : base() {
-            this.Add("A", new TriVertex { Entry = entries[0], idx = indexes[0] });
-            this.Add("B", new TriVertex { Entry = entries[1], idx = indexes[1] });
-            this.Add("C", new TriVertex { Entry = entries[2], idx = indexes[2] });
+            this.Add(new TriVertex { Entry = entries[0], idx = indexes[0] });
+            this.Add(new TriVertex { Entry = entries[1], idx = indexes[1] });
+            this.Add(new TriVertex { Entry = entries[2], idx = indexes[2] });
         }
-        protected TriVertexCollection(SerializationInfo info, StreamingContext context) : base(info, context) { }
     
-        public SKPoint[] ToGlobalLocations() => this.Values.Select(v => v.Entry.GlobalLocation).ToArray();
+        public SKPoint[] ToGlobalLocations() => this.Select(v => v.Entry.GlobalLocation).ToArray();
+
+        public SKPoint[] ToValues() => this.Select(v => v.Entry.Value).ToArray();
+
+        public List<Entry> GetEntryList() => this.Select(v => v.Entry).ToList();
         //public TriVertex this[string idx] {
         //    get {
         //        return this.Vertices[idx];
@@ -1290,13 +1314,13 @@ namespace TuggingController {
         //    }
         //}
         public TriVertex? Any(int targetIdx) {
-            var ret = this.Values.Where(value => value.idx == targetIdx).ToArray();
+            var ret = this.Where(value => value.idx == targetIdx).ToArray();
 
             return ret.Length > 0 ? ret[0] : (TriVertex?)null;
         }
 
         public void ForEach(Action<Entry> action) {
-            Entry[] all = this.Values.Select(triVertex => triVertex.Entry).ToArray();
+            Entry[] all = this.Select(triVertex => triVertex.Entry).ToArray();
             Array.ForEach(all, action);
         }
 
@@ -1584,26 +1608,29 @@ namespace TuggingController {
         }
 
         // Vertex [Value]
-        //public Entry[] Vertices { get; set; }
         public TriVertexCollection Vertices { get; set; }
+        public Simplex Simplex_Re { get; set; }
         public SimplicialComplex Simplex { get; set; } = new SimplicialComplex();
         public int[] VertexIndexes { get; set; }
-        //public SKMatrix Scale { get; set; }
 
         public Triangle(Entry[] vertices) : this(vertices, new int[]{ 0, 1, 2 }, new SKPoint(0, 0), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
         public Triangle(Entry[] vertices, int[] vertexIndexes, SKMatrix scale, SKMatrix transform) : this(vertices, vertexIndexes, new SKPoint(0, 0), scale, transform) {
             this.UpdateSimplexState();
         }
-        //public Triangle(SKPoint[] vertices, SKPoint location, SKMatrix scale, SKMatrix transform): base(location, transform) {
-        //    this.Scale = scale;
-        //    this.Vertices = vertices;
-        //}
 
         public Triangle(Entry[] vertices, int[] vertexIndexes, SKPoint location, SKMatrix scale, SKMatrix transform) : base(location, transform, scale) {
             //this.Vertices = vertices;
             this.Vertices = new TriVertexCollection(vertices, vertexIndexes);
             this.VertexIndexes = vertexIndexes;
+
+            // [New Feature]: Testing
+            var states = this.Vertices.ToValues();
+            this.Simplex_Re = new Simplex(
+                Helper.ToVectorArray(states).Select(
+                    v => new StateVector(v)
+                ).ToArray()
+            );
         }
 
         public Triangle IsVertex(int targetIdx) => this.Vertices.Any(targetIdx).HasValue ? this : null;
@@ -1611,8 +1638,9 @@ namespace TuggingController {
         public Triangle IsVertex(int i1, int i2) => this.Vertices.Any(i1).HasValue & this.Vertices.Any(i2).HasValue ? this : null;
 
         public Triangle IsInsideFromGlobalLocation(SKPoint gTarget) => this.IsInside_v1(gTarget, PointType.Global);
-        public Triangle IsInsideFromLocation(SKPoint lTarget) => this.IsInside_v1(lTarget, PointType.Local);
-        public Triangle IsInsideFromValue(SKPoint vTarget) => this.IsInside_v1(vTarget, PointType.Value);
+        //public Triangle IsInsideFromLocation(SKPoint lTarget) => this.IsInside_v1(lTarget, PointType.Local);
+        //public Triangle IsInsideFromValue(SKPoint vTarget) => this.IsInside_v1(vTarget, PointType.Value);
+
         public Triangle IsInside_v1(SKPoint target, PointType type) {
             string propertyName = "";
 
@@ -1631,29 +1659,39 @@ namespace TuggingController {
             var barycentricCoordinate = SimplicialComplex.GetBarycentricCoordinate(
                     target,
                     new SimplicialComplex.Simplex3I {
-                        V1 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.Vertices["A"].Entry),
-                        V2 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.Vertices["B"].Entry),
-                        V3 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.Vertices["C"].Entry)
+                        V1 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.Vertices[0].Entry),
+                        V2 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.Vertices[1].Entry),
+                        V3 = (SKPoint)typeof(Entry).GetProperty(propertyName).GetValue(this.Vertices[2].Entry)
                     });
             this.IsHovered = barycentricCoordinate.IsInside;
 
             return barycentricCoordinate.IsInside ? this : null;
         }
 
+        public Triangle IsInside_Re(SKPoint target) {
+            this.IsHovered = this.Simplex_Re.IsInside(Helper.ToVector(target));
 
-        public void UpdateSimplexState() {
+            return this.IsHovered ? this : null;
+        }
+
+        //public void UpdateSimplexState() {
             //this.Simplex.CreatePair_v1(entry);
-            if (this.Vertices["A"].Entry.PairedConfig != null) {
-                this.Simplex.CreatePair_v1(this.Vertices["A"].Entry, "A");
-            }
-            if (this.Vertices["B"].Entry.PairedConfig != null) {
-                this.Simplex.CreatePair_v1(this.Vertices["B"].Entry, "B");
-            }
-            if (this.Vertices["C"].Entry.PairedConfig != null) {
-                this.Simplex.CreatePair_v1(this.Vertices["C"].Entry, "C");
-            }
+            //if (this.Vertices["A"].Entry.PairedConfig != null) {
+            //    this.Simplex.CreatePair_v1(this.Vertices["A"].Entry, "A");
+            //}
+            //if (this.Vertices["B"].Entry.PairedConfig != null) {
+            //    this.Simplex.CreatePair_v1(this.Vertices["B"].Entry, "B");
+            //}
+            //if (this.Vertices["C"].Entry.PairedConfig != null) {
+            //    this.Simplex.CreatePair_v1(this.Vertices["C"].Entry, "C");
+            //}
 
             //this.Vertices.ForEach(e => { if (e.PairedConfig != null) { this.Simplex.CreatePair_v1(e)}; });
+        //}
+
+        public void UpdateSimplexState() {
+            this.Simplex_Re.Clear();
+            this.Vertices.GetEntryList().ForEach(e => this.Simplex_Re.Add(e.Pair));
         }
 
         public override void Draw(SKCanvas canvas) {
@@ -1780,10 +1818,11 @@ namespace TuggingController {
     }
 
     public class Entry : ScalableCanvasObject {
-        public bool isSelected { get; set; } = false;
-        public bool isHovered { get; set; } = false;
-        public bool isPaired { get; set; } = false;
-        public SKPoint[] PairedConfig;
+        public bool IsSelected { get; set; } = false;
+        public bool IsHovered { get; set; } = false;
+        public bool IsPaired { get; set; } = false;
+        public SKPoint[] PairedConfig { get; set; }
+        public Pair Pair { get; set; }
         public SKPoint Value { get; set; }
         public override SKPoint Location {
             get {
@@ -1808,7 +1847,8 @@ namespace TuggingController {
         public Entry(SKPoint value, SKMatrix scale, SKMatrix transform) : base(transform) {
             this.Value = value;
             this.Scale = scale;
-            //this.Value = scale.MapPoint(location);
+            this.Pair = new Pair(new StateVector(Helper.ToVector(this.Value)));
+
             Logger.Debug("Create new entry - [Value]: {0}", this.Value);
             Logger.Debug("Create new entry - [Location]: {0}", this.Location);
         }
@@ -1834,7 +1874,7 @@ namespace TuggingController {
         public override void Draw(SKCanvas canvas) {
             float radius = 5;
 
-            if (this.isHovered | this.isSelected) {
+            if (this.IsHovered | this.IsSelected) {
                 radius += 2;
                 //Hover.DrawHover(canvas, this.GlobalLocation);
             }
@@ -1856,10 +1896,10 @@ namespace TuggingController {
                 StrokeWidth = 2
             };
 
-            if (this.isSelected) {
+            if (this.IsSelected) {
                 fillPaint.Color = SKColors.MediumVioletRed;
             }
-            else if (!this.isSelected & this.isPaired) {
+            else if (!this.IsSelected & this.IsPaired) {
                 fillPaint.Color = SKColors.YellowGreen;
             }
             // Draw entry shape
@@ -1873,7 +1913,7 @@ namespace TuggingController {
         }
 
         public void DrawHover(SKCanvas canvas) {
-            if (this.isHovered) {
+            if (this.IsHovered) {
                 Hover.DrawHover(canvas, this.Value, this.Location, this.Transform);
             }
         }
@@ -2320,6 +2360,7 @@ namespace TuggingController {
         public static SKPoint ToSKPoint(Point p) {
             return new SKPoint { X = p.X, Y = p.Y };
         }
+
         public static SKPoint GenerateZeroPoint() {
             return new SKPoint(0, 0);
         }

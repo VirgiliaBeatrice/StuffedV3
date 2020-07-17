@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Diagnostics;
+﻿using MathNet.Numerics.LinearAlgebra;
 using NLog;
 using SkiaSharp;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
+
 
 namespace TuggingController {
 
@@ -29,11 +28,11 @@ namespace TuggingController {
                 }
             }
         }
-        public struct BarycentricCoordinateI {
-            public float U;
-            public float V;
-            public float W;
-        }
+        //public struct BarycentricCoordinateI {
+        //    public float U;
+        //    public float V;
+        //    public float W;
+        //}
 
         public class ConfigurationObject {
             public Vector2 C1 { get; set; }
@@ -199,7 +198,7 @@ namespace TuggingController {
         }
 
         public void CreateSimplex(SKPoint[] vertices) {
-            foreach(SKPoint v in vertices) {
+            foreach (SKPoint v in vertices) {
                 this.States.Add(v);
                 // Create empty ConfigurationObject
                 this.Configurations.Add(new ConfigurationObject());
@@ -287,10 +286,10 @@ namespace TuggingController {
             //var w = a3 / a > 1.0f ? 0.0f : a3 / a;
 
 
-            return new BarycentricCoordinate { 
+            return new BarycentricCoordinate {
                 U = u,
                 V = v,
-                W = w 
+                W = w
             };
         }
 
@@ -508,4 +507,274 @@ namespace TuggingController {
     //    public string Data { get; set; }
 
     //    }
+}
+
+namespace Reparameterization {
+    // A simplicial complex space that preserve linear relationship between state space and configuration space
+    public class SimplicialComplex : List<Simplex> {
+        public bool IsSet {
+            get {
+                return this.TrueForAll(simplex => simplex.IsSet);
+            }
+        }
+        public SimplicialComplex() { }
+    }
+
+
+    // A nD-Simplex that has (n + 1) vertices.
+    public class Simplex : List<Pair> {
+        public bool IsSet {
+            get {
+                return this.TrueForAll(pair => pair.IsPaired);
+            }
+        }
+
+        private BarycentricCoordinate2D Coordinate;
+        private Matrix<float> StateMatrix {
+            get {
+                return Matrix<float>.Build.DenseOfRowVectors(
+                this.Select(e => e.State.Vector).ToArray());
+            }
+        }
+        private Matrix<float> ConfigurationMatrix {
+            get {
+                return Matrix<float>.Build.DenseOfRowVectors(
+                this.Select(e => e.Config.Vector).ToArray());
+            }
+        }
+
+        public Simplex(StateVector[] states) {
+            this.AddRange(states.Select(s => new Pair(s)));
+
+            this.Coordinate = new BarycentricCoordinate2D(this);
+            //this.StateMatrix = Matrix<float>.Build.DenseOfRowVectors(
+                //this.Select(e => e.State.Vector).ToArray()
+            //);
+        }
+
+        public Simplex(StateVector[] states, ConfigurationVector[] configs) {
+            if (states.Length != configs.Length) {
+                throw new Exception("The counts of each vector array should be mateched.");
+            }
+            else {
+                this.AddRange(states.Zip(configs, (s, c) => new Pair(s, c)));
+            }
+
+            this.Coordinate = new BarycentricCoordinate2D(this);
+            //this.StateMatrix = Matrix<float>.Build.DenseOfRowVectors(
+            //    this.Select(e => e.State.Vector).ToArray()
+            //);
+            //this.ConfigurationMatrix = Matrix<float>.Build.DenseOfRowVectors(
+            //    this.Select(e => e.Config.Vector).ToArray()
+            //);
+        }
+
+        public ConfigurationVector GetInterpolatedConfigurationVector(Vector<float> newStateVector) {
+            if (this.IsSet) {
+                BarycenterCoefficient coefficient = this.Coordinate.GetBarycentricCoefficient(newStateVector);
+
+                return new ConfigurationVector(
+                    this.ConfigurationMatrix.LeftMultiply(coefficient.ToVector())
+                );
+            }
+            else {
+                return null;
+            }
+        }
+
+        public bool IsInside(Vector<float> targetVector) {
+            return BarycentricCoordinate2D.IsInside(this.Coordinate.GetBarycentricCoefficient(targetVector));
+        }
+    }
+
+    // Barycentric coordinate of 2D-Simplex
+    public class BarycentricCoordinate2D {
+        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        public Simplex Simplex { get; set; }
+        private Vector<float>[] Vertices {
+            get {
+                return new Vector<float>[] {
+                    this.Simplex[0].State.Vector,
+                    this.Simplex[1].State.Vector,
+                    this.Simplex[2].State.Vector
+                };
+            }
+        }
+
+        public static bool IsInside(BarycenterCoefficient c) {
+            return (c.U <= 1.0f & c.U >= 0.0f) & (c.V <= 1.0f & c.V >= 0.0f) & (c.W <= 1.0f & c.W >= 0.0f) & (Math.Round(c.U + c.V + c.W, 2) == 1.0f);
+        }
+
+        public BarycentricCoordinate2D(Simplex simplex) {
+            this.Simplex = simplex;
+        }
+
+        public BarycenterCoefficient GetBarycentricCoefficient(Vector<float> targetVector) {
+            var a1 = TriangleMath.GetTriangleArea(new Vector<float>[] {
+                this.Vertices[1], this.Vertices[2], targetVector
+            }, true);
+            var a2 = TriangleMath.GetTriangleArea(new Vector<float>[] {
+                this.Vertices[2], this.Vertices[0], targetVector
+            }, true);
+            var a3 = TriangleMath.GetTriangleArea(new Vector<float>[] {
+                this.Vertices[0], this.Vertices[1], targetVector
+            }, true);
+
+            var a = TriangleMath.GetTriangleArea(new Vector<float>[] {
+                this.Vertices[0], this.Vertices[1], this.Vertices[2]
+            }, true);
+
+            var u = a1 / a;
+            var v = a2 / a;
+            var w = a3 / a;
+
+            return new BarycenterCoefficient {
+                U = u,
+                V = v,
+                W = w,
+            };
+        }
+    }
+
+    // A pair that preserves relationship of state vector and configuration vector
+    public class Pair {
+        public StateVector State { get; set; } = null;
+        public ConfigurationVector Config { get; set; } = null;
+        public bool IsPaired {
+            get {
+                return (this.State != null) & (this.Config != null);
+            }
+        }
+
+        public Pair() { }
+
+        public Pair(StateVector state) {
+            this.State = state;
+        }
+
+        public Pair(ConfigurationVector config) {
+            this.Config = config;
+        }
+
+        public Pair(StateVector state, ConfigurationVector config) {
+            this.State = state;
+            this.Config = config;
+        }
+    }
+
+    // A single vector in configuration space
+    // Based on MathNet's Vector
+    public class ConfigurationVector {
+        public Vector<float> Vector { get; set; }
+
+        public ConfigurationVector(Vector<float> vector) {
+            this.Vector = vector;
+        }
+
+        public ConfigurationVector(IEnumerable<float> vs) {
+            this.Vector = Vector<float>.Build.DenseOfEnumerable(vs);
+        }
+
+        public void Multiply(float c) {
+            this.Vector = this.Vector.Multiply(c);
+        }
+    }
+
+    [Serializable]
+    class ConfigurationSpace : List<ConfigurationVector> { }
+
+    // A single vector in state space
+    // Based on MathNet's Vector
+    public class StateVector {
+
+        public Vector<float> Vector { get; set; }
+
+        public StateVector(Vector<float> vector) {
+            this.Vector = vector;
+        }
+
+        public static StateVector ToStateVector(Vector<float> vector) {
+            return new StateVector(vector);
+        }
+    }
+
+    [Serializable]
+    class StateSpace : List<StateVector> { }
+
+    public class BarycenterCoefficient {
+        public float U { get; set; }
+        public float V { get; set; }
+        public float W { get; set; }
+
+        public float[] ToArray() {
+            return new float[] { U, V, W };
+        }
+
+        public Vector<float> ToVector() {
+            return Vector<float>.Build.DenseOfArray(this.ToArray());
+        }
+    }
+
+    class TriangleMath {
+        // https://mathworld.wolfram.com/VectorNorm.html
+        private static float GetNormalOfTriangle(Vector<float>[] vertices) {
+            Vector<float> v0, v1, v2;
+
+            v0 = Vector<float>.Build.DenseOfArray(new float[] { vertices[0][0], vertices[0][1], 0.0f });
+            v1 = Vector<float>.Build.DenseOfArray(new float[] { vertices[1][0], vertices[1][1], 0.0f });
+            v2 = Vector<float>.Build.DenseOfArray(new float[] { vertices[2][0], vertices[2][1], 0.0f });
+
+            Vector<float> left = v1 - v0;
+            Vector<float> right = v2 - v0;
+
+            Vector<float> normal = Vector<float>.Build.DenseOfArray(
+                new float[] {
+                    (left[1] * right[2]) - (left[2] * right[1]),
+                    (left[2] * right[0]) - (left[0] * right[2]),
+                    (left[0] * right[1]) - (left[1] * right[0])
+                }
+            );
+            normal = normal.Normalize(normal.Norm(1.0));
+            //Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
+
+            return normal[2];
+        }
+
+        // https://en.wikipedia.org/wiki/Shoelace_formula
+        public static float GetTriangleArea(Vector<float>[] vertices, bool isSigned) {
+            Logger logger = LogManager.GetCurrentClassLogger();
+
+            Triangle tri = new Triangle {
+                V0 = vertices[0],
+                V1 = vertices[1],
+                V2 = vertices[2]
+            };
+
+            var orientation = GetNormalOfTriangle(vertices);
+            //logger.Debug("Orient: {0}", orientation == 1 ? "CCW" : "CW");
+            var ret = Math.Abs(tri.V0[0] * (tri.V1[1] - tri.V2[1]) + tri.V1[0] * (tri.V2[1] - tri.V0[1]) + tri.V2[0] * (tri.V0[1] - tri.V1[1])) / 2.0f;
+
+            //return (tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2.0f;
+
+            return isSigned ? ret * orientation : ret;
+        }
+    }
+
+    public struct Triangle {
+        public Vector<float> V0;
+        public Vector<float> V1;
+        public Vector<float> V2;
+    }
+
+    class Helper {
+        public static Vector<float> ToVector(SKPoint point) {
+            return Vector<float>.Build.DenseOfArray(new float[] { point.X, point.Y });
+        }
+
+        public static Vector<float>[] ToVectorArray(SKPoint[] points) {
+            return points.Select(p => ToVector(p)).ToArray();
+        }
+    }
+
 }
