@@ -6,14 +6,19 @@ using System.IO.Ports;
 using System.Threading;
 using System.Linq;
 
+
 namespace PCController
 {
+    public delegate void SendMessageHandler(string msg);
+
     public partial class MainForm : Form
     {
         Boards boards;
         Motors motors;
         Haptics haptics;
         private MMTimer mmTimer;
+        public SendMessageHandler handler;
+
 
         bool bHaptic = false;
         int[] times = null;
@@ -215,6 +220,8 @@ namespace PCController
                 txMsg.Text += boards.GetPos(i);
                 txMsg.Text += " ";
             }
+
+            this.handler("TimerTickTest");
         }
 
         private void trBoards_AfterLabelEdit(object sender, NodeLabelEditEventArgs e)

@@ -18,15 +18,17 @@ using LA = MathNet.Numerics.LinearAlgebra;
 using Reparameterization;
 using Xamarin.Forms.Internals;
 using System.Configuration.Internal;
+using PCController;
+
 
 namespace TuggingController {
     public partial class Form1 : Form {
         public PointChart Chart;
         public ConfigurationCanvas ConfigurationCanvas;
-        public SimplicialComplex Mapping { get; set; } = new SimplicialComplex();
+        public MainForm PCController { get; set; }
+        //public SimplicialComplex Mapping { get; set; } = new SimplicialComplex();
 
         //public SimplicialComplex mapping = new SimplicialComplex();
-
         private readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         private bool IsDragging { get; set; } = false;
@@ -81,6 +83,14 @@ namespace TuggingController {
 
             this.comboBox1.DataSource = Enum.GetValues(typeof(ConfigurationCanvas.CanvasState));
             this.comboBox1.SelectedIndexChanged += this.ConfigurationSpace_ChangeState;
+
+            this.PCController = new MainForm();
+            this.PCController.Show();
+            this.PCController.handler += this.ReceiveHandler;
+        }
+
+        private void ReceiveHandler(string msg) {
+            Console.WriteLine(msg);
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
