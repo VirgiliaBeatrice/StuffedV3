@@ -22,9 +22,14 @@ using PCController;
 
 
 namespace TuggingController {
+    public class ConfigurationRobot : List<float> {
+        
+    }
+
     public partial class Form1 : Form {
         public PointChart Chart;
         public ConfigurationCanvas ConfigurationCanvas;
+        public ConfigurationRobot RobotConfiguration { get; set; }
         public MainForm PCController { get; set; }
         //public SimplicialComplex Mapping { get; set; } = new SimplicialComplex();
 
@@ -87,10 +92,15 @@ namespace TuggingController {
             this.PCController = new MainForm();
             this.PCController.Show();
             this.PCController.handler += this.ReceiveHandler;
+
+            this.RobotConfiguration = new ConfigurationRobot();
         }
 
-        private void ReceiveHandler(string msg) {
-            Console.WriteLine(msg);
+        private void ReceiveHandler(float[] config) {
+            this.RobotConfiguration = new ConfigurationRobot();
+            this.RobotConfiguration.AddRange(config);
+
+            this.Logger.Info($"Received {config}");
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
@@ -428,22 +438,20 @@ namespace TuggingController {
                     Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_Re(this.Chart.TestPoint.Value) != null);
 
                     if (collection.Length != 0) {
-                        //var result = collection[0].Simplex.GetInterpolatedConfiguration_v1(this.Chart.TestPoint.Value);
-                        //if (result != null)
-                        //    this.ConfigurationCanvas.ControlPoints = result.ToSKPoint();
-
                         var result = collection[0].Simplex_Re.GetInterpolatedConfigurationVector(Helper.ToVector(this.Chart.TestPoint.Value));
 
                         if (result != null) {
                             var rowArray = result.Vector.ToArray();
-                            var newControlPoints = new SKPoint[] {
-                                new SKPoint(rowArray[0], rowArray[1]),
-                                new SKPoint(rowArray[0 + 2], rowArray[1 + 2]),
-                                new SKPoint(rowArray[0 + 4], rowArray[1 + 4]),
-                                new SKPoint(rowArray[0 + 6], rowArray[1 + 6]),
-                            };
+                            //var newControlPoints = new SKPoint[] {
+                            //    new SKPoint(rowArray[0], rowArray[1]),
+                            //    new SKPoint(rowArray[0 + 2], rowArray[1 + 2]),
+                            //    new SKPoint(rowArray[0 + 4], rowArray[1 + 4]),
+                            //    new SKPoint(rowArray[0 + 6], rowArray[1 + 6]),
+                            //};
 
-                            this.ConfigurationCanvas.ControlPoints = newControlPoints;
+                            //this.ConfigurationCanvas.ControlPoints = newControlPoints;
+                            this.Logger.Info($"{rowArray[0]} {rowArray[1]} {rowArray[2]}");
+                            this.PCController.SetMotor(rowArray);
                         }
 
                         //Logger.Debug("{0} {1} {2} {3}", result.C1, result.C2, result.C3, result.C4);
@@ -530,12 +538,14 @@ namespace TuggingController {
             if (targets.Length != 0) {
                 var selectedEntry = targets[0];
                 var currentConfiguration = this.ConfigurationCanvas.ControlPoints;
+                var currentConfigurationRobot = this.RobotConfiguration.ToArray();
 
                 // Attention!: Array should be cloned in case of assigning a reference.
                 selectedEntry.PairedConfig = (SKPoint[]) currentConfiguration.Clone();
 
                 // [New Feature]: Testing
-                var currentConfigurationVector = ToConfigurationVector(currentConfiguration);
+                //var currentConfigurationVector = ToConfigurationVector(currentConfiguration);
+                var currentConfigurationVector = new ConfigurationVector(currentConfigurationRobot);
                 //selectedEntry.Pair = 
                 //this.Chart.Triangles
                 foreach(var tri in this.Chart.Triangles) {

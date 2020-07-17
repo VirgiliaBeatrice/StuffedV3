@@ -93,6 +93,7 @@
             this.splitContainerBottom = new System.Windows.Forms.SplitContainer();
             this.trBoards = new System.Windows.Forms.TreeView();
             this.txMsg = new System.Windows.Forms.TextBox();
+            this.bt_SendTo = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerHoriz)).BeginInit();
             this.splitContainerHoriz.Panel1.SuspendLayout();
             this.splitContainerHoriz.Panel2.SuspendLayout();
@@ -153,6 +154,7 @@
             // 
             this.splitContainerHoriz.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainerHoriz.Location = new System.Drawing.Point(0, 0);
+            this.splitContainerHoriz.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.splitContainerHoriz.Name = "splitContainerHoriz";
             // 
             // splitContainerHoriz.Panel1
@@ -162,8 +164,9 @@
             // splitContainerHoriz.Panel2
             // 
             this.splitContainerHoriz.Panel2.Controls.Add(this.splitContainerTop);
-            this.splitContainerHoriz.Size = new System.Drawing.Size(984, 593);
-            this.splitContainerHoriz.SplitterDistance = 751;
+            this.splitContainerHoriz.Size = new System.Drawing.Size(738, 514);
+            this.splitContainerHoriz.SplitterDistance = 563;
+            this.splitContainerHoriz.SplitterWidth = 3;
             this.splitContainerHoriz.TabIndex = 4;
             // 
             // tbControl
@@ -176,9 +179,10 @@
             this.tbControl.Controls.Add(this.tpHeat);
             this.tbControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tbControl.Location = new System.Drawing.Point(0, 0);
+            this.tbControl.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.tbControl.Name = "tbControl";
             this.tbControl.SelectedIndex = 0;
-            this.tbControl.Size = new System.Drawing.Size(751, 593);
+            this.tbControl.Size = new System.Drawing.Size(563, 514);
             this.tbControl.TabIndex = 5;
             // 
             // tpMagnet
@@ -186,10 +190,11 @@
             this.tpMagnet.BackColor = System.Drawing.SystemColors.Control;
             this.tpMagnet.Controls.Add(this.pnMagnet);
             this.tpMagnet.Controls.Add(this.panel3);
-            this.tpMagnet.Location = new System.Drawing.Point(4, 25);
+            this.tpMagnet.Location = new System.Drawing.Point(4, 22);
+            this.tpMagnet.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.tpMagnet.Name = "tpMagnet";
-            this.tpMagnet.Padding = new System.Windows.Forms.Padding(3);
-            this.tpMagnet.Size = new System.Drawing.Size(743, 564);
+            this.tpMagnet.Padding = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.tpMagnet.Size = new System.Drawing.Size(555, 488);
             this.tpMagnet.TabIndex = 5;
             this.tpMagnet.Text = "Magnet";
             // 
@@ -198,9 +203,10 @@
             this.pnMagnet.AutoScroll = true;
             this.pnMagnet.AutoSize = true;
             this.pnMagnet.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnMagnet.Location = new System.Drawing.Point(3, 35);
+            this.pnMagnet.Location = new System.Drawing.Point(2, 31);
+            this.pnMagnet.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.pnMagnet.Name = "pnMagnet";
-            this.pnMagnet.Size = new System.Drawing.Size(737, 526);
+            this.pnMagnet.Size = new System.Drawing.Size(551, 454);
             this.pnMagnet.TabIndex = 3;
             this.pnMagnet.Resize += new System.EventHandler(this.pnMagnet_Resize);
             // 
@@ -208,16 +214,18 @@
             // 
             this.panel3.Controls.Add(this.btMeasure);
             this.panel3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel3.Location = new System.Drawing.Point(3, 3);
+            this.panel3.Location = new System.Drawing.Point(2, 3);
+            this.panel3.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(737, 32);
+            this.panel3.Size = new System.Drawing.Size(551, 28);
             this.panel3.TabIndex = 2;
             // 
             // btMeasure
             // 
-            this.btMeasure.Location = new System.Drawing.Point(3, 3);
+            this.btMeasure.Location = new System.Drawing.Point(2, 3);
+            this.btMeasure.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btMeasure.Name = "btMeasure";
-            this.btMeasure.Size = new System.Drawing.Size(75, 23);
+            this.btMeasure.Size = new System.Drawing.Size(56, 20);
             this.btMeasure.TabIndex = 0;
             this.btMeasure.Text = "Measure";
             this.btMeasure.UseVisualStyleBackColor = true;
@@ -227,10 +235,11 @@
             // 
             this.tpHaptic.Controls.Add(this.flHaptic);
             this.tpHaptic.Controls.Add(this.panel6);
-            this.tpHaptic.Location = new System.Drawing.Point(4, 25);
+            this.tpHaptic.Location = new System.Drawing.Point(4, 22);
+            this.tpHaptic.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.tpHaptic.Name = "tpHaptic";
-            this.tpHaptic.Padding = new System.Windows.Forms.Padding(3);
-            this.tpHaptic.Size = new System.Drawing.Size(743, 564);
+            this.tpHaptic.Padding = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.tpHaptic.Size = new System.Drawing.Size(555, 488);
             this.tpHaptic.TabIndex = 5;
             this.tpHaptic.Text = "Haptic";
             this.tpHaptic.UseVisualStyleBackColor = true;
@@ -240,9 +249,10 @@
             this.flHaptic.AutoScroll = true;
             this.flHaptic.BackColor = System.Drawing.SystemColors.Window;
             this.flHaptic.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flHaptic.Location = new System.Drawing.Point(3, 41);
+            this.flHaptic.Location = new System.Drawing.Point(2, 36);
+            this.flHaptic.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.flHaptic.Name = "flHaptic";
-            this.flHaptic.Size = new System.Drawing.Size(737, 520);
+            this.flHaptic.Size = new System.Drawing.Size(551, 449);
             this.flHaptic.TabIndex = 1;
             // 
             // panel6
@@ -253,34 +263,38 @@
             this.panel6.Controls.Add(this.udAmp);
             this.panel6.Controls.Add(this.udDamp);
             this.panel6.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel6.Location = new System.Drawing.Point(3, 3);
+            this.panel6.Location = new System.Drawing.Point(2, 3);
+            this.panel6.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.panel6.Name = "panel6";
-            this.panel6.Size = new System.Drawing.Size(737, 38);
+            this.panel6.Size = new System.Drawing.Size(551, 33);
             this.panel6.TabIndex = 7;
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(3, 10);
+            this.label5.Location = new System.Drawing.Point(2, 9);
+            this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(97, 15);
+            this.label5.Size = new System.Drawing.Size(75, 13);
             this.label5.TabIndex = 5;
             this.label5.Text = "Vibration Amp:";
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(201, 10);
+            this.label6.Location = new System.Drawing.Point(151, 9);
+            this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(45, 15);
+            this.label6.Size = new System.Drawing.Size(38, 13);
             this.label6.TabIndex = 6;
             this.label6.Text = "Damp:";
             // 
             // btHapticStart
             // 
-            this.btHapticStart.Location = new System.Drawing.Point(444, 2);
+            this.btHapticStart.Location = new System.Drawing.Point(333, 2);
+            this.btHapticStart.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btHapticStart.Name = "btHapticStart";
-            this.btHapticStart.Size = new System.Drawing.Size(100, 34);
+            this.btHapticStart.Size = new System.Drawing.Size(75, 29);
             this.btHapticStart.TabIndex = 2;
             this.btHapticStart.Text = "Start";
             this.btHapticStart.UseVisualStyleBackColor = true;
@@ -288,14 +302,15 @@
             // 
             // udAmp
             // 
-            this.udAmp.Location = new System.Drawing.Point(112, 8);
+            this.udAmp.Location = new System.Drawing.Point(84, 7);
+            this.udAmp.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.udAmp.Maximum = new decimal(new int[] {
             150,
             0,
             0,
             0});
             this.udAmp.Name = "udAmp";
-            this.udAmp.Size = new System.Drawing.Size(78, 22);
+            this.udAmp.Size = new System.Drawing.Size(58, 20);
             this.udAmp.TabIndex = 3;
             this.udAmp.Value = new decimal(new int[] {
             30,
@@ -311,14 +326,15 @@
             0,
             0,
             196608});
-            this.udDamp.Location = new System.Drawing.Point(254, 8);
+            this.udDamp.Location = new System.Drawing.Point(190, 7);
+            this.udDamp.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.udDamp.Maximum = new decimal(new int[] {
             1,
             0,
             0,
             0});
             this.udDamp.Name = "udDamp";
-            this.udDamp.Size = new System.Drawing.Size(74, 22);
+            this.udDamp.Size = new System.Drawing.Size(56, 20);
             this.udDamp.TabIndex = 4;
             this.udDamp.Value = new decimal(new int[] {
             1,
@@ -332,10 +348,11 @@
             this.tpPos.Controls.Add(this.panel2);
             this.tpPos.Controls.Add(this.laCurTime);
             this.tpPos.Controls.Add(this.track);
-            this.tpPos.Location = new System.Drawing.Point(4, 25);
+            this.tpPos.Location = new System.Drawing.Point(4, 22);
+            this.tpPos.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.tpPos.Name = "tpPos";
-            this.tpPos.Padding = new System.Windows.Forms.Padding(3);
-            this.tpPos.Size = new System.Drawing.Size(743, 564);
+            this.tpPos.Padding = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.tpPos.Size = new System.Drawing.Size(555, 488);
             this.tpPos.TabIndex = 3;
             this.tpPos.Text = "Pos";
             this.tpPos.UseVisualStyleBackColor = true;
@@ -343,13 +360,15 @@
             // flPos
             // 
             this.flPos.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flPos.Location = new System.Drawing.Point(3, 98);
+            this.flPos.Location = new System.Drawing.Point(2, 86);
+            this.flPos.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.flPos.Name = "flPos";
-            this.flPos.Size = new System.Drawing.Size(737, 463);
+            this.flPos.Size = new System.Drawing.Size(551, 399);
             this.flPos.TabIndex = 98;
             // 
             // panel2
             // 
+            this.panel2.Controls.Add(this.bt_SendTo);
             this.panel2.Controls.Add(this.btCopy);
             this.panel2.Controls.Add(this.label4);
             this.panel2.Controls.Add(this.btSave);
@@ -367,18 +386,18 @@
             this.panel2.Controls.Add(this.ckRun);
             this.panel2.Controls.Add(this.ckRunOnce);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel2.Location = new System.Drawing.Point(3, 42);
+            this.panel2.Location = new System.Drawing.Point(2, 37);
+            this.panel2.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(737, 56);
+            this.panel2.Size = new System.Drawing.Size(551, 49);
             this.panel2.TabIndex = 99;
             // 
             // btCopy
             // 
             this.btCopy.AutoSize = true;
-            this.btCopy.Location = new System.Drawing.Point(274, 25);
-            this.btCopy.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.btCopy.Location = new System.Drawing.Point(206, 22);
             this.btCopy.Name = "btCopy";
-            this.btCopy.Size = new System.Drawing.Size(56, 26);
+            this.btCopy.Size = new System.Drawing.Size(42, 23);
             this.btCopy.TabIndex = 113;
             this.btCopy.Text = "&Clip";
             this.btCopy.UseVisualStyleBackColor = true;
@@ -387,19 +406,17 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(2, 31);
-            this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label4.Location = new System.Drawing.Point(2, 27);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(38, 15);
+            this.label4.Size = new System.Drawing.Size(30, 13);
             this.label4.TabIndex = 112;
             this.label4.Text = "Time";
             // 
             // btSave
             // 
-            this.btSave.Location = new System.Drawing.Point(211, 25);
-            this.btSave.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.btSave.Location = new System.Drawing.Point(158, 22);
             this.btSave.Name = "btSave";
-            this.btSave.Size = new System.Drawing.Size(56, 26);
+            this.btSave.Size = new System.Drawing.Size(42, 23);
             this.btSave.TabIndex = 110;
             this.btSave.Text = "&Save";
             this.btSave.UseVisualStyleBackColor = true;
@@ -407,10 +424,9 @@
             // 
             // btLoad
             // 
-            this.btLoad.Location = new System.Drawing.Point(151, 25);
-            this.btLoad.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.btLoad.Location = new System.Drawing.Point(113, 22);
             this.btLoad.Name = "btLoad";
-            this.btLoad.Size = new System.Drawing.Size(56, 26);
+            this.btLoad.Size = new System.Drawing.Size(42, 23);
             this.btLoad.TabIndex = 109;
             this.btLoad.Text = "&Load";
             this.btLoad.UseVisualStyleBackColor = true;
@@ -418,18 +434,16 @@
             // 
             // udkeyTime
             // 
-            this.udkeyTime.Location = new System.Drawing.Point(40, 27);
-            this.udkeyTime.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.udkeyTime.Location = new System.Drawing.Point(30, 23);
             this.udkeyTime.Name = "udkeyTime";
-            this.udkeyTime.Size = new System.Drawing.Size(103, 22);
+            this.udkeyTime.Size = new System.Drawing.Size(77, 20);
             this.udkeyTime.TabIndex = 111;
             // 
             // del
             // 
-            this.del.Location = new System.Drawing.Point(391, 25);
-            this.del.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.del.Location = new System.Drawing.Point(293, 22);
             this.del.Name = "del";
-            this.del.Size = new System.Drawing.Size(56, 26);
+            this.del.Size = new System.Drawing.Size(42, 23);
             this.del.TabIndex = 99;
             this.del.Text = "&Del";
             this.del.UseVisualStyleBackColor = true;
@@ -437,10 +451,9 @@
             // 
             // add
             // 
-            this.add.Location = new System.Drawing.Point(333, 25);
-            this.add.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.add.Location = new System.Drawing.Point(250, 22);
             this.add.Name = "add";
-            this.add.Size = new System.Drawing.Size(56, 26);
+            this.add.Size = new System.Drawing.Size(42, 23);
             this.add.TabIndex = 98;
             this.add.Text = "&Add";
             this.add.UseVisualStyleBackColor = true;
@@ -449,16 +462,16 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(181, 3);
+            this.label3.Location = new System.Drawing.Point(136, 3);
             this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(25, 15);
+            this.label3.Size = new System.Drawing.Size(20, 13);
             this.label3.TabIndex = 108;
             this.label3.Text = "ms";
             // 
             // udTick
             // 
-            this.udTick.Location = new System.Drawing.Point(122, 0);
+            this.udTick.Location = new System.Drawing.Point(92, 0);
             this.udTick.Margin = new System.Windows.Forms.Padding(2);
             this.udTick.Maximum = new decimal(new int[] {
             1000,
@@ -471,7 +484,7 @@
             0,
             0});
             this.udTick.Name = "udTick";
-            this.udTick.Size = new System.Drawing.Size(58, 22);
+            this.udTick.Size = new System.Drawing.Size(44, 20);
             this.udTick.TabIndex = 107;
             this.udTick.Value = new decimal(new int[] {
             100,
@@ -482,8 +495,7 @@
             // 
             // udLoopTime
             // 
-            this.udLoopTime.Location = new System.Drawing.Point(366, 0);
-            this.udLoopTime.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.udLoopTime.Location = new System.Drawing.Point(274, 0);
             this.udLoopTime.Maximum = new decimal(new int[] {
             1000000,
             0,
@@ -495,7 +507,7 @@
             0,
             0});
             this.udLoopTime.Name = "udLoopTime";
-            this.udLoopTime.Size = new System.Drawing.Size(80, 22);
+            this.udLoopTime.Size = new System.Drawing.Size(60, 20);
             this.udLoopTime.TabIndex = 100;
             this.udLoopTime.Value = new decimal(new int[] {
             4000,
@@ -507,19 +519,18 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(354, 3);
+            this.label2.Location = new System.Drawing.Point(266, 3);
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(15, 15);
+            this.label2.Size = new System.Drawing.Size(12, 13);
             this.label2.TabIndex = 106;
             this.label2.Text = "/";
             // 
             // udStep
             // 
-            this.udStep.Location = new System.Drawing.Point(255, 0);
-            this.udStep.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.udStep.Location = new System.Drawing.Point(191, 0);
             this.udStep.Name = "udStep";
-            this.udStep.Size = new System.Drawing.Size(40, 22);
+            this.udStep.Size = new System.Drawing.Size(30, 20);
             this.udStep.TabIndex = 104;
             this.udStep.Value = new decimal(new int[] {
             1,
@@ -530,19 +541,17 @@
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(208, 3);
-            this.label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label10.Location = new System.Drawing.Point(156, 3);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(46, 15);
+            this.label10.Size = new System.Drawing.Size(38, 13);
             this.label10.TabIndex = 103;
             this.label10.Text = "Speed";
             // 
             // lbCurTime
             // 
-            this.lbCurTime.Location = new System.Drawing.Point(310, 2);
-            this.lbCurTime.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lbCurTime.Location = new System.Drawing.Point(232, 2);
             this.lbCurTime.Name = "lbCurTime";
-            this.lbCurTime.Size = new System.Drawing.Size(45, 16);
+            this.lbCurTime.Size = new System.Drawing.Size(34, 14);
             this.lbCurTime.TabIndex = 102;
             this.lbCurTime.Text = "0";
             this.lbCurTime.TextAlign = System.Drawing.ContentAlignment.TopRight;
@@ -550,10 +559,9 @@
             // ckRun
             // 
             this.ckRun.AutoSize = true;
-            this.ckRun.Location = new System.Drawing.Point(66, 3);
-            this.ckRun.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.ckRun.Location = new System.Drawing.Point(50, 3);
             this.ckRun.Name = "ckRun";
-            this.ckRun.Size = new System.Drawing.Size(54, 19);
+            this.ckRun.Size = new System.Drawing.Size(46, 17);
             this.ckRun.TabIndex = 101;
             this.ckRun.Text = "R&un";
             this.ckRun.UseVisualStyleBackColor = true;
@@ -561,10 +569,9 @@
             // ckRunOnce
             // 
             this.ckRunOnce.AutoSize = true;
-            this.ckRunOnce.Location = new System.Drawing.Point(4, 3);
-            this.ckRunOnce.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.ckRunOnce.Location = new System.Drawing.Point(3, 3);
             this.ckRunOnce.Name = "ckRunOnce";
-            this.ckRunOnce.Size = new System.Drawing.Size(64, 19);
+            this.ckRunOnce.Size = new System.Drawing.Size(52, 17);
             this.ckRunOnce.TabIndex = 105;
             this.ckRunOnce.Text = "Once";
             this.ckRunOnce.UseVisualStyleBackColor = true;
@@ -572,10 +579,9 @@
             // laCurTime
             // 
             this.laCurTime.BackColor = System.Drawing.Color.Red;
-            this.laCurTime.Location = new System.Drawing.Point(196, 35);
-            this.laCurTime.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.laCurTime.Location = new System.Drawing.Point(147, 30);
             this.laCurTime.Name = "laCurTime";
-            this.laCurTime.Size = new System.Drawing.Size(4, 7);
+            this.laCurTime.Size = new System.Drawing.Size(3, 6);
             this.laCurTime.TabIndex = 13;
             // 
             // track
@@ -583,11 +589,11 @@
             this.track.AutoSize = false;
             this.track.Dock = System.Windows.Forms.DockStyle.Top;
             this.track.LargeChange = 20;
-            this.track.Location = new System.Drawing.Point(3, 3);
+            this.track.Location = new System.Drawing.Point(2, 3);
             this.track.Margin = new System.Windows.Forms.Padding(0);
             this.track.Maximum = 10000;
             this.track.Name = "track";
-            this.track.Size = new System.Drawing.Size(737, 39);
+            this.track.Size = new System.Drawing.Size(551, 34);
             this.track.TabIndex = 1;
             this.track.TickStyle = System.Windows.Forms.TickStyle.None;
             this.track.ValueChanged += new System.EventHandler(this.track_ValueChanged);
@@ -595,10 +601,11 @@
             // tpCurrent
             // 
             this.tpCurrent.Controls.Add(this.flCurrent);
-            this.tpCurrent.Location = new System.Drawing.Point(4, 25);
+            this.tpCurrent.Location = new System.Drawing.Point(4, 22);
+            this.tpCurrent.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.tpCurrent.Name = "tpCurrent";
-            this.tpCurrent.Padding = new System.Windows.Forms.Padding(3);
-            this.tpCurrent.Size = new System.Drawing.Size(743, 564);
+            this.tpCurrent.Padding = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.tpCurrent.Size = new System.Drawing.Size(555, 488);
             this.tpCurrent.TabIndex = 1;
             this.tpCurrent.Text = "Current";
             this.tpCurrent.UseVisualStyleBackColor = true;
@@ -606,19 +613,21 @@
             // flCurrent
             // 
             this.flCurrent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flCurrent.Location = new System.Drawing.Point(3, 3);
+            this.flCurrent.Location = new System.Drawing.Point(2, 3);
+            this.flCurrent.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.flCurrent.Name = "flCurrent";
-            this.flCurrent.Size = new System.Drawing.Size(737, 558);
+            this.flCurrent.Size = new System.Drawing.Size(551, 482);
             this.flCurrent.TabIndex = 0;
             // 
             // tpParam
             // 
             this.tpParam.Controls.Add(this.flParam);
             this.tpParam.Controls.Add(this.panel4);
-            this.tpParam.Location = new System.Drawing.Point(4, 25);
+            this.tpParam.Location = new System.Drawing.Point(4, 22);
+            this.tpParam.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.tpParam.Name = "tpParam";
-            this.tpParam.Padding = new System.Windows.Forms.Padding(3);
-            this.tpParam.Size = new System.Drawing.Size(743, 564);
+            this.tpParam.Padding = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.tpParam.Size = new System.Drawing.Size(555, 488);
             this.tpParam.TabIndex = 2;
             this.tpParam.Text = "Param";
             this.tpParam.UseVisualStyleBackColor = true;
@@ -628,9 +637,10 @@
             this.flParam.AutoScroll = true;
             this.flParam.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flParam.ForeColor = System.Drawing.Color.CadetBlue;
-            this.flParam.Location = new System.Drawing.Point(3, 32);
+            this.flParam.Location = new System.Drawing.Point(2, 28);
+            this.flParam.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.flParam.Name = "flParam";
-            this.flParam.Size = new System.Drawing.Size(737, 529);
+            this.flParam.Size = new System.Drawing.Size(551, 457);
             this.flParam.TabIndex = 0;
             // 
             // panel4
@@ -640,16 +650,18 @@
             this.panel4.Controls.Add(this.btRecvPd);
             this.panel4.Controls.Add(this.btSendPd);
             this.panel4.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel4.Location = new System.Drawing.Point(3, 3);
+            this.panel4.Location = new System.Drawing.Point(2, 3);
+            this.panel4.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.panel4.Name = "panel4";
-            this.panel4.Size = new System.Drawing.Size(737, 29);
+            this.panel4.Size = new System.Drawing.Size(551, 25);
             this.panel4.TabIndex = 3;
             // 
             // btLoadSpidar
             // 
-            this.btLoadSpidar.Location = new System.Drawing.Point(615, 3);
+            this.btLoadSpidar.Location = new System.Drawing.Point(461, 3);
+            this.btLoadSpidar.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btLoadSpidar.Name = "btLoadSpidar";
-            this.btLoadSpidar.Size = new System.Drawing.Size(119, 23);
+            this.btLoadSpidar.Size = new System.Drawing.Size(89, 20);
             this.btLoadSpidar.TabIndex = 4;
             this.btLoadSpidar.Text = "Load SPIDAR";
             this.btLoadSpidar.UseVisualStyleBackColor = true;
@@ -657,9 +669,10 @@
             // 
             // btLoadNuibot
             // 
-            this.btLoadNuibot.Location = new System.Drawing.Point(497, 3);
+            this.btLoadNuibot.Location = new System.Drawing.Point(373, 3);
+            this.btLoadNuibot.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btLoadNuibot.Name = "btLoadNuibot";
-            this.btLoadNuibot.Size = new System.Drawing.Size(112, 23);
+            this.btLoadNuibot.Size = new System.Drawing.Size(84, 20);
             this.btLoadNuibot.TabIndex = 3;
             this.btLoadNuibot.Text = "Load Nuibot";
             this.btLoadNuibot.UseVisualStyleBackColor = true;
@@ -667,9 +680,10 @@
             // 
             // btRecvPd
             // 
-            this.btRecvPd.Location = new System.Drawing.Point(86, 3);
+            this.btRecvPd.Location = new System.Drawing.Point(64, 3);
+            this.btRecvPd.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btRecvPd.Name = "btRecvPd";
-            this.btRecvPd.Size = new System.Drawing.Size(75, 23);
+            this.btRecvPd.Size = new System.Drawing.Size(56, 20);
             this.btRecvPd.TabIndex = 2;
             this.btRecvPd.Text = "Receive";
             this.btRecvPd.UseVisualStyleBackColor = true;
@@ -677,9 +691,10 @@
             // 
             // btSendPd
             // 
-            this.btSendPd.Location = new System.Drawing.Point(5, 3);
+            this.btSendPd.Location = new System.Drawing.Point(4, 3);
+            this.btSendPd.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btSendPd.Name = "btSendPd";
-            this.btSendPd.Size = new System.Drawing.Size(75, 23);
+            this.btSendPd.Size = new System.Drawing.Size(56, 20);
             this.btSendPd.TabIndex = 1;
             this.btSendPd.Text = "Send";
             this.btSendPd.UseVisualStyleBackColor = true;
@@ -689,10 +704,11 @@
             // 
             this.tpHeat.Controls.Add(this.flHeat);
             this.tpHeat.Controls.Add(this.panel5);
-            this.tpHeat.Location = new System.Drawing.Point(4, 25);
+            this.tpHeat.Location = new System.Drawing.Point(4, 22);
+            this.tpHeat.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.tpHeat.Name = "tpHeat";
-            this.tpHeat.Padding = new System.Windows.Forms.Padding(3);
-            this.tpHeat.Size = new System.Drawing.Size(743, 564);
+            this.tpHeat.Padding = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.tpHeat.Size = new System.Drawing.Size(555, 488);
             this.tpHeat.TabIndex = 4;
             this.tpHeat.Text = "Heat";
             this.tpHeat.UseVisualStyleBackColor = true;
@@ -700,9 +716,10 @@
             // flHeat
             // 
             this.flHeat.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flHeat.Location = new System.Drawing.Point(3, 35);
+            this.flHeat.Location = new System.Drawing.Point(2, 31);
+            this.flHeat.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.flHeat.Name = "flHeat";
-            this.flHeat.Size = new System.Drawing.Size(737, 526);
+            this.flHeat.Size = new System.Drawing.Size(551, 454);
             this.flHeat.TabIndex = 3;
             // 
             // panel5
@@ -712,16 +729,18 @@
             this.panel5.Controls.Add(this.btRecvHeat);
             this.panel5.Controls.Add(this.btSendHeat);
             this.panel5.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel5.Location = new System.Drawing.Point(3, 3);
+            this.panel5.Location = new System.Drawing.Point(2, 3);
+            this.panel5.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.panel5.Name = "panel5";
-            this.panel5.Size = new System.Drawing.Size(737, 32);
+            this.panel5.Size = new System.Drawing.Size(551, 28);
             this.panel5.TabIndex = 5;
             // 
             // btLoadSpidarHeat
             // 
-            this.btLoadSpidarHeat.Location = new System.Drawing.Point(615, 6);
+            this.btLoadSpidarHeat.Location = new System.Drawing.Point(461, 5);
+            this.btLoadSpidarHeat.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btLoadSpidarHeat.Name = "btLoadSpidarHeat";
-            this.btLoadSpidarHeat.Size = new System.Drawing.Size(119, 23);
+            this.btLoadSpidarHeat.Size = new System.Drawing.Size(89, 20);
             this.btLoadSpidarHeat.TabIndex = 6;
             this.btLoadSpidarHeat.Text = "Load SPIDAR";
             this.btLoadSpidarHeat.UseVisualStyleBackColor = true;
@@ -729,9 +748,10 @@
             // 
             // btLoadNubotiHeat
             // 
-            this.btLoadNubotiHeat.Location = new System.Drawing.Point(497, 6);
+            this.btLoadNubotiHeat.Location = new System.Drawing.Point(373, 5);
+            this.btLoadNubotiHeat.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btLoadNubotiHeat.Name = "btLoadNubotiHeat";
-            this.btLoadNubotiHeat.Size = new System.Drawing.Size(112, 23);
+            this.btLoadNubotiHeat.Size = new System.Drawing.Size(84, 20);
             this.btLoadNubotiHeat.TabIndex = 5;
             this.btLoadNubotiHeat.Text = "Load Nuibot";
             this.btLoadNubotiHeat.UseVisualStyleBackColor = true;
@@ -739,9 +759,10 @@
             // 
             // btRecvHeat
             // 
-            this.btRecvHeat.Location = new System.Drawing.Point(87, 3);
+            this.btRecvHeat.Location = new System.Drawing.Point(65, 3);
+            this.btRecvHeat.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btRecvHeat.Name = "btRecvHeat";
-            this.btRecvHeat.Size = new System.Drawing.Size(75, 23);
+            this.btRecvHeat.Size = new System.Drawing.Size(56, 20);
             this.btRecvHeat.TabIndex = 4;
             this.btRecvHeat.Text = "Receive";
             this.btRecvHeat.UseVisualStyleBackColor = true;
@@ -749,9 +770,10 @@
             // 
             // btSendHeat
             // 
-            this.btSendHeat.Location = new System.Drawing.Point(6, 3);
+            this.btSendHeat.Location = new System.Drawing.Point(4, 3);
+            this.btSendHeat.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btSendHeat.Name = "btSendHeat";
-            this.btSendHeat.Size = new System.Drawing.Size(75, 23);
+            this.btSendHeat.Size = new System.Drawing.Size(56, 20);
             this.btSendHeat.TabIndex = 2;
             this.btSendHeat.Text = "Send";
             this.btSendHeat.UseVisualStyleBackColor = true;
@@ -761,6 +783,7 @@
             // 
             this.splitContainerTop.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainerTop.Location = new System.Drawing.Point(0, 0);
+            this.splitContainerTop.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.splitContainerTop.Name = "splitContainerTop";
             this.splitContainerTop.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -771,8 +794,9 @@
             // splitContainerTop.Panel2
             // 
             this.splitContainerTop.Panel2.Controls.Add(this.splitContainerBottom);
-            this.splitContainerTop.Size = new System.Drawing.Size(229, 593);
-            this.splitContainerTop.SplitterDistance = 136;
+            this.splitContainerTop.Size = new System.Drawing.Size(172, 514);
+            this.splitContainerTop.SplitterDistance = 117;
+            this.splitContainerTop.SplitterWidth = 3;
             this.splitContainerTop.TabIndex = 4;
             // 
             // panel1
@@ -783,15 +807,17 @@
             this.panel1.Controls.Add(this.btListBoards);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
+            this.panel1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(229, 136);
+            this.panel1.Size = new System.Drawing.Size(172, 117);
             this.panel1.TabIndex = 6;
             // 
             // btReset
             // 
-            this.btReset.Location = new System.Drawing.Point(5, 81);
+            this.btReset.Location = new System.Drawing.Point(4, 70);
+            this.btReset.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btReset.Name = "btReset";
-            this.btReset.Size = new System.Drawing.Size(121, 23);
+            this.btReset.Size = new System.Drawing.Size(91, 20);
             this.btReset.TabIndex = 3;
             this.btReset.Text = "Reset Motor";
             this.btReset.UseVisualStyleBackColor = true;
@@ -800,25 +826,28 @@
             // cmbPortBin
             // 
             this.cmbPortBin.FormattingEnabled = true;
-            this.cmbPortBin.Location = new System.Drawing.Point(5, 23);
+            this.cmbPortBin.Location = new System.Drawing.Point(4, 20);
+            this.cmbPortBin.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.cmbPortBin.Name = "cmbPortBin";
-            this.cmbPortBin.Size = new System.Drawing.Size(121, 23);
+            this.cmbPortBin.Size = new System.Drawing.Size(92, 21);
             this.cmbPortBin.TabIndex = 0;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 6);
+            this.label1.Location = new System.Drawing.Point(4, 5);
+            this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(82, 15);
+            this.label1.Size = new System.Drawing.Size(65, 13);
             this.label1.TabIndex = 1;
             this.label1.Text = "UART port#";
             // 
             // btListBoards
             // 
-            this.btListBoards.Location = new System.Drawing.Point(5, 52);
+            this.btListBoards.Location = new System.Drawing.Point(4, 45);
+            this.btListBoards.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.btListBoards.Name = "btListBoards";
-            this.btListBoards.Size = new System.Drawing.Size(121, 23);
+            this.btListBoards.Size = new System.Drawing.Size(91, 20);
             this.btListBoards.TabIndex = 2;
             this.btListBoards.Text = "List boards";
             this.btListBoards.UseVisualStyleBackColor = true;
@@ -828,6 +857,7 @@
             // 
             this.splitContainerBottom.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainerBottom.Location = new System.Drawing.Point(0, 0);
+            this.splitContainerBottom.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.splitContainerBottom.Name = "splitContainerBottom";
             this.splitContainerBottom.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -838,8 +868,9 @@
             // splitContainerBottom.Panel2
             // 
             this.splitContainerBottom.Panel2.Controls.Add(this.txMsg);
-            this.splitContainerBottom.Size = new System.Drawing.Size(229, 453);
-            this.splitContainerBottom.SplitterDistance = 252;
+            this.splitContainerBottom.Size = new System.Drawing.Size(172, 394);
+            this.splitContainerBottom.SplitterDistance = 219;
+            this.splitContainerBottom.SplitterWidth = 3;
             this.splitContainerBottom.TabIndex = 5;
             // 
             // trBoards
@@ -847,8 +878,9 @@
             this.trBoards.Dock = System.Windows.Forms.DockStyle.Fill;
             this.trBoards.LabelEdit = true;
             this.trBoards.Location = new System.Drawing.Point(0, 0);
+            this.trBoards.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.trBoards.Name = "trBoards";
-            this.trBoards.Size = new System.Drawing.Size(229, 252);
+            this.trBoards.Size = new System.Drawing.Size(172, 219);
             this.trBoards.TabIndex = 4;
             this.trBoards.BeforeLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.trBoards_BeforeLabelEdit);
             this.trBoards.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.trBoards_AfterLabelEdit);
@@ -857,18 +889,30 @@
             // 
             this.txMsg.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txMsg.Location = new System.Drawing.Point(0, 0);
+            this.txMsg.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.txMsg.Multiline = true;
             this.txMsg.Name = "txMsg";
             this.txMsg.ReadOnly = true;
-            this.txMsg.Size = new System.Drawing.Size(229, 197);
+            this.txMsg.Size = new System.Drawing.Size(172, 172);
             this.txMsg.TabIndex = 0;
+            // 
+            // bt_SendTo
+            // 
+            this.bt_SendTo.Location = new System.Drawing.Point(446, 11);
+            this.bt_SendTo.Name = "bt_SendTo";
+            this.bt_SendTo.Size = new System.Drawing.Size(75, 23);
+            this.bt_SendTo.TabIndex = 114;
+            this.bt_SendTo.Text = "SendTo";
+            this.bt_SendTo.UseVisualStyleBackColor = true;
+            this.bt_SendTo.Click += new System.EventHandler(this.bt_SendTo_Click);
             // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(984, 593);
+            this.ClientSize = new System.Drawing.Size(738, 514);
             this.Controls.Add(this.splitContainerHoriz);
+            this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.Name = "MainForm";
             this.Text = "PCController";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
@@ -978,6 +1022,7 @@
         private System.Windows.Forms.Panel panel6;
         private System.Windows.Forms.Button btLoadSpidarHeat;
         private System.Windows.Forms.Button btLoadNubotiHeat;
+        private System.Windows.Forms.Button bt_SendTo;
     }
 }
 

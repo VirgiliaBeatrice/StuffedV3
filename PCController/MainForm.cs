@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace PCController
 {
-    public delegate void SendMessageHandler(string msg);
+    public delegate void SendMessageHandler(float[] config);
 
     public partial class MainForm : Form
     {
@@ -80,6 +80,13 @@ namespace PCController
             udLoopTime_ValueChanged(udLoopTime, null);
             ResetMagnet();
         }
+
+        public void SetMotor(float[] motorParams) {
+            for (int i = 0; i < motors.Count; ++i) {
+                motors[i].position.Value = (int) motorParams[i];
+            }
+        }
+
         void SetTextMessage(string msg)
         {
             txMsg.Text = msg;
@@ -220,8 +227,6 @@ namespace PCController
                 txMsg.Text += boards.GetPos(i);
                 txMsg.Text += " ";
             }
-
-            this.handler("TimerTickTest");
         }
 
         private void trBoards_AfterLabelEdit(object sender, NodeLabelEditEventArgs e)
@@ -409,6 +414,14 @@ namespace PCController
             if (bHaptic) btHapticStart_Click(sender, e);
         }
 
+        private void bt_SendTo_Click(object sender, EventArgs e) {
+            float[] targets = new float[boards.NMotor];
+            for (int i = 0; i < motors.Count; ++i) {
+                targets[i] = motors[i].position.Value;
+            }
+
+            this.handler(targets);
+        }
     }
     public class CurrentControl
     {
