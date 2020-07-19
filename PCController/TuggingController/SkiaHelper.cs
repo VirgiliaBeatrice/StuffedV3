@@ -4,10 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TuggingController
-{
-    class Controller
-    {
-        //public static 
+namespace TuggingController {
+    class Class1 {
     }
 }

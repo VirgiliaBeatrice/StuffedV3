@@ -19,13 +19,15 @@ using Reparameterization;
 using Xamarin.Forms.Internals;
 using System.Configuration.Internal;
 using PCController;
-
+using System.Security.Policy;
 
 namespace TuggingController {
     public partial class Form1 : Form {
         public PointChart Chart;
         public ConfigurationCanvas ConfigurationCanvas;
-        public ConfigurationRobot RobotConfiguration { get; set; }
+        //public RobotConfiguration RobotConfiguration { get; set; }
+        public RobotConfigurationSpace RobotConfigurationSpace { get; set; }
+        
         public MainForm PCController { get; set; }
         //public SimplicialComplex Mapping { get; set; } = new SimplicialComplex();
 
@@ -85,12 +87,15 @@ namespace TuggingController {
             this.comboBox1.DataSource = Enum.GetValues(typeof(ConfigurationCanvas.CanvasState));
             this.comboBox1.SelectedIndexChanged += this.ConfigurationSpace_ChangeState;
 
-            this.RobotConfiguration = new ConfigurationRobot();
+            //this.RobotConfiguration = new RobotConfiguration();
+            this.RobotConfigurationSpace = new RobotConfigurationSpace();
         }
 
         private void ReceiveHandler(float[] config) {
-            this.RobotConfiguration = new ConfigurationRobot();
-            this.RobotConfiguration.AddRange(config);
+            this.RobotConfigurationSpace = new RobotConfigurationSpace();
+            this.RobotConfigurationSpace.Add(config);
+            //this.RobotConfiguration = new RobotConfiguration();
+            //this.RobotConfiguration.AddRange(config);
 
             this.Logger.Info($"Received {config}");
         }
@@ -430,7 +435,7 @@ namespace TuggingController {
                     Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_Re(this.Chart.TestPoint.Value) != null);
 
                     if (collection.Length != 0) {
-                        var result = collection[0].Simplex_Re.GetInterpolatedConfigurationVector(Helper.ToVector(this.Chart.TestPoint.Value));
+                        var result = collection[0].Simplex_Re.GetInterpolatedConfigurationVector(SkiaHelper.ToVector(this.Chart.TestPoint.Value));
 
                         if (result != null) {
                             var rowArray = result.Vector.ToArray();
@@ -530,14 +535,15 @@ namespace TuggingController {
             if (targets.Length != 0) {
                 var selectedEntry = targets[0];
                 var currentConfiguration = this.ConfigurationCanvas.ControlPoints;
-                var currentConfigurationRobot = this.RobotConfiguration.ToArray();
+                //var currentConfigurationRobotVector = this.RobotConfiguration.ToArray();
+                var currentConfigurationVector = this.RobotConfigurationSpace.Last();
 
                 // Attention!: Array should be cloned in case of assigning a reference.
                 selectedEntry.PairedConfig = (SKPoint[]) currentConfiguration.Clone();
 
                 // [New Feature]: Testing
                 //var currentConfigurationVector = ToConfigurationVector(currentConfiguration);
-                var currentConfigurationVector = new ConfigurationVector(currentConfigurationRobot);
+                //var currentConfigurationVector = new ConfigurationVector(currentConfigurationRobot);
                 //selectedEntry.Pair = 
                 //this.Chart.Triangles
                 foreach(var tri in this.Chart.Triangles) {
@@ -601,7 +607,17 @@ namespace TuggingController {
         }
     }
 
-    public class ConfigurationRobot : List<float> { }
+    //public class RobotConfiguration : List<float> { }
+    public class RobotConfigurationSpace : ConfigurationSpace {
+        public override ConfigurationVector[] ToConfigurationVectorArray() {
+            throw new NotImplementedException();
+        }
+
+        public void Add(float[] rawValues) {
+            this.Add(new ConfigurationVector(rawValues));
+        }
+    }
+
     public class EntryCollection : ObservableCollection<Entry> {
         public EntryCollection() : base() { }
 
@@ -1651,7 +1667,7 @@ namespace TuggingController {
             // [New Feature]: Testing
             var states = this.Vertices.ToValues();
             this.Simplex_Re = new Simplex(
-                Helper.ToVectorArray(states).Select(
+                SkiaHelper.ToVectorArray(states).Select(
                     v => new StateVector(v)
                 ).ToArray()
             );
@@ -1693,7 +1709,7 @@ namespace TuggingController {
         }
 
         public Triangle IsInside_Re(SKPoint target) {
-            this.IsHovered = this.Simplex_Re.IsInside(Helper.ToVector(target));
+            this.IsHovered = this.Simplex_Re.IsInside(SkiaHelper.ToVector(target));
 
             return this.IsHovered ? this : null;
         }
@@ -1871,7 +1887,7 @@ namespace TuggingController {
         public Entry(SKPoint value, SKMatrix scale, SKMatrix transform) : base(transform) {
             this.Value = value;
             this.Scale = scale;
-            this.Pair = new Pair(new StateVector(Helper.ToVector(this.Value)));
+            this.Pair = new Pair(new StateVector(SkiaHelper.ToVector(this.Value)));
 
             Logger.Debug("Create new entry - [Value]: {0}", this.Value);
             Logger.Debug("Create new entry - [Location]: {0}", this.Location);
@@ -2366,7 +2382,7 @@ namespace TuggingController {
     }
 
 
-    public class SkiaHelper {
+    public partial class SkiaHelper {
         public static decimal CeilingOrFloor(decimal dec) {
             return dec < 0 ? decimal.Floor(dec) : decimal.Ceiling(dec);
         }

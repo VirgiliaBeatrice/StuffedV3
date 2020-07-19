@@ -507,6 +507,16 @@ namespace TuggingController {
     //    public string Data { get; set; }
 
     //    }
+
+    public partial class SkiaHelper {
+        public static Vector<float> ToVector(SKPoint point) {
+            return Vector<float>.Build.DenseOfArray(new float[] { point.X, point.Y });
+        }
+
+        public static Vector<float>[] ToVectorArray(SKPoint[] points) {
+            return points.Select(p => ToVector(p)).ToArray();
+        }
+    }
 }
 
 namespace Reparameterization {
@@ -672,8 +682,8 @@ namespace Reparameterization {
             this.Vector = vector;
         }
 
-        public ConfigurationVector(IEnumerable<float> vs) {
-            this.Vector = Vector<float>.Build.DenseOfEnumerable(vs);
+        public ConfigurationVector(IEnumerable<float> enumerable) {
+            this.Vector = Vector<float>.Build.DenseOfEnumerable(enumerable);
         }
 
         public void Multiply(float c) {
@@ -682,7 +692,9 @@ namespace Reparameterization {
     }
 
     [Serializable]
-    class ConfigurationSpace : List<ConfigurationVector> { }
+    public abstract class ConfigurationSpace : List<ConfigurationVector> {
+        public abstract ConfigurationVector[] ToConfigurationVectorArray();
+    }
 
     // A single vector in state space
     // Based on MathNet's Vector
@@ -752,10 +764,7 @@ namespace Reparameterization {
             };
 
             var orientation = GetNormalOfTriangle(vertices);
-            //logger.Debug("Orient: {0}", orientation == 1 ? "CCW" : "CW");
             var ret = Math.Abs(tri.V0[0] * (tri.V1[1] - tri.V2[1]) + tri.V1[0] * (tri.V2[1] - tri.V0[1]) + tri.V2[0] * (tri.V0[1] - tri.V1[1])) / 2.0f;
-
-            //return (tri.A.X * (tri.B.Y - tri.C.Y) + tri.B.X * (tri.C.Y - tri.A.Y) + tri.C.X * (tri.A.Y - tri.B.Y)) / 2.0f;
 
             return isSigned ? ret * orientation : ret;
         }
@@ -767,14 +776,6 @@ namespace Reparameterization {
         public Vector<float> V2;
     }
 
-    class Helper {
-        public static Vector<float> ToVector(SKPoint point) {
-            return Vector<float>.Build.DenseOfArray(new float[] { point.X, point.Y });
-        }
 
-        public static Vector<float>[] ToVectorArray(SKPoint[] points) {
-            return points.Select(p => ToVector(p)).ToArray();
-        }
-    }
 
 }
