@@ -22,10 +22,6 @@ using PCController;
 
 
 namespace TuggingController {
-    public class ConfigurationRobot : List<float> {
-        
-    }
-
     public partial class Form1 : Form {
         public PointChart Chart;
         public ConfigurationCanvas ConfigurationCanvas;
@@ -88,10 +84,6 @@ namespace TuggingController {
 
             this.comboBox1.DataSource = Enum.GetValues(typeof(ConfigurationCanvas.CanvasState));
             this.comboBox1.SelectedIndexChanged += this.ConfigurationSpace_ChangeState;
-
-            this.PCController = new MainForm();
-            this.PCController.Show();
-            this.PCController.handler += this.ReceiveHandler;
 
             this.RobotConfiguration = new ConfigurationRobot();
         }
@@ -596,8 +588,20 @@ namespace TuggingController {
         private void button3_Click(object sender, EventArgs e) {
             this.Chart.SaveToFile();
         }
+
+        private void bt_InvokePCController_Click(object sender, EventArgs e) {
+            Button btn = (Button)sender;
+
+            btn.Enabled = false;
+            this.PCController = new MainForm();
+            this.PCController.handler += this.ReceiveHandler;
+            this.PCController.FormClosed += (s, ev) => { ((Button)sender).Enabled = true; };
+
+            this.PCController.Show();
+        }
     }
 
+    public class ConfigurationRobot : List<float> { }
     public class EntryCollection : ObservableCollection<Entry> {
         public EntryCollection() : base() { }
 
