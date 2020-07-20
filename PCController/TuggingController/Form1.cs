@@ -20,6 +20,7 @@ using Xamarin.Forms.Internals;
 using System.Configuration.Internal;
 using PCController;
 using System.Security.Policy;
+using System.Runtime.CompilerServices;
 
 namespace TuggingController {
     public partial class Form1 : Form {
@@ -74,7 +75,7 @@ namespace TuggingController {
             TuggingController.MouseDoubleClick += skControl1_MouseDoubleClick;
             this.SizeChanged += Form1_SizeChanged;
             this.Chart = new PointChart();
-            this.Chart.Entries.CollectionChanged += Entries_CollectionChanged;
+            //this.Chart.Entries.CollectionChanged += Entries_CollectionChanged;
 
             this.ConfigurationCanvas = new ConfigurationCanvas(mid.X, mid.Y);
             ConfigurationSpace.Location = new Point(mid.X, 0);
@@ -618,8 +619,13 @@ namespace TuggingController {
         }
     }
 
-    public class EntryCollection : ObservableCollection<Entry> {
+    public class EntryCollection : List<Entry> {
         public EntryCollection() : base() { }
+        
+        public new void Add(Entry entry) {
+            entry.Index = this.Count;
+            base.Add(entry);
+        }
 
         public void UpdateScale(SKMatrix scale) => this.ForEach(e => e.UpdateScale(scale));
         public void UpdateTransform(SKMatrix transform) => this.ForEach(e => e.UpdateTransform(transform));
@@ -647,7 +653,7 @@ namespace TuggingController {
             return ret;
         }
 
-        public void ForEach(Action<Entry> action) {
+        public new void ForEach(Action<Entry> action) {
             for (int i = 0; i < this.Count; i++) {
                 action(this[i]);
             }
@@ -1289,16 +1295,24 @@ namespace TuggingController {
     }
 
     public class Hover {
-        protected readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public Hover() { }
 
-        public static void DrawHover(SKCanvas canvas, SKPoint value, SKPoint location, SKMatrix transform) {
+        public static void DrawHover(SKCanvas canvas, SKPoint value, int idx, SKPoint location, SKMatrix transform) {
+            var text = $"{idx} - {{ {value.X:F4}, {value.Y:F4} }}";
+            var textPaint = new SKPaint {
+                Color = SKColors.White
+            };
+            var bounds = new SKRect();
+
+            textPaint.MeasureText(text, ref bounds);
+
             var anchor = transform.MapPoint(location);
-            var size = new SKSize(100, 50);
+            var size = new SKSize(150, 50);
             var offset = new SKPoint(10, -25);
             anchor += offset;
-            var rect = new SKRect(anchor.X, anchor.Y, anchor.X + size.Width, anchor.Y + size.Height);
+            var rect = new SKRect(anchor.X, anchor.Y, anchor.X + bounds.Width + offset.X, anchor.Y + bounds.Height * 2);
             var pathPaint = new SKPaint {
                 IsAntialias = true,
                 Color = SKColors.Black.WithAlpha((byte)(0xFF * 0.7)),
@@ -1314,14 +1328,14 @@ namespace TuggingController {
             //    PathEffect = SKPathEffect.CreateCorner(5)
             //};
 
+
+
+
+            
             canvas.DrawRect(rect, pathPaint);
+            canvas.DrawText(text, anchor + new SKSize(5, 15), textPaint);
 
-            var textPaint = new SKPaint {
-                Color = SKColors.White
-            };
-            textPaint.MeasureText(value.X.ToString("F4") + ", " + value.Y.ToString("F4"), ref rect);
-
-            canvas.DrawText(value.X.ToString("F4") + ", " + value.Y.ToString("F4"), anchor + new SKPoint(5, 25), textPaint);
+            //canvas.DrawText(value.X.ToString("F4") + ", " + value.Y.ToString("F4"), anchor + new SKPoint(5, 25), textPaint);
             //canvas.DrawRect(rect, strokePaint);
         }
     }
@@ -1514,23 +1528,6 @@ namespace TuggingController {
 
         public TriangleCollection Triangles { get; set; }
         public ExtremeCollection Extremes { get; set; } = new ExtremeCollection();
-        //public SKPoint[] Centroids {
-        //    get {
-        //        return this.Extremes.Select((e, idx) => {
-        //            var tmp = new SKPoint[] {
-        //                this.Extremes.PrevElement(idx).GlobalLocation,
-        //                e.GlobalLocation,
-        //                this.Extremes.NextElement(idx).GlobalLocation
-        //            };
-        //            return this.GetCentroid(tmp);
-        //        }).ToArray();
-        //    }
-        //}
-
-        //public SkiaHelper.SKLineSegment[] Edges => this.Extremes.Select(
-        //            (e, idx) => {
-        //                return new SkiaHelper.SKLineSegment() { Start = e.GlobalLocation, End = this.Extremes.NextElement(idx).GlobalLocation };
-        //            }).ToArray();
 
         public ConvexHull() : this(Array.Empty<Extreme>()) { }
         public ConvexHull(Extreme[] extremes): this(extremes, new SKPoint(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
@@ -1862,6 +1859,7 @@ namespace TuggingController {
         public bool IsHovered { get; set; } = false;
         public bool IsPaired { get; set; } = false;
         public SKPoint[] PairedConfig { get; set; }
+        public int Index { get; set; } = -1;
         public Pair Pair { get; set; }
         public SKPoint Value { get; set; }
         public override SKPoint Location {
@@ -1954,7 +1952,7 @@ namespace TuggingController {
 
         public void DrawHover(SKCanvas canvas) {
             if (this.IsHovered) {
-                Hover.DrawHover(canvas, this.Value, this.Location, this.Transform);
+                Hover.DrawHover(canvas, this.Value, this.Index, this.Location, this.Transform);
             }
         }
 

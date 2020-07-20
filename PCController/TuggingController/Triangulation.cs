@@ -581,7 +581,7 @@ namespace Reparameterization {
 
         public ConfigurationVector GetInterpolatedConfigurationVector(Vector<float> newStateVector) {
             if (this.IsSet) {
-                BarycenterCoefficient coefficient = this.Coordinate.GetBarycentricCoefficient(newStateVector);
+                var coefficient = this.Coordinate.GetBarycentricCoefficient(newStateVector);
 
                 return new ConfigurationVector(
                     this.ConfigurationMatrix.LeftMultiply(coefficient.ToVector())
