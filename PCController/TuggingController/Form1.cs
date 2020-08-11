@@ -1506,7 +1506,7 @@ namespace TuggingController {
             for (var idx = 0; idx < extremes.Length; idx++) {
                 var extremeLeft = extremes[idx];
                 var extremeRight = extremes[(idx + 1) == extremes.Length ? 0 : idx + 1];
-                var edge = new Edge<Triangle>(extremeLeft.Entry, extremeRight.Entry, extremeLeft.Parents.Intersect(extremeRight.Parents));
+                var edge = new Edge<Triangle>(extremeLeft.Entry, extremeRight.Entry, extremeLeft.Parents.Intersect(extremeRight.Parents), ((float)idx) / ((float)extremes.Length - 1.0f));
 
                 this.Add(edge);
             }
@@ -1524,18 +1524,27 @@ namespace TuggingController {
             for (var idx = 0; idx < edges.Length; idx++) {
                 var edge = edges[idx];
                 var triangles = edge.Parents;
+                var enumerator = triangles.Select((tri, index) => new { Value = tri, Index = index });
 
-                foreach(var tri in triangles) {
-                    var restVertex = tri.Vertices.Where(v => !edge.Start.Equals(v.Entry) & !edge.End.Equals(v.Entry)).ToArray()[0];
-                    var ridgeLeft = new Ridge<Triangle>(restVertex.Entry, edge.Start, new Triangle[] { tri });
-                    var ridgeRight = new Ridge<Triangle>(restVertex.Entry, edge.End, new Triangle[] { tri });
-                    Func<Edge<Triangle>, bool> evaluateFunc(Ridge<Triangle> r) => (e) => {
-                        var vertexSet = new HashSet<Entry>();
+                foreach (var tri in enumerator) {
+                    var restVertex = tri.Value.Vertices.Where(
+                        v => !edge.Start.Equals(v.Entry) & !edge.End.Equals(v.Entry)).ToArray()[0];
+                    var ridgeLeft = new Ridge<Triangle>(
+                        restVertex.Entry, edge.Start,
+                        new Triangle[] { tri.Value },
+                        tri.Index / triangles.Count);
+                    var ridgeRight = new Ridge<Triangle>(
+                        restVertex.Entry, edge.End,
+                        new Triangle[] { tri.Value }, 
+                        tri.Index / triangles.Count);
+                    Func<Edge<Triangle>, bool> evaluateFunc(Ridge<Triangle> r) =>
+                        (e) => {
+                            var vertexSet = new HashSet<Entry> {
+                                e.Start,
+                                e.End
+                            };
 
-                        vertexSet.Add(e.Start);
-                        vertexSet.Add(e.End);
-
-                        return !vertexSet.SetEquals(r.Vertices);
+                            return !vertexSet.SetEquals(r.Vertices);
                     };
 
                     if (edges.All(evaluateFunc(ridgeLeft))) {
@@ -1559,7 +1568,7 @@ namespace TuggingController {
     }
 
     public class Ridge<T> : Edge<T> {
-        public Ridge(Entry start, Entry end, IEnumerable<T> parents) : base(start, end, parents) { }
+        public Ridge(Entry start, Entry end, IEnumerable<T> parents, float colorFactor) : base(start, end, parents, colorFactor) { }
 
         public bool HasSameVertices(Ridge<T> ridge) {
             return this.Vertices.Equals(ridge.Vertices);
@@ -1648,11 +1657,65 @@ namespace TuggingController {
         }
     }
 
+    public readonly struct ColorGradient {
+        public int RMax { get; }
+        public int GMax { get; }
+        public int BMax { get; }
+        public int RMin { get; }
+        public int GMin { get; }
+        public int BMin { get; }
+
+        public ColorGradient(int[] rgbMax, int[] rgbMin) {
+            this.RMax = rgbMax[0];
+            this.GMax = rgbMax[1];
+            this.BMax = rgbMax[2];
+            this.RMin = rgbMin[0];
+            this.GMin = rgbMin[1];
+            this.BMin = rgbMin[2];
+        }
+    }
+    public readonly struct ColorGradients {
+        public static SKColor GetSKColor(float factor, ColorGradient gradient) {
+            if (factor > 1 | factor < 0) {
+                throw new Exception("Incorrect factor to get SKColor");
+            }
+
+            Func<int, int, byte> colorEquation = (int min, int max) => Convert.ToByte(min + (max - min) * factor);
+            var newR = colorEquation(gradient.RMin, gradient.RMax);
+            var newG = colorEquation(gradient.GMin, gradient.GMax);
+            var newB = colorEquation(gradient.BMin, gradient.BMax);
+
+            return new SKColor(newR, newG, newB);
+        }
+        
+        public static ColorGradient ShroomHaze = new ColorGradient(
+            new int[] { 0x5c, 0x25, 0x8d }, new int[] { 0x43, 0x89, 0xa2 });
+        public static ColorGradient GrapefruitSunset = new ColorGradient(
+            new int[] { 0xe9, 0x64, 0x43 }, new int[] { 0x90, 0x4e, 0x95 });
+    }
+
     public class Edge<T> {
+        public SKColor Color { get; set; }
         public SortedSet<T> Parents { get; set; }
         public List<Entry> Vertices => new List<Entry>(new Entry[] { this.Start, this.End });
-        public SkiaHelper.Ray StartRay { set; get; }
-        public SkiaHelper.Ray EndRay { set; get; }
+        public SkiaHelper.Ray StartRay {
+            get {
+                var centerToStart = new SkiaHelper.LineSegment(
+                    SkiaHelper.ConvertSKPointToVector(this.Center),
+                    SkiaHelper.ConvertSKPointToVector(this.Start.GlobalLocation));
+
+                return SkiaHelper.Ray.CreateRay(centerToStart.V1, centerToStart.Direction);
+            }
+        }
+        public SkiaHelper.Ray EndRay {
+            get {
+                var centerToEnd = new SkiaHelper.LineSegment(
+                    SkiaHelper.ConvertSKPointToVector(this.Center),
+                    SkiaHelper.ConvertSKPointToVector(this.End.GlobalLocation));
+
+                return SkiaHelper.Ray.CreateRay(centerToEnd.V1, centerToEnd.Direction);
+            }
+        }
         public Entry Start { get; set; }
         public Entry End { get; set; }
         public Entry Centroid => (this.End - this.Start) / 2.0f + this.Start;
@@ -1669,20 +1732,14 @@ namespace TuggingController {
 
         public Edge() { }
 
-        public Edge(Entry start, Entry end, IEnumerable<T> parents) {
+        public Edge(Entry start, Entry end, IEnumerable<T> parents, float colorFactor) {
             this.Start = start;
             this.End = end;
             this.Parents = new SortedSet<T>(parents);
+            this.Color = ColorGradients.GetSKColor(colorFactor, ColorGradients.GrapefruitSunset);
 
-            var centerToStart = new SkiaHelper.LineSegment(
-                SkiaHelper.ConvertSKPointToVector(this.Center),
-                SkiaHelper.ConvertSKPointToVector(this.Start.GlobalLocation));
-            var centerToEnd = new SkiaHelper.LineSegment(
-                SkiaHelper.ConvertSKPointToVector(this.Center),
-                SkiaHelper.ConvertSKPointToVector(this.End.GlobalLocation));
 
-            this.StartRay = SkiaHelper.Ray.CreateRay(centerToStart.V1, centerToStart.Direction);
-            this.EndRay = SkiaHelper.Ray.CreateRay(centerToEnd.V1, centerToEnd.Direction);
+
         }
 
         public bool Equals(Edge<T> obj) {
@@ -1717,27 +1774,45 @@ namespace TuggingController {
         }
 
         public virtual void Draw(SKCanvas canvas) {
+            this.DrawEdge(canvas);
             this.DrawCenter(canvas);
             //this.DrawExtensionLine(canvas);
         }
 
         private void DrawCenter(SKCanvas canvas) {
-            var radius = 2.0f;
+            var radius = 3.0f;
             var fillPaint = new SKPaint {
                 IsAntialias = true,
-                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Azure, 0.8f),
+                //Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Azure, 0.8f),
+                Color = this.Color,
                 Style = SKPaintStyle.Fill
             };
             var strokePaint = new SKPaint {
                 IsAntialias = true,
                 Color = SKColors.Black,
                 Style = SKPaintStyle.Stroke,
-                StrokeWidth = 1
+                StrokeWidth = 2
             };
 
             // Draw entry shape
             canvas.DrawCircle(this.Center, radius, fillPaint);
             canvas.DrawCircle(this.Center, radius, strokePaint);
+        }
+
+        private void DrawEdge(SKCanvas canvas) {
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Purple,
+                //Color = this.Color,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2
+            };
+            var path = new SKPath();
+
+            path.MoveTo(this.Start.GlobalLocation);
+            path.LineTo(this.End.GlobalLocation);
+
+            canvas.DrawPath(path, strokePaint);
         }
         
     }
@@ -1829,32 +1904,32 @@ namespace TuggingController {
         //}
         public void Draw(SKCanvas canvas, SKRect area) {
 
-            if (this.Extremes.Count < 3)
-                return;
+            //if (this.Extremes.Count < 3)
+            //    return;
             //var fillPaint = new SKPaint {
             //    IsAntialias = true,
             //    //Color = SKColors.ForestGreen,
             //    Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.3f),
             //    Style = SKPaintStyle.Fill
             //};
-            var strokePaint = new SKPaint {
-                IsAntialias = true,
-                Color = SKColors.Purple,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 1
-            };
-            var path = new SKPath();
-            SKPoint[] gExtremes = this.Extremes.ToGlobalLocations();
+            //var strokePaint = new SKPaint {
+            //    IsAntialias = true,
+            //    Color = SKColors.Purple,
+            //    Style = SKPaintStyle.Stroke,
+            //    StrokeWidth = 1
+            //};
+            //var path = new SKPath();
+            //SKPoint[] gExtremes = this.Extremes.ToGlobalLocations();
 
-            path.MoveTo(gExtremes[0]);
+            //path.MoveTo(gExtremes[0]);
 
-            for (int idx = 1; idx < gExtremes.Length; idx++) {
-                path.LineTo(gExtremes[idx]);
-            }
+            //for (int idx = 1; idx < gExtremes.Length; idx++) {
+            //    path.LineTo(gExtremes[idx]);
+            //}
 
-            path.LineTo(gExtremes[0]);
+            //path.LineTo(gExtremes[0]);
 
-            canvas.DrawPath(path, strokePaint);
+            //canvas.DrawPath(path, strokePaint);
 
             this.Edges.ForEach(e => e.Draw(canvas));
             this.Ridges.ForEach(r => r.Draw(canvas));
