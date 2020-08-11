@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Numerics;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
@@ -21,6 +20,14 @@ using System.Configuration.Internal;
 using PCController;
 using System.Security.Policy;
 using System.Runtime.CompilerServices;
+using Xamarin.Forms.Xaml;
+using MathNet.Numerics.LinearAlgebra;
+using NLog.Filters;
+using MathNet.Numerics.Interpolation;
+using System.CodeDom;
+using MathNet.Numerics.Distributions;
+using System.Security.Cryptography;
+using System.Collections;
 
 namespace TuggingController {
     public partial class Form1 : Form {
@@ -36,6 +43,7 @@ namespace TuggingController {
         private readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         private bool IsDragging { get; set; } = false;
+        private bool IsDoubleClick { get; set; } = false;
         private Point StartLocationOnDrag { get; set; }
         private Point CurrentLocationOnDrag { get; set; }
 
@@ -250,7 +258,7 @@ namespace TuggingController {
 
                 //Logger.Debug(extremeIndexes);
                 this.Chart.ConvexHull.SetExtremes(extremeIndexes.Select(idx => new Extreme() { Entry = this.Chart.Entries[idx], Index = idx }));
-                this.Chart.ConvexHull.Triangles = this.Chart.Triangles;
+                //this.Chart.ConvexHull.Triangles = this.Chart.Triangles;
                 TuggingController.Invalidate();
             }
             else if (fileName == "qdelaunayN") {
@@ -296,22 +304,54 @@ namespace TuggingController {
         }
 
         private void RunTriangulationTask() {
-            if (File.Exists("data.txt")) {
-                File.Delete("data.txt");
-            }
-            using (FileStream fs = File.Create("data.txt")) {
-                byte[] info = new UTF8Encoding(true).GetBytes(this.Chart.PrintEntries());
-                fs.Write(info, 0, info.Length);
-            }
+            //if (File.Exists("data.txt")) {
+            //    File.Delete("data.txt");
+            //}
+            //using (FileStream fs = File.Create("data.txt")) {
+            //    byte[] info = new UTF8Encoding(true).GetBytes(this.Chart.PrintEntries());
+            //    fs.Write(info, 0, info.Length);
+            //}
 
-            this.Tri.RunDelaunay();
-            this.Tri.StartTask();
+            // Test
+            var flatPoints = this.Chart.Entries.Flatten();
+            var triangles = this.Tri.RunDelaunay_v1(2, this.Chart.Entries.Count, ref flatPoints);
+
+            this.UpdateTriangles(triangles);
+
+            //this.Tri.RunDelaunay();
+            //this.Tri.StartTask();
+        }
+
+        private void UpdateConvexHull(int[] extremeIndices) {
+            var extremes = extremeIndices.Select(
+                idx => new Extreme() {
+                    Entry = this.Chart.Entries[idx],
+                    Index = idx,
+                    Parents = new SortedSet<Triangle>(
+                        this.Chart.Triangles.Where(
+                            tri => (tri.IsVertex(idx) != null))),
+                }).ToArray();
+            this.Chart.ConvexHull.SetExtremes(extremes);
+            this.Chart.ConvexHull.Triangles = this.Chart.Triangles;
+
+            TuggingController.Invalidate();
+        }
+
+        private void UpdateTriangles(List<int[]> triangles) {
+            this.Chart.Triangulate(triangles);
+            TuggingController.Invalidate();
         }
 
         private void RunConvexHullTask() {
+            // Test
+            var flatPoints = this.Chart.Entries.Flatten();
+            var extremes = this.Tri.RunConvexHull_v1(2, this.Chart.Entries.Count, ref flatPoints);
+
+            // #TODO
+            this.UpdateConvexHull(extremes.ToArray());
             // Bug: Old data.txt will cause exception.
-            this.Tri.RunConvexHull();
-            this.Tri.StartTask();
+            //this.Tri.RunConvexHull();
+            //this.Tri.StartTask();
         }
 
         private void RunDelaunayNTask() {
@@ -323,12 +363,15 @@ namespace TuggingController {
             switch (e.Button) {
                 case MouseButtons.Left:
                     //this.IsDragging = false;
-                    if (!this.IsDragging) {
+                    if (!this.IsDragging & !this.IsDoubleClick) {
                         this.skControl1_MouseClick(sender, e);
+                    } else if (this.IsDoubleClick) {
+                        this.IsDoubleClick = false;
                     }
 
                     if (this.Chart.Entries.Count > 3) {
                         this.RunTriangulationTask();
+                        this.RunConvexHullTask();
                     }
                     break;
                 case MouseButtons.Right:
@@ -346,6 +389,7 @@ namespace TuggingController {
 
             switch (e.Button) {
                 case MouseButtons.Left:
+                    this.IsDoubleClick = true;
                     //if ()
                     Logger.Debug("Add new point");
                     Logger.Debug(e.Location);
@@ -433,7 +477,7 @@ namespace TuggingController {
                     //Logger.Debug("{0} {1}", targetLoc.X, targetLoc.Y);
 
                     //Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_v1(targetLoc, PointType.Global) != null);
-                    Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_Re(this.Chart.TestPoint.Value) != null);
+                    Triangle[] collection = this.Chart.Triangles.Where(tri => tri.IsInside_Re(this.Chart.TestPoint.Value) != null).ToArray();
 
                     if (collection.Length != 0) {
                         var result = collection[0].Simplex_Re.GetInterpolatedConfigurationVector(SkiaHelper.ToVector(this.Chart.TestPoint.Value));
@@ -658,28 +702,40 @@ namespace TuggingController {
                 action(this[i]);
             }
         }
+
+        public double[] Flatten() {
+            var tmpList = new List<double>();
+
+            this.ForEach(e => tmpList.AddRange(new double[] { e.Value.X, e.Value.Y }));
+
+            return tmpList.ToArray();
+        }
     }
 
-    public class TriangleCollection : ObservableCollection<Triangle> {
+    public class TriangleCollection : List<Triangle> {
         public TriangleCollection() : base() { }
 
         public void UpdateScale(SKMatrix scale) => this.ForEach(e => e.UpdateScale(scale));
         public void UpdateTransform(SKMatrix transform) => this.ForEach(e => e.UpdateTransform(transform));
 
-        public Triangle[] Where(Func<Triangle, bool> predicate) {
-            var ret = new List<Triangle>();
-            foreach (var tri in this) {
-                if (predicate(tri))
-                    ret.Add(tri);
-            }
+        public Triangle[] GetTrianglesFromVertexIndices(int[] indices) {
+            return this.Where(tri => tri.IsVertices(indices) != null).ToArray();
+        }
 
-            return ret.ToArray();
-        }
-        public void ForEach(Action<Triangle> action) {
-            for (int i = 0; i < this.Count; i++) {
-                action(this[i]);
-            }
-        }
+        //public Triangle[] Where(Func<Triangle, bool> predicate) {
+        //    var ret = new List<Triangle>();
+        //    foreach (var tri in this) {
+        //        if (predicate(tri))
+        //            ret.Add(tri);
+        //    }
+
+        //    return ret.ToArray();
+        //}
+        //public void ForEach(Action<Triangle> action) {
+        //    for (int i = 0; i < this.Count; i++) {
+        //        action(this[i]);
+        //    }
+        //}
     }
 
     public abstract class Chart {
@@ -939,7 +995,7 @@ namespace TuggingController {
         public Triangle IsInTriangleArea(SKPoint pointerLocation) {
             //SKPoint value = this.Scale.MapPoint(this.Transform.MapPoint(SkiaHelper.ToSKPoint(pointerLocation)));
 
-            Triangle[] retTri = this.Triangles.Where(t => t.IsInsideFromGlobalLocation(pointerLocation) != null);
+            Triangle[] retTri = this.Triangles.Where(t => t.IsInsideFromGlobalLocation(pointerLocation) != null).ToArray();
             return retTri.Length != 0 ? retTri[0] : null;
         }
 
@@ -1309,7 +1365,6 @@ namespace TuggingController {
             textPaint.MeasureText(text, ref bounds);
 
             var anchor = transform.MapPoint(location);
-            var size = new SKSize(150, 50);
             var offset = new SKPoint(10, -25);
             anchor += offset;
             var rect = new SKRect(anchor.X, anchor.Y, anchor.X + bounds.Width + offset.X, anchor.Y + bounds.Height * 2);
@@ -1327,31 +1382,34 @@ namespace TuggingController {
             //    StrokeWidth = 2,
             //    PathEffect = SKPathEffect.CreateCorner(5)
             //};
-
-
-
-
             
             canvas.DrawRect(rect, pathPaint);
             canvas.DrawText(text, anchor + new SKSize(5, 15), textPaint);
-
-            //canvas.DrawText(value.X.ToString("F4") + ", " + value.Y.ToString("F4"), anchor + new SKPoint(5, 25), textPaint);
             //canvas.DrawRect(rect, strokePaint);
         }
     }
 
     public struct TriVertex {
-        public Entry Entry;
-        //public SKPoint location;
-        public int idx;
+        public Entry Entry { get; set; }
+        public int Index { get; set; }
+        public Triangle Parent { get; set; }
     }
 
     [Serializable]
     public class TriVertexCollection : List<TriVertex> {
-        public TriVertexCollection(Entry[] entries, int[] indexes) : base() {
-            this.Add(new TriVertex { Entry = entries[0], idx = indexes[0] });
-            this.Add(new TriVertex { Entry = entries[1], idx = indexes[1] });
-            this.Add(new TriVertex { Entry = entries[2], idx = indexes[2] });
+        public TriVertexCollection(Entry[] entries, int[] indexes, Triangle parent) : base() {
+            this.Add(
+                new TriVertex {
+                    Entry = entries[0], Index = indexes[0], Parent = parent
+                });
+            this.Add(
+                new TriVertex {
+                    Entry = entries[1], Index = indexes[1], Parent = parent
+                });
+            this.Add(
+                new TriVertex {
+                    Entry = entries[2], Index = indexes[2], Parent = parent
+                });
         }
     
         public SKPoint[] ToGlobalLocations() => this.Select(v => v.Entry.GlobalLocation).ToArray();
@@ -1368,7 +1426,7 @@ namespace TuggingController {
         //    }
         //}
         public TriVertex? Any(int targetIdx) {
-            var ret = this.Where(value => value.idx == targetIdx).ToArray();
+            var ret = this.Where(value => value.Index == targetIdx).ToArray();
 
             return ret.Length > 0 ? ret[0] : (TriVertex?)null;
         }
@@ -1386,10 +1444,10 @@ namespace TuggingController {
         Global
     }
 
-    public abstract class ScalableCanvasObject : CanvasObject, IScalable {
+    public class ScalableCanvasObject : CanvasObject, IScalable {
         public SKMatrix Scale { get; set; }
 
-        protected ScalableCanvasObject(SKMatrix scale) : base(new SKPoint(0, 0), SKMatrix.MakeIdentity()) {
+        protected ScalableCanvasObject(SKMatrix scale, SKMatrix transform) : base(new SKPoint(0, 0), transform) {
             this.Scale = scale;
         }
 
@@ -1398,6 +1456,13 @@ namespace TuggingController {
         }
         public virtual void UpdateScale(SKMatrix scale) => this.Scale = scale;
 
+        public override void Draw(SKCanvas canvas) {
+            throw new NotImplementedException();
+        }
+
+        public override CanvasObject Clone() {
+            throw new NotImplementedException();
+        }
     }
 
     public interface IScalable {
@@ -1406,8 +1471,10 @@ namespace TuggingController {
     }
 
     public struct Extreme {
+        public SortedSet<Triangle> Parents;
         public Entry Entry;
         public int Index;
+        
     }
 
     public class ExtremeCollection : List<Extreme> {
@@ -1425,6 +1492,125 @@ namespace TuggingController {
         }
         public Extreme NextElement(int idx) {
             return this[idx + 1 > this.Count - 1 ? 0 : idx + 1];
+        }
+    }
+
+    public class EdgeCollection<T> : List<Edge<Triangle>> {
+        public T Parent { get; set; }
+        public EdgeCollection() : base() { }
+        public EdgeCollection(T parent) {
+            this.Parent = parent;
+        }
+
+        public void Add(Extreme[] extremes) {
+            for (var idx = 0; idx < extremes.Length; idx++) {
+                var extremeLeft = extremes[idx];
+                var extremeRight = extremes[(idx + 1) == extremes.Length ? 0 : idx + 1];
+                var edge = new Edge<Triangle>(extremeLeft.Entry, extremeRight.Entry, extremeLeft.Parents.Intersect(extremeRight.Parents));
+
+                this.Add(edge);
+            }
+        }
+    }
+
+    public class RidgeCollection<T> : List<Ridge<Triangle>> {
+        public T Parent { get; set; }
+
+        public RidgeCollection(T parent) {
+            this.Parent = parent;
+        }
+
+        public void Add(Edge<Triangle>[] edges){
+            for (var idx = 0; idx < edges.Length; idx++) {
+                var edge = edges[idx];
+                var triangles = edge.Parents;
+
+                foreach(var tri in triangles) {
+                    var restVertex = tri.Vertices.Where(v => !edge.Start.Equals(v.Entry) & !edge.End.Equals(v.Entry)).ToArray()[0];
+                    var ridgeLeft = new Ridge<Triangle>(restVertex.Entry, edge.Start, new Triangle[] { tri });
+                    var ridgeRight = new Ridge<Triangle>(restVertex.Entry, edge.End, new Triangle[] { tri });
+                    Func<Edge<Triangle>, bool> evaluateFunc(Ridge<Triangle> r) => (e) => {
+                        var vertexSet = new HashSet<Entry>();
+
+                        vertexSet.Add(e.Start);
+                        vertexSet.Add(e.End);
+
+                        return !vertexSet.SetEquals(r.Vertices);
+                    };
+
+                    if (edges.All(evaluateFunc(ridgeLeft))) {
+                        this.Add(ridgeLeft);
+                    }
+
+                    if (edges.All(evaluateFunc(ridgeRight))) {
+                        this.Add(ridgeRight);
+                    }
+                }
+            }
+        }
+
+        public new void Add(Ridge<Triangle> ridge) {
+            var duplicates = this.FindAll(r => r.HasSameVertices(ridge));
+
+            if (duplicates.Count == 0) {
+                base.Add(ridge);
+            }
+        }
+    }
+
+    public class Ridge<T> : Edge<T> {
+        public Ridge(Entry start, Entry end, IEnumerable<T> parents) : base(start, end, parents) { }
+
+        public bool HasSameVertices(Ridge<T> ridge) {
+            return this.Vertices.Equals(ridge.Vertices);
+        }
+
+        public override void Draw(SKCanvas canvas) {
+            this.DrawCentroid(canvas);
+            this.DrawExtensionLine(canvas);
+        }
+
+        private void DrawCentroid(SKCanvas canvas) {
+            var radius = 3.0f;
+            var fillPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Cyan, 0.8f),
+                Style = SKPaintStyle.Fill
+            };
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 1
+            };
+
+            // Draw entry shape
+            canvas.DrawCircle(this.Centroid.GlobalLocation, radius, fillPaint);
+            canvas.DrawCircle(this.Centroid.GlobalLocation, radius, strokePaint);
+        }
+
+        private void DrawExtensionLine(SKCanvas canvas) {
+            //var startRayV0 = SkiaHelper.ConvertVectorToSKPoint(this.StartRay.V0);
+            //var startRayV1 = SkiaHelper.ConvertVectorToSKPoint(this.StartRay.GetNewPointOnLine(1000.0f));
+
+            var endRayV0 = SkiaHelper.ConvertVectorToSKPoint(this.EndRay.V0);
+            var endRayV1 = SkiaHelper.ConvertVectorToSKPoint(this.EndRay.GetNewPointOnLine(1000.0f));
+
+            var endRayStrokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.DarkSalmon,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2
+            };
+            //var startRayStrokePaint = new SKPaint {
+            //    IsAntialias = true,
+            //    Color = SKColors.DarkViolet,
+            //    Style = SKPaintStyle.Stroke,
+            //    StrokeWidth = 2
+            //};
+
+            //canvas.DrawLine(startRayV0, startRayV1, startRayStrokePaint);
+            canvas.DrawLine(endRayV0, endRayV1, endRayStrokePaint);
         }
     }
 
@@ -1462,65 +1648,97 @@ namespace TuggingController {
         }
     }
 
-    public class Edge {
+    public class Edge<T> {
+        public SortedSet<T> Parents { get; set; }
+        public List<Entry> Vertices => new List<Entry>(new Entry[] { this.Start, this.End });
+        public SkiaHelper.Ray StartRay { set; get; }
+        public SkiaHelper.Ray EndRay { set; get; }
         public Entry Start { get; set; }
-        public SKPoint centroidOfStart { get; set; }
         public Entry End { get; set; }
-        public SKPoint centroidOfEnd { get; set; }
-        public SKRect Area { get; set; }
-        public Polygon OuterZone {
+        public Entry Centroid => (this.End - this.Start) / 2.0f + this.Start;
+
+        public SKPoint Center {
             get {
-                var (verticesOfArea, lineSegments) = SkiaHelper.GetAreaLineSegments(this.Area);
-                //ccw
-                SkiaHelper.SKRay endRay = new SkiaHelper.SKRay() {
-                    Start = this.End.GlobalLocation, Direction = centroidOfEnd };
-                SKPoint intersectionOfEnd = new SKPoint();
-                int intersectionIdxOfEnd = 0;
-                for (int idx = 0; idx < lineSegments.Length; idx ++) {
-                    LA.Matrix<float> T = SkiaHelper.CheckIsIntersected(endRay, lineSegments[idx]);
-                    if (endRay.IsInLine(T[0, 0]) & lineSegments[idx].IsInLine(T[1, 0])) {
-                        intersectionOfEnd = endRay.GetIntersection(T[0, 0]);
-                        intersectionIdxOfEnd = idx;
-                    }
-                }
+                var start = this.Start.GlobalLocation;
+                var end = this.End.GlobalLocation;
+                var size = new SKSize((end.X - start.X) / 2, (end.Y - start.Y) / 2);
 
-                SkiaHelper.SKRay startRay = new SkiaHelper.SKRay() {
-                    Start = this.Start.GlobalLocation,
-                    Direction = centroidOfStart
-                };
-                SKPoint intersectionOfStart = new SKPoint();
-                int intersectionIdxOfStart = 0;
-
-                for (int idx = 0; idx < lineSegments.Length; idx++) {
-                    int offset = intersectionIdxOfEnd + idx >= lineSegments.Length ? intersectionIdxOfEnd + idx - lineSegments.Length : intersectionIdxOfEnd + idx;
-                    LA.Matrix<float> T = SkiaHelper.CheckIsIntersected(startRay, lineSegments[offset]);
-                    if (startRay.IsInLine(T[0, 0]) & lineSegments[offset].IsInLine(T[1, 0])) {
-                        intersectionOfStart = startRay.GetIntersection(T[0, 0]);
-                        intersectionIdxOfStart = offset;
-                    }
-                }
-
-                SKPoint[] vertices = Array.Empty<SKPoint>();
-
-                if (intersectionIdxOfEnd == intersectionIdxOfStart) {
-                    vertices = new SKPoint[] {
-                        endRay.Start,
-                        intersectionOfEnd,
-                        intersectionOfStart,
-                        startRay.Start
-                    };
-                }
-                else {
-                    vertices = new SKPoint[] {
-                        endRay.Start,
-                        intersectionOfEnd,
-                    };
-                }
-                return null;
+                return new SKPoint(start.X + size.Width, start.Y + size.Height);
             }
         }
+
         public Edge() { }
 
+        public Edge(Entry start, Entry end, IEnumerable<T> parents) {
+            this.Start = start;
+            this.End = end;
+            this.Parents = new SortedSet<T>(parents);
+
+            var centerToStart = new SkiaHelper.LineSegment(
+                SkiaHelper.ConvertSKPointToVector(this.Center),
+                SkiaHelper.ConvertSKPointToVector(this.Start.GlobalLocation));
+            var centerToEnd = new SkiaHelper.LineSegment(
+                SkiaHelper.ConvertSKPointToVector(this.Center),
+                SkiaHelper.ConvertSKPointToVector(this.End.GlobalLocation));
+
+            this.StartRay = SkiaHelper.Ray.CreateRay(centerToStart.V1, centerToStart.Direction);
+            this.EndRay = SkiaHelper.Ray.CreateRay(centerToEnd.V1, centerToEnd.Direction);
+        }
+
+        public bool Equals(Edge<T> obj) {
+            return this.Parents.Equals(obj.Parents) & this.Start.Equals(obj.Start) & this.End.Equals(obj.End);
+        }
+
+        private void FindIntersectionPoint() {
+
+        }
+        private void DrawExtensionLine(SKCanvas canvas) {
+            var startRayV0 = SkiaHelper.ConvertVectorToSKPoint(this.StartRay.V0);
+            var startRayV1 = SkiaHelper.ConvertVectorToSKPoint(this.StartRay.GetNewPointOnLine(1000.0f));
+
+            var endRayV0 = SkiaHelper.ConvertVectorToSKPoint(this.EndRay.V0);
+            var endRayV1 = SkiaHelper.ConvertVectorToSKPoint(this.EndRay.GetNewPointOnLine(1000.0f));
+
+            var endRayStrokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Chocolate,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2
+            };
+            var startRayStrokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.DarkTurquoise,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2
+            };
+
+            canvas.DrawLine(startRayV0, startRayV1, startRayStrokePaint);
+            canvas.DrawLine(endRayV0, endRayV1, endRayStrokePaint);
+        }
+
+        public virtual void Draw(SKCanvas canvas) {
+            this.DrawCenter(canvas);
+            //this.DrawExtensionLine(canvas);
+        }
+
+        private void DrawCenter(SKCanvas canvas) {
+            var radius = 2.0f;
+            var fillPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Azure, 0.8f),
+                Style = SKPaintStyle.Fill
+            };
+            var strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 1
+            };
+
+            // Draw entry shape
+            canvas.DrawCircle(this.Center, radius, fillPaint);
+            canvas.DrawCircle(this.Center, radius, strokePaint);
+        }
         
     }
 
@@ -1528,33 +1746,44 @@ namespace TuggingController {
 
         public TriangleCollection Triangles { get; set; }
         public ExtremeCollection Extremes { get; set; } = new ExtremeCollection();
+        public EdgeCollection<ConvexHull> Edges { get; set; }
+        public RidgeCollection<ConvexHull> Ridges { get; set; }
+
 
         public ConvexHull() : this(Array.Empty<Extreme>()) { }
         public ConvexHull(Extreme[] extremes): this(extremes, new SKPoint(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
         public ConvexHull(Extreme[] extremes, SKPoint location, SKMatrix transform, SKMatrix scale) : base(location, transform, scale) {
             this.Extremes = new ExtremeCollection(extremes);
+            this.Edges = new EdgeCollection<ConvexHull>(this);
+            this.Ridges = new RidgeCollection<ConvexHull>(this);
+
         }
         
-        private void GetNeighborTriangles() {
-            for (int idx = 0; idx < this.Extremes.Count; idx++) {
-                Triangle tri1 = this.Triangles.Where(tri => tri.IsVertex(this.Extremes[idx].Index, this.Extremes.PrevElement(idx).Index) != null)[0];
-                Triangle tri2 = this.Triangles.Where(tri => tri.IsVertex(this.Extremes[idx].Index, this.Extremes.NextElement(idx).Index) != null)[0];
+        //private void GetNeighborTriangles() {
+        //    for (int idx = 0; idx < this.Extremes.Count; idx++) {
+        //        Triangle tri1 = this.Triangles.Where(tri => tri.IsVertex(this.Extremes[idx].Index, this.Extremes.PrevElement(idx).Index) != null)[0];
+        //        Triangle tri2 = this.Triangles.Where(tri => tri.IsVertex(this.Extremes[idx].Index, this.Extremes.NextElement(idx).Index) != null)[0];
 
-                if (tri1 == tri2) {
-                    Logger.Debug("{0} - Single extreme.", this.Extremes[idx].Index);
-                }
-                else if (tri1.VertexIndexes.Where(i => !new int[] { this.Extremes[idx].Index, this.Extremes.PrevElement(idx).Index }.Contains(i)).ToArray()[0] == tri2.VertexIndexes.Where(i => !new int[] { this.Extremes[idx].Index, this.Extremes.NextElement(idx).Index }.Contains(i)).ToArray()[0]) {
-                    Logger.Debug("{0} - Two triangle One Extreme.", this.Extremes[idx].Index);
-                }
-                else {
-                    Logger.Debug("{0} - More than 2 triangles 1 extreme", this.Extremes[idx].Index);
-                }
-            }
-        }
+        //        if (tri1 == tri2) {
+        //            Logger.Debug("{0} - Single extreme.", this.Extremes[idx].Index);
+        //        }
+        //        else if (tri1.VertexIndexes.Where(i => !new int[] { this.Extremes[idx].Index, this.Extremes.PrevElement(idx).Index }.Contains(i)).ToArray()[0] == tri2.VertexIndexes.Where(i => !new int[] { this.Extremes[idx].Index, this.Extremes.NextElement(idx).Index }.Contains(i)).ToArray()[0]) {
+        //            Logger.Debug("{0} - Two triangle One Extreme.", this.Extremes[idx].Index);
+        //        }
+        //        else {
+        //            Logger.Debug("{0} - More than 2 triangles 1 extreme", this.Extremes[idx].Index);
+        //        }
+        //    }
+        //}
 
         public void SetExtremes(IEnumerable<Extreme> extremes) {
             this.Extremes.Clear();
+            this.Edges.Clear();
+            this.Ridges.Clear();
+
             this.Extremes.AddRange(extremes);
+            this.Edges.Add(this.Extremes.ToArray());
+            this.Ridges.Add(this.Edges.ToArray());
         }
 
         private SKPoint GetCentroid(SKPoint[] vertices) {
@@ -1595,9 +1824,9 @@ namespace TuggingController {
             canvas.DrawCircle(centroid, radius, fillPaint);
             canvas.DrawCircle(centroid, radius, strokePaint);
         }
-        public override void Draw(SKCanvas canvas) {
-            throw new NotImplementedException();
-        }
+        //public override void Draw(SKCanvas canvas) {
+        //    throw new NotImplementedException();
+        //}
         public void Draw(SKCanvas canvas, SKRect area) {
 
             if (this.Extremes.Count < 3)
@@ -1626,8 +1855,11 @@ namespace TuggingController {
             path.LineTo(gExtremes[0]);
 
             canvas.DrawPath(path, strokePaint);
-            this.GetNeighborTriangles();
-            //SkiaHelper.DrawRay(canvas, new SkiaHelper.SKRay() { Start = this.Extremes[0].GlobalLocation, Direction = SKPoint.Normalize(new SKPoint(1, 1)) }, area);
+
+            this.Edges.ForEach(e => e.Draw(canvas));
+            this.Ridges.ForEach(r => r.Draw(canvas));
+            //this.GetNeighborTriangles();
+            //SkiaHelper.DrawRay(canvas, new SkiaHelper.SKRay() { Start = this.Extremes[0].Entry.GlobalLocation, Direction = SKPoint.Normalize(new SKPoint(1, 1)) }, area);
             //this.Centroids.ToList().ForEach(c => this.DrawCentroid(canvas, c));
 
             //for (int idx = 0; idx < this.Extremes.Count; idx ++) {
@@ -1637,7 +1869,7 @@ namespace TuggingController {
         }
     }
 
-    public class Triangle : ScalableCanvasObject {
+    public class Triangle : ScalableCanvasObject, IComparable {
         public bool IsHovered { get; set; } = false;
         public bool IsSelected { get; set; } = false;
         public bool IsSet {
@@ -1658,7 +1890,7 @@ namespace TuggingController {
 
         public Triangle(Entry[] vertices, int[] vertexIndexes, SKPoint location, SKMatrix scale, SKMatrix transform) : base(location, transform, scale) {
             //this.Vertices = vertices;
-            this.Vertices = new TriVertexCollection(vertices, vertexIndexes);
+            this.Vertices = new TriVertexCollection(vertices, vertexIndexes, this);
             this.VertexIndexes = vertexIndexes;
 
             // [New Feature]: Testing
@@ -1673,6 +1905,8 @@ namespace TuggingController {
         public Triangle IsVertex(int targetIdx) => this.Vertices.Any(targetIdx).HasValue ? this : null;
 
         public Triangle IsVertex(int i1, int i2) => this.Vertices.Any(i1).HasValue & this.Vertices.Any(i2).HasValue ? this : null;
+
+        public Triangle IsVertices(int[] indices) => indices.All(idx => this.Vertices.Any(idx).HasValue) ? this : null;
 
         public Triangle IsInsideFromGlobalLocation(SKPoint gTarget) => this.IsInside_v1(gTarget, PointType.Global);
         //public Triangle IsInsideFromLocation(SKPoint lTarget) => this.IsInside_v1(lTarget, PointType.Local);
@@ -1763,6 +1997,14 @@ namespace TuggingController {
             canvas.DrawPath(path, fillPaint);
             canvas.DrawPath(path, strokePaint);
         }
+
+        public int CompareTo(object obj) {
+
+            var context = ((Triangle) obj).VertexIndexes.Select(idx => Convert.ToString(idx)).ToArray();
+            var contextThis = this.VertexIndexes.Select(idx => Convert.ToString(idx)).ToArray();
+
+            return string.Compare(string.Join("", contextThis), string.Join("", context));
+        }
     }
 
     // TODO: ChartObject [with Scale]  <-- CanvasObject
@@ -1852,9 +2094,17 @@ namespace TuggingController {
 
             return ret;
         }
+
+        public override CanvasObject Clone() {
+            throw new NotImplementedException();
+        }
     }
 
-    public class Entry : ScalableCanvasObject {
+    public interface IOrdered {
+        int Index { get; set; }
+    }
+
+    public class Entry : ScalableCanvasObject, IComparer<Entry> {
         public bool IsSelected { get; set; } = false;
         public bool IsHovered { get; set; } = false;
         public bool IsPaired { get; set; } = false;
@@ -1882,31 +2132,66 @@ namespace TuggingController {
 
         public Entry(SKPoint value) : this(value, SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
-        public Entry(SKPoint value, SKMatrix scale, SKMatrix transform) : base(transform) {
+        public Entry(SKPoint value, SKMatrix scale, SKMatrix transform) : base(scale, transform) {
             this.Value = value;
-            this.Scale = scale;
+            //this.Scale = scale;
             this.Pair = new Pair(new StateVector(SkiaHelper.ToVector(this.Value)));
 
             Logger.Debug("Create new entry - [Value]: {0}", this.Value);
             Logger.Debug("Create new entry - [Location]: {0}", this.Location);
         }
 
+        public static Entry operator +(Entry entryLeft, Entry entryRight) {
+            var leftT = entryLeft.Transform.Values;
+            var rightT = entryRight.Transform.Values;
+            var leftS = entryLeft.Scale.Values;
+            var rightS = entryRight.Scale.Values;
 
-        //public Entry(float x, float y, SKMatrix transform, bool isLocal) {
-        //    SKMatrix inverse;
-        //    transform.TryInvert(out inverse);
+            if (!Enumerable.SequenceEqual(leftT, rightT) & !Enumerable.SequenceEqual(leftS, rightS)) {
+                throw new Exception("Transform or Scale is not equal.");
+            }
+            else {
+                return new Entry(
+                    entryLeft.Value + entryRight.Value,
+                    entryLeft.Scale,
+                    entryLeft.Transform);
+            }
+        }
 
-        //    this.InverseTransform = inverse;
-        //    this.Transform = transform;
+        public static Entry operator -(Entry entryLeft, Entry entryRight) {
+            var leftT = entryLeft.Transform.Values;
+            var rightT = entryRight.Transform.Values;
+            var leftS = entryLeft.Scale.Values;
+            var rightS = entryRight.Scale.Values;
 
-        //    if (isLocal) {
-        //        this.LocalCoordinate = new SKPoint(x, y);
-        //    } else {
-        //        this.LocalCoordinate = this.InverseTransform.MapPoint(new SKPoint(x, y));
+            if (!Enumerable.SequenceEqual(leftT, rightT) & !Enumerable.SequenceEqual(leftS, rightS)) {
+                throw new Exception("Transform or Scale is not equal.");
+            }
+            else {
+                return new Entry(
+                    entryLeft.Value - entryRight.Value,
+                    entryLeft.Scale,
+                    entryLeft.Transform);
+            }
+        }
+
+        public static Entry operator /(Entry entry, float div) {
+            return new Entry(
+                new SKPoint(entry.Value.X / div, entry.Value.Y / div),
+                entry.Scale,
+                entry.Transform
+                );
+        }
+
+        //public override bool Equals(object obj) {
+        //    //Check for null and compare run-time types.
+        //    if ((obj == null) || !this.GetType().Equals(obj.GetType())) {
+        //        return false;
         //    }
-
-        //    Logger.Debug("Global Coordinate: {0}", this.GlobalCoordinate);
-        //    Logger.Debug("Local Coordinate: {0}", this.LocalCoordinate);
+        //    else {
+        //        Point p = (Point)obj;
+        //        return (x == p.x) && (y == p.y);
+        //    }
         //}
 
         public override void Draw(SKCanvas canvas) {
@@ -1975,6 +2260,11 @@ namespace TuggingController {
             this.Value = inverseScale.MapPoint(inverseCoordinate.MapPoint(gLocation));
         }
 
+        public int Compare(Entry x, Entry y) {
+            return x.Index.CompareTo(y.Index);
+        }
+
+
         //public void DrawEntry(SKCanvas canvas) {
         //    float radius = 5;
 
@@ -2019,14 +2309,14 @@ namespace TuggingController {
             }
         }
 
-        protected CanvasObject(SKPoint location, SKMatrix transform) {
+        public CanvasObject(SKPoint location, SKMatrix transform) {
             this.Location = location;
             this.Transform = transform;
 
             this.EnableLogging();
         }
 
-        protected CanvasObject(SKMatrix transform) : this(new SKPoint(), transform) { }
+        public CanvasObject(SKMatrix transform) : this(new SKPoint(), transform) { }
 
         public void EnableLogging() {
             this.Logger = LogManager.GetCurrentClassLogger();
@@ -2036,13 +2326,25 @@ namespace TuggingController {
         }
 
         public abstract void Draw(SKCanvas canvas);
+        public abstract CanvasObject Clone();
         public virtual void UpdateTransform(SKMatrix transform) {
             this.Transform = transform;
         }
     }
 
-    public class Axis : CanvasObject
-    {
+    public class StaticCanvasObject : CanvasObject {
+        public StaticCanvasObject(SKPoint location, SKMatrix transform) : base(location, transform) { }
+        public StaticCanvasObject(SKMatrix transform) : this(new SKPoint(), transform) { }
+
+        public override void Draw(SKCanvas canvas) {
+            throw new NotImplementedException();
+        }
+        public override CanvasObject Clone() {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class Axis : StaticCanvasObject {
         public string Label { get; set; } = "X";
         public List<Tick> Ticks { get; set; } = new List<Tick>();
         public int MaxTicksLimit { get; set; } = 11;
@@ -2153,7 +2455,7 @@ namespace TuggingController {
 
     }
 
-    public class Tick : CanvasObject {
+    public class Tick : StaticCanvasObject {
         public enum Directions {
             DOWN = 0,
             UP = 1,
@@ -2305,7 +2607,7 @@ namespace TuggingController {
         }
     }
 
-    public class Label : CanvasObject {
+    public class Label : StaticCanvasObject {
         public string Type { get; set; } = "H";
         public SKPoint Anchor { get; set; }
         public string Name { get; set; }
@@ -2481,11 +2783,160 @@ namespace TuggingController {
 
         public class SKLine {
             public SKPoint Start { get; set; }
+            private LA.Vector<float> VStart {
+                get {
+                    return LA.Vector<float>.Build.DenseOfArray(new float[] { this.Start.X, this.Start.Y });
+                }
+            }
             public virtual SKPoint Direction { get; set; }
+            public virtual LA.Vector<float> VDirection {
+                get {
+                    return LA.Vector<float>.Build.DenseOfArray(new float[] { this.Direction.X, this.Direction.Y });
+                }
+            }
 
             //public virtual bool IsInLine(SKPoint target) {
 
             //}
+        }
+
+        public class Rect {
+            // clockwise
+            public LineSegment Top { get; set; }
+            public LineSegment Right { get; set; }
+            public LineSegment Bottom { get; set; }
+            public LineSegment Left { get; set; }
+
+            public Rect(SKRect rect) {
+            }
+        }
+
+        public class LineSegment : Line {
+            public LineSegment(Vector<float> v0, Vector<float> v1) : base(v0, v1) { }
+            public LineSegment(Line line) : base(line.V0, line.V1) { }
+
+            public static LineSegment CreateLineSegment(Vector<float> v0, Vector<float> direction) {
+                return new LineSegment(CreateLineFromDirection(v0, direction));
+            }
+        }
+
+        public class Ray : Line {
+            public Ray(Vector<float> v0, Vector<float> v1) : base(v0, v1) { }
+            public Ray(Line line) : base(line.V0, line.V1) { }
+
+            public static Ray CreateRay(Vector<float> v0, Vector<float> direction) {
+                return new Ray(CreateLineFromDirection(v0, direction));
+            }
+
+            public bool isOnRay(Vector<float> v) {
+                float t1, t2;
+
+                t1 = this.UnitDirection[0] != 0.0f ? (v[0] - this.V0[0]) / this.UnitDirection[0] : float.PositiveInfinity;
+                t2 = this.UnitDirection[1] != 0.0f ? (v[1] - this.V0[1]) / this.UnitDirection[1] : float.PositiveInfinity;
+
+                return (t1 == t2 | (float.IsPositiveInfinity(t1) & v[0] == 0.0f) | (float.IsPositiveInfinity(t2) & v[1] == 0.0f)) & t1 >= 0.0f & t2 >= 0.0f;
+            }
+        }
+
+        public interface ILine {
+            Vector<float> V0 { get; set; }
+            Vector<float> V1 { get; set; }
+            Vector<float> Direction { get; }
+            Vector<float> UnitDirection { get; }
+            float L2Norm { get; }
+        }
+
+        // L = V(V0) + T * V(V1 - V0)
+        public class Line : ILine {
+            public Vector<float> V0 { get; set; }
+            public Vector<float> V1 { get; set; }
+            public Vector<float> Direction {
+                get {
+                    return this.V1 - this.V0;
+                }
+            }
+            public float L2Norm {
+                get {
+                    return (float) this.Direction.L2Norm();
+                }
+            }
+            public Vector<float> UnitDirection {
+                get {
+                    return this.Direction.Normalize(2.0f);
+                }
+            }
+
+            public Line(Vector<float> v0, Vector<float> v1) {
+                this.V0 = v0;
+                this.V1 = v1;
+            }
+
+            public Vector<float> GetNewPointOnLine(float magnitude) {
+                return this.V0 + magnitude * this.UnitDirection;
+            }
+
+            public static Line CreateLineFromDirection(Vector<float> v0, Vector<float> direction) {
+                return new Line(v0, v0 + direction);
+            }
+        }
+
+        public static (bool, bool) IsIntersectionPointOnLine(Line l1, Line l2) {
+            (float t, float u) = GetIntersectionFactors(l1, l2);
+
+            return (t >= 0.0f & t <= 1.0f, u >= 0.0f & u <= 1.0f);
+        }
+
+        public static (bool, bool) IsIntersectionPointOnRay(Line l1, Line l2) {
+            (float t, float u) = GetIntersectionFactors(l1, l2);
+
+            return (t >= 0.0f, u >= 0.0f);
+        }
+
+        public static Vector<float> ConvertSKPointToVector(SKPoint point) {
+            return Vector<float>.Build.DenseOfArray(new float[] { point.X, point.Y });
+        }
+
+        public static SKPoint ConvertVectorToSKPoint(Vector<float> v) {
+            return new SKPoint(v[0], v[1]);
+        }
+
+
+        public static (float, float) GetIntersectionFactors(Line l1, Line l2) {
+            var a = l1.V0[0] - l2.V0[0];
+            var b = l1.V1[0] - l1.V0[0];
+            var c = l2.V1[0] - l2.V0[0];
+            var d = l1.V0[1] - l2.V0[1];
+            var e = l1.V1[1] - l1.V0[1];
+            var f = l2.V1[1] - l2.V0[1];
+
+            var detT = Matrix<float>.Build.DenseOfArray(
+                new float[,] {
+                    { c, f },
+                    { a, d }
+                }).Determinant();
+            var detU = Matrix<float>.Build.DenseOfArray(
+                new float[,] {
+                    { b, e },
+                    { d, a }
+                }).Determinant();
+            var det = Matrix<float>.Build.DenseOfArray(
+                new float[,] {
+                    { b, f },
+                    { e, c }
+                }).Determinant();
+
+
+            float t, u;
+
+            if (det == 0.0f) {
+                t = float.PositiveInfinity;
+                u = float.PositiveInfinity;
+            } else {
+                t = detT / det;
+                u = detU / det;
+            }
+
+            return (t, u);
         }
 
         public static LA.Matrix<float> CheckIsIntersected(SKLine line1, SKLine line2) {
@@ -2509,6 +2960,21 @@ namespace TuggingController {
 
         public static SKPoint SKPointMultiply(SKPoint factor1, float factor2) {
             return new SKPoint() { X = factor1.X * factor2, Y = factor1.Y * factor2 };
+        }
+
+        public static LineSegment[] GetAreaLineSegments_v1(SKRect area) {
+            var LT = Vector<float>.Build.DenseOfArray(new float[] { area.Left, area.Top });
+            var LB = Vector<float>.Build.DenseOfArray(new float[] { area.Left, area.Bottom }) ;
+            var RT = Vector<float>.Build.DenseOfArray(new float[] { area.Right, area.Top });
+            var RB = Vector<float>.Build.DenseOfArray(new float[] { area.Right,  area.Bottom }) ;
+
+            LineSegment[] lineSegments = new LineSegment[] {
+                new LineSegment(LT, LB),
+                new LineSegment(LB, RB),
+                new LineSegment(RB, RT),
+                new LineSegment(RT, LT)};
+
+            return lineSegments;
         }
 
         public static (SKPoint[], SKLineSegment[]) GetAreaLineSegments(SKRect area) {

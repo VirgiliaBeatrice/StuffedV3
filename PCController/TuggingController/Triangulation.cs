@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-
+using System.Text;
 
 namespace TuggingController {
 
@@ -377,6 +377,7 @@ namespace TuggingController {
     }
 
     class Triangulation {
+        public QhullCSharp Qhull = new QhullCSharp();
         public Process Task;
         public delegate void DataReceivedHandler(string name, string data);
         private readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -428,6 +429,26 @@ namespace TuggingController {
             this.Task.ErrorDataReceived += CMD_ErrorReceived;
             this.Task.EnableRaisingEvents = true;
             this.Task.Exited += CMD_ProcessExited;
+        }
+
+        public List<int> RunConvexHull_v1(int dim, int count, ref double[] flatPoints) {
+            QhullCSharp.QhullRunConvex(dim, count, ref flatPoints);
+
+            var ret = QhullCSharp.QhullGetConvexHull();
+
+            QhullCSharp.QhullReset();
+
+            return ret;
+        }
+
+        public List<int[]> RunDelaunay_v1(int dim, int count, ref double[] flatPoints) {
+            QhullCSharp.QhullRunDelaunay(dim, count, ref flatPoints);
+
+            var ret = QhullCSharp.QhullGetGoodFacets();
+
+            QhullCSharp.QhullReset();
+
+            return ret;
         }
 
         public void RunDelaunay() {
