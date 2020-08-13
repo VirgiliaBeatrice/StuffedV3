@@ -118,6 +118,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Decorator.cs" />
     <Compile Include="QhullCSharp.cs" />
     <Compile Include="SkiaHelper.cs" />
     <Compile Include="ConfigurationCanvas.cs" />

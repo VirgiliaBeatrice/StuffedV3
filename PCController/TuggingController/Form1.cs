@@ -81,6 +81,7 @@ namespace TuggingController {
             TuggingController.MouseUp += skControl1_MouseUp;
             //TuggingController.MouseClick += skControl1_MouseClick;
             TuggingController.MouseDoubleClick += skControl1_MouseDoubleClick;
+            TuggingController.MouseWheel += TuggingController_MouseWheel;
             this.SizeChanged += Form1_SizeChanged;
             this.Chart = new PointChart();
             //this.Chart.Entries.CollectionChanged += Entries_CollectionChanged;
@@ -92,6 +93,7 @@ namespace TuggingController {
             ConfigurationSpace.MouseMove += ConfigurationSpace_MouseMove;
             ConfigurationSpace.MouseDown += ConfigurationSpace_MouseDown;
             ConfigurationSpace.MouseUp += ConfigurationSpace_MouseUp;
+            //ConfigurationSpace.MouseHover += (sender, e) => ConfigurationSpace.Focus();
 
             this.comboBox1.DataSource = Enum.GetValues(typeof(ConfigurationCanvas.CanvasState));
             this.comboBox1.SelectedIndexChanged += this.ConfigurationSpace_ChangeState;
@@ -650,6 +652,13 @@ namespace TuggingController {
 
             this.PCController.Show();
         }
+
+        private void TuggingController_MouseWheel(object sender, MouseEventArgs e) {
+            float scaleConstant = 0.01f;
+
+            this.Chart.UpdateScale(scaleConstant * (e.Delta > 0 ? 1.0f : -1.0f));
+            this.TuggingController.Invalidate();
+        }
     }
 
     //public class RobotConfiguration : List<float> { }
@@ -758,9 +767,16 @@ namespace TuggingController {
             }
         }
         public float Margin { get; set; } = 80;
-        public float Padding;
+        public float Padding { get; set; }
         public float LabelTextSize { get; set; } = 16;
-        public SKRect chartArea { get; set; }
+        public SKRect ChartArea {
+            get {
+                return new SKRect {
+                    Size = new SKSize(this.width - this.Margin * 2, this.height - this.Margin * 2),
+                    Location = new SKPoint(this.Margin, this.Margin)
+                };
+            }
+        }
         protected SKRect frameArea;
         public bool forceUpdateScale { get; set; } = true;
         public bool Hovered { get; set; } = false;
@@ -774,14 +790,37 @@ namespace TuggingController {
         protected float height;
         public SKMatrix Transform;
         public SKMatrix InverseTransform;
+        public SKMatrix Translation;
+        public SKMatrix InverseTranslation;
         public SKMatrix Scale;
         public SKMatrix InverseScale;
+        public Transform ChartTransform {
+            get {
+                var scale = SKMatrix.MakeScale(1.0f, -1.0f);
+                // Height of SKRect is signed.
+                var translation = SKMatrix.MakeTranslation(this.Margin, Math.Abs(this.ChartArea.Height) + this.Margin);
+
+                return new Transform() {
+                    Scale = scale,
+                    Translation = translation
+                };
+            }
+        }
 
         protected readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         #endregion
 
         #region Methods
+
+        public Chart() {
+            //this.Scale = SKMatrix.MakeScale(1.0f, -1.0f);
+            //// Height of SKRect is signed.
+            //this.Translation = SKMatrix.MakeTranslation(this.Margin, Math.Abs(this.ChartArea.Height));
+            //this.ChartTransform = new TransformObject() { 
+            //    Scale = this.Scale, Translation = this.Translation 
+            //};
+        }
 
         // TODO: Calculation still has some problems.
         protected void CalculateSize() {
@@ -846,7 +885,7 @@ namespace TuggingController {
         protected void UpdateScale() {
             SKMatrix scale = SKMatrix.MakeTranslation(this.RangeOfInflatedValue.Left, this.RangeOfInflatedValue.Bottom);
             // Height in SKRect has a sign.
-            SKMatrix.PreConcat(ref scale, SKMatrix.MakeScale(this.RangeOfInflatedValue.Width / this.chartArea.Width, Math.Abs(this.RangeOfInflatedValue.Height) / this.chartArea.Height));
+            SKMatrix.PreConcat(ref scale, SKMatrix.MakeScale(this.RangeOfInflatedValue.Width / this.ChartArea.Width, Math.Abs(this.RangeOfInflatedValue.Height) / this.ChartArea.Height));
             this.Scale = scale;
 
             this.Scale.TryInvert(out this.InverseScale);
@@ -864,6 +903,26 @@ namespace TuggingController {
             //Logger.Debug("Local Coordinate: {0}, {1}", tps[0], tps[1]);
             //Logger.Debug("Value Coordinate: {0}, {1}", MappedTPs[0], MappedTPs[1]);
         }
+
+        public void UpdateScale(float scaleFactor) {
+            SKMatrix scale = this.Scale;
+
+            SKMatrix.PreConcat(ref scale, SKMatrix.MakeScale(scaleFactor, scaleFactor));
+
+            this.Scale = scale;
+            this.Scale.TryInvert(out this.InverseScale);
+
+            this.Entries.UpdateScale(this.InverseScale);
+            this.Triangles.UpdateScale(this.InverseScale);
+            this.TestPoint.UpdateScale(this.InverseScale);
+        }
+
+        private void UpdateChartSize(int width, int height) {
+            if (width != this.width | height != this.height) {
+                this.width = width;
+                this.height = height;
+            }
+        }
         public void Draw(SKSurface surface, int width, int height) {
             this.Surface = surface;
             this.width = width;
@@ -872,14 +931,14 @@ namespace TuggingController {
             this.Canvas = new SKCanvas(SavedBitmap);
             //this.Canvas = surface.Canvas;
 
-            chartArea = new SKRect {
-                Size = new SKSize(this.width - this.Margin * 2, this.height - this.Margin * 2),
-                Location = new SKPoint(this.Margin, this.Margin)
-            };
+            //ChartArea = new SKRect {
+            //    Size = new SKSize(this.width - this.Margin * 2, this.height - this.Margin * 2),
+            //    Location = new SKPoint(this.Margin, this.Margin)
+            //};
 
-            frameArea = new SKRect {
-                Size = new SKSize(this.width, this.height)
-            };
+            //frameArea = new SKRect {
+            //    Size = new SKSize(this.width, this.height)
+            //};
 
 
 
@@ -976,7 +1035,7 @@ namespace TuggingController {
         #region Methods
 
         public PointChart() : base() {
-
+            //this.CalculateSize();
         }
 
         private double DegreeToRadian(double degree) {
@@ -984,11 +1043,17 @@ namespace TuggingController {
         }
 
         public void Initialize() {
-            this.Entries = new EntryCollection() {
-                new Entry(new SKPoint(0, 0)),
-                new Entry(new SKPoint(1, 0)),
-                new Entry(new SKPoint(0, 1)),
-            };
+            //this.Entries = new EntryCollection() {
+            //    new Entry(new SKPoint(0, 0)),
+            //    new Entry(new SKPoint(1, 0)),
+            //    new Entry(new SKPoint(0, 1)),
+            //};
+
+            this.Entries.Clear();
+            this.AddPointFromValue(0.0f, 0.0f);
+            this.AddPointFromValue(1.0f, 0.0f);
+            this.AddPointFromValue(0.0f, 1.0f);
+
             this.Triangulate(new List<int[]>() { new int[] { 0, 1, 2 } });
         }
 
@@ -1036,7 +1101,7 @@ namespace TuggingController {
 
         public bool IsInChartArea(Point pointerLocation) {
             SKPoint relativeLocation = this.Transform.MapPoint(SkiaHelper.ToSKPoint(pointerLocation));
-            return (relativeLocation.X <= this.chartArea.Width & relativeLocation.X >= 0) && (relativeLocation.Y <= this.chartArea.Height & relativeLocation.Y >= 0);
+            return (relativeLocation.X <= this.ChartArea.Width & relativeLocation.X >= 0) && (relativeLocation.Y <= this.ChartArea.Height & relativeLocation.Y >= 0);
         }
 
         public override void DrawHover(Chart ctx) {
@@ -1048,7 +1113,7 @@ namespace TuggingController {
         }
 
         public override void DrawIndicator() {
-            this.DrawCross(this.Canvas, this.chartArea, this.Transform.MapPoint(this.PointerLocation), this.InverseTransform);
+            this.DrawCross(this.Canvas, this.ChartArea, this.Transform.MapPoint(this.PointerLocation), this.InverseTransform);
         }
 
         private void DrawCross(SKCanvas canvas, SKRect bound, SKPoint location, SKMatrix transform) {
@@ -1123,7 +1188,7 @@ namespace TuggingController {
         }
 
         public override void UpdateTransform() {
-            SKMatrix transform = SKMatrix.MakeTranslation(-this.Margin, (this.chartArea.Height + this.Margin));
+            SKMatrix transform = SKMatrix.MakeTranslation(-this.Margin, (this.ChartArea.Height + this.Margin));
             SKMatrix.PreConcat(ref transform, SKMatrix.MakeScale(1, -1));
             //SKMatrix.PreConcat(ref mat, );
             //SKMatrix.PostConcat(ref mat, SKMatrix.MakeTranslation(this.Margin, (this.chartArea.Height + this.Margin)));
@@ -1159,11 +1224,11 @@ namespace TuggingController {
             //var p1 = new SKPoint(200, 50);
 
             var origin = new SKPoint(0, 0);
-            var yMax = new SKPoint(0, this.chartArea.Height);
-            var xMax = new SKPoint(this.chartArea.Width, 0);
+            var yMax = new SKPoint(0, this.ChartArea.Height);
+            var xMax = new SKPoint(this.ChartArea.Width, 0);
 
             var canvasRect = new SKRect() {
-                Size = new SKSize(this.chartArea.Width, this.chartArea.Height)
+                Size = new SKSize(this.ChartArea.Width, this.ChartArea.Height)
             };
 
             //var shader = SKShader.CreateLinearGradient(
@@ -1204,14 +1269,14 @@ namespace TuggingController {
             this.Axes.Clear();
 
             if (this.Entries.Count == 0) {
-                this.Axes.Add(new Axis("X", this.chartArea.Width, this.InverseTransform));
-                this.Axes.Add(new Axis("Y", this.chartArea.Height, this.InverseTransform));
+                this.Axes.Add(new Axis("X", this.ChartArea.Width, this.InverseTransform));
+                this.Axes.Add(new Axis("Y", this.ChartArea.Height, this.InverseTransform));
             }
             else {
                 //this.Axes.Add(new Axis("X", this.MinValue.X, this.MaxValue.X, this.chartArea.Width, this.Transform));
                 //this.Axes.Add(new Axis("Y", this.MinValue.Y, this.MaxValue.Y, this.chartArea.Height, this.Transform));
-                this.Axes.Add(new Axis("X", this.RangeOfInflatedValue.Left, this.RangeOfInflatedValue.Right, this.chartArea.Width, this.InverseTransform));
-                this.Axes.Add(new Axis("Y", this.RangeOfInflatedValue.Bottom, this.RangeOfInflatedValue.Top, this.chartArea.Height, this.InverseTransform));
+                this.Axes.Add(new Axis("X", this.RangeOfInflatedValue.Left, this.RangeOfInflatedValue.Right, this.ChartArea.Width, this.InverseTransform));
+                this.Axes.Add(new Axis("Y", this.RangeOfInflatedValue.Bottom, this.RangeOfInflatedValue.Top, this.ChartArea.Height, this.InverseTransform));
             }
 
             this.DrawAxes();
@@ -1254,7 +1319,7 @@ namespace TuggingController {
                 this.Entries.ForEach(e => e.Draw(this.Canvas));
             }
 
-            this.ConvexHull.Draw(this.Canvas, this.chartArea);
+            this.ConvexHull.Draw(this.Canvas, this.ChartArea);
         }
 
         //protected void DrawPoints(SKCanvas canvas, SKPoint[] points)
@@ -1282,11 +1347,15 @@ namespace TuggingController {
             //this.Entries.Add(new Entry(this.InverseTransform.MapPoint(new SKPoint(point.X, point.Y)), this.Transform));
 
             var tPoint = new SKPoint(point.X, point.Y);
+
+            Logger.Debug($"New Point: G - {tPoint}, V - {this.ChartTransform.InverseMapPoint(tPoint)}");
             tPoint = this.Transform.MapPoint(tPoint);
             tPoint = this.Scale.MapPoint(tPoint);
             //this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
             //this.Entries.Add(new Entry(tPoint, inverse, this.InverseTransform));
             this.Entries.Add(new Entry(tPoint, this.InverseScale, this.InverseTransform));
+
+
         }
 
         public void AddPointFromValue(float x, float y) {
@@ -1296,6 +1365,11 @@ namespace TuggingController {
             //this.Entries.Add(new Entry(tPoint, this.Scale, this.InverseTransform));
             //this.Entries.Add(new Entry(tPoint, inverse, this.InverseTransform));
             this.Entries.Add(new Entry(tPoint));
+
+            // Test
+            //this.Entries.Add(new Entry(tPoint, this.ChartTransform));
+            Logger.Debug($"New Point: V - {tPoint}, G - {this.ChartTransform.MapPoint(tPoint)}");
+
         }
 
         public void Triangulate(List<int[]> triangles) {
@@ -1340,11 +1414,11 @@ namespace TuggingController {
             };
 
             Logger.Debug("Window Size: {0}, {1}", this.frameArea.Width, this.frameArea.Height);
-            Logger.Debug("Frame Size: {0} {1}", this.chartArea.Width, this.chartArea.Height);
+            Logger.Debug("Frame Size: {0} {1}", this.ChartArea.Width, this.ChartArea.Height);
 
             this.Canvas.DrawRect(this.frameArea, paint);
             paint.Color = SKColors.Blue;
-            this.Canvas.DrawRect(this.chartArea, paint);
+            this.Canvas.DrawRect(this.ChartArea, paint);
         }
 
         #endregion
@@ -1594,8 +1668,8 @@ namespace TuggingController {
             };
 
             // Draw entry shape
-            canvas.DrawCircle(this.Centroid.GlobalLocation, radius, fillPaint);
-            canvas.DrawCircle(this.Centroid.GlobalLocation, radius, strokePaint);
+            canvas.DrawCircle(this.Centroid.Value.GlobalLocation, radius, fillPaint);
+            canvas.DrawCircle(this.Centroid.Value.GlobalLocation, radius, strokePaint);
         }
 
         private void DrawExtensionLine(SKCanvas canvas) {
@@ -1718,7 +1792,7 @@ namespace TuggingController {
         }
         public Entry Start { get; set; }
         public Entry End { get; set; }
-        public Entry Centroid => (this.End - this.Start) / 2.0f + this.Start;
+        public Lazy<Entry> Centroid => new Lazy<Entry>(() => (this.End - this.Start) / 2.0f + this.Start);
 
         public SKPoint Center {
             get {
@@ -2180,6 +2254,7 @@ namespace TuggingController {
     }
 
     public class Entry : ScalableCanvasObject, IComparer<Entry> {
+        public Transform TransformNew { get; set; }
         public bool IsSelected { get; set; } = false;
         public bool IsHovered { get; set; } = false;
         public bool IsPaired { get; set; } = false;
@@ -2212,8 +2287,14 @@ namespace TuggingController {
             //this.Scale = scale;
             this.Pair = new Pair(new StateVector(SkiaHelper.ToVector(this.Value)));
 
-            Logger.Debug("Create new entry - [Value]: {0}", this.Value);
-            Logger.Debug("Create new entry - [Location]: {0}", this.Location);
+            //Logger.Debug("Create new entry - [Value]: {0}", this.Value);
+            //Logger.Debug("Create new entry - [Location]: {0}", this.Location);
+        }
+
+        public Entry(SKPoint value, Transform transform) : this(value) {
+            this.TransformNew = transform;
+
+            Logger.Debug($"Test transform from value: {this.TransformNew.MapPoint(this.Value)}");
         }
 
         public static Entry operator +(Entry entryLeft, Entry entryRight) {
