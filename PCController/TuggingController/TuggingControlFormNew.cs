@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace TuggingController {
         public TuggingControlForm() {
             InitializeComponent();
 
+            //this.KeyPreview = true;
             this.ClientSize = new Size(400, 400);
             this.SizeChanged += this.TuggingControlForm_SizeChanged;
             this.chartControl = new ChartControl();
@@ -31,5 +33,11 @@ namespace TuggingController {
 
             this.Invalidate(true);
         }
+
+        //protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
+        //    Console.WriteLine(msg);
+        //    Console.WriteLine($"{this.chartControl.Focused}");
+        //    return base.ProcessCmdKey(ref msg, keyData);
+        //}
     }
 }

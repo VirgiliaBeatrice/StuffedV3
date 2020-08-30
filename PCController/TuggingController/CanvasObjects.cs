@@ -2,6 +2,7 @@
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Xml.Schema;
 
 namespace TuggingController {
 
@@ -34,7 +35,7 @@ namespace TuggingController {
         public Logger Logger { get; protected set; } = LogManager.GetCurrentClassLogger();
 
         public SKRect BoarderBox { get; set; } = new SKRect();
-        public SKSize Size {
+        public virtual SKSize Size {
             get => this.BoarderBox.Size;
             set {
                 var oldBoarderBox = this.BoarderBox;
@@ -168,21 +169,33 @@ namespace TuggingController {
 
     public class Chart_v1 : ContainerCanvasObject_v1 {
         private Grid_v1 _grid;
+        private float _scale = 1.0f;
 
-        public new SKSize Size {
+        public float Scale {
+            get => this._scale;
+            set {
+                this._scale = value;
+                this._grid.Transform.Scale = SKMatrix.MakeScale(this._scale, -this._scale);
+
+                // TODO
+                // Transformation
+                this.Children.ForEach(child => child.Transform.Scale = SKMatrix.MakeScale(this._scale, this._scale));
+                // Validate grid's box
+                this.Size = this.Size;
+            }
+        }
+
+        public override SKSize Size {
             get => this.BoarderBox.Size;
             set {
-                var boarderBox = this.BoarderBox;
-
-                boarderBox.Size = value;
+                this.BoarderBox = new SKRect() { Size = value };
+                //this.BoarderBox.Size = value;
                 this._grid.Size = value;
             }
         }
 
-        public Chart_v1(SKSize size) : base() {
-            this._grid = new Grid_v1(this.Size);
-
-            this.Size = size;
+        public Chart_v1() : base() {
+            this._grid = new Grid_v1();
 
             this._grid.SetParent(this);
             this.Children.Add(this._grid);
@@ -223,8 +236,8 @@ namespace TuggingController {
 
         // Note: Coordinate is different to SKRect
         // Chart: Left-Bottom, SKRect: Left-Top
-        public new SKRect BoarderBox { get; set; } = new SKRect();
-        public new SKSize Size {
+        //public new SKRect BoarderBox { get; set; } = new SKRect();
+        public override SKSize Size {
             get => this.BoarderBox.Size;
             set {
                 this.BoarderBox = this.SetBoarderBoxFromSize(value);
@@ -232,17 +245,17 @@ namespace TuggingController {
         }
         public SKPaint BoarderPaint { get; set; } = new SKPaint() { Color = SKColors.BlueViolet, IsStroke = true, StrokeWidth = 6.0f };
 
-        public Grid_v1(SKSize size) : base() {
-            this.Size = size;
-        }
+        public Grid_v1() : base() { }
 
         private SKRect SetBoarderBoxFromSize(SKSize size) {
-            return new SKRect() {
-                Left = this.Location.X - size.Width / 2,
-                Right = this.Location.X + size.Width / 2,
-                Top = this.Location.Y + size.Height / 2,
-                Bottom = this.Location.Y - size.Height / 2
+            var lBox = new SKRect() {
+                Left = this.Location.X,
+                Right = this.Location.X + size.Width,
+                Top = this.Location.Y,
+                Bottom = this.Location.Y + size.Height
             };
+
+            return this.Transform.InverseMapRect(lBox);
         }
 
         private void UpdateGrid() {
@@ -252,6 +265,7 @@ namespace TuggingController {
             this.Children.Clear();
 
             // !Performance!
+            // TODO: overflow
             List<int> calculate(float min, float max, int interval) {
                 var ret = new List<int>();
                 int minInt = (int)Math.Truncate(min);
@@ -273,7 +287,7 @@ namespace TuggingController {
             }
 
             var gridXCoordinates = calculate(this.BoarderBox.Left, this.BoarderBox.Right, this._gridScale);
-            var gridYCoordinates = calculate(this.BoarderBox.Bottom, this.BoarderBox.Top, this._gridScale);
+            var gridYCoordinates = calculate(this.BoarderBox.Top, this.BoarderBox.Bottom, this._gridScale);
 
             foreach (var x in gridXCoordinates) {
                 var vLine = new Line_v1() {
@@ -300,13 +314,6 @@ namespace TuggingController {
 
         protected override void DrawThis(SKCanvas canvas) {
             canvas.DrawRect(this.Transform.MapRect(this.BoarderBox), this.BoarderPaint);
-
-            //var center = new SKPoint(this.BoarderBox.MidX, this.BoarderBox.MidY);
-            //canvas.DrawCircle(
-            //    this.Transform.MapPoint(center),
-            //    10.0f,
-            //    new SKPaint() { Color = SKColors.Red }
-            //);
         }
 
         protected override void Invalidate() {
