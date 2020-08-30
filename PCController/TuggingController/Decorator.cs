@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,22 +30,30 @@ namespace TuggingController {
         }
     }
 
-    public class Transform {
+    // Transform Component for CanvasObject
+    public class Transform : IComponent {
         public static Transform WithScale(SKMatrix scale) {
-            return new Transform(scale, SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity());
+            return new Transform() { Scale = scale };
         }
 
         public static Transform WithRotation(SKMatrix rotation) {
-            return new Transform(SKMatrix.MakeIdentity(), rotation, SKMatrix.MakeIdentity());
+            return new Transform() { Rotation = rotation };
         }
 
         public static Transform WithTranslation(SKMatrix translation) {
-            return new Transform(SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity(), translation);
+            return new Transform() { Translation = translation };
         }
 
-        public SKMatrix Scale { get; set; }
-        public SKMatrix Rotation { get; set; }
-        public SKMatrix Translation { get; set; }
+        // Nullable Property
+        public Transform Parent { get; set; }
+        public ICanvasObject CanvasObject { get; set; }
+
+        // Initialized Property
+        public SKMatrix Scale { get; set; } = SKMatrix.MakeIdentity();
+        public SKMatrix Rotation { get; set; } = SKMatrix.MakeIdentity();
+        public SKMatrix Translation { get; set; } = SKMatrix.MakeIdentity();
+
+        // Order: T<-R<-S, Global(TRS)<-Local(TRS)
         public SKMatrix Transformation {
             get {
                 var mat = SKMatrix.MakeIdentity();
@@ -56,15 +65,31 @@ namespace TuggingController {
                 return mat;
             }
         }
+        public SKMatrix GlobalTransformation {
+            get {
+                var transform = this.Transformation;
+
+                if (this.Parent != null) {
+                    SKMatrix.PostConcat(ref transform, this.Parent.GlobalTransformation);
+                }
+                return transform;
+            }
+        }
         public SKMatrix InvTransformation {
             get {
-                var inv = SKMatrix.MakeIdentity();
-
-                this.Transformation.TryInvert(out inv);
+                this.Transformation.TryInvert(out SKMatrix inv);
 
                 return inv;
             }
         }
+        public SKMatrix GlobalInvTransformation {
+            get {
+                this.Transformation.TryInvert(out SKMatrix inv);
+
+                return inv;
+            }
+        }
+
 
         public Transform() : this(SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
@@ -74,12 +99,47 @@ namespace TuggingController {
             this.Rotation = rotation;
         }
 
+        /// <summary>
+        /// Transform a local coordinate to global coordinate.
+        /// Local --> Global
+        /// </summary>
+        /// <param name="point">Local Coordinate</param>
+        /// <returns>Global Coordinate</returns>
         public SKPoint MapPoint(SKPoint point) {
-            return this.Transformation.MapPoint(point);
+            //var tranform = this.Transformation;
+
+            //if (this.Parent != null) {
+            //    SKMatrix.PostConcat(ref tranform, this.Parent.Transformation);
+            //}
+
+            //return tranform.MapPoint(point);
+            return this.GlobalTransformation.MapPoint(point);
+        }
+        /// <summary>
+        /// Transform a global coordinate to a local point according to its
+        /// parent transform matrix.
+        /// Global --> Local
+        /// </summary>
+        /// <param name="point">Global Coordinate</param>
+        /// <returns>Local Coordinate</returns>
+        public SKPoint InverseMapPoint(SKPoint point) {
+            var invTransform = this.InvTransformation;
+
+            if (this.Parent != null) {
+                SKMatrix.PreConcat(ref invTransform, this.Parent.InvTransformation);
+            }
+
+            return invTransform.MapPoint(point);
         }
 
-        public SKPoint InverseMapPoint(SKPoint point) {
-            return this.InvTransformation.MapPoint(point);
+        public SKRect MapRect(SKRect rect) {
+            var transform = this.Transformation;
+
+            if(this.Parent != null) {
+                SKMatrix.PostConcat(ref transform, this.Parent.Transformation);
+            }
+
+            return transform.MapRect(rect);
         }
     }
 }

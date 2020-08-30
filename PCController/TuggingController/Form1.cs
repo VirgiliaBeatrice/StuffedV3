@@ -37,6 +37,7 @@ namespace TuggingController {
         public RobotConfigurationSpace RobotConfigurationSpace { get; set; }
         
         public MainForm PCController { get; set; }
+        private TuggingControlForm TuggingForm { get; set; } = new TuggingControlForm();
         //public SimplicialComplex Mapping { get; set; } = new SimplicialComplex();
 
         //public SimplicialComplex mapping = new SimplicialComplex();
@@ -52,6 +53,7 @@ namespace TuggingController {
         private Triangulation Tri { get; set; }
         public Form1() {
             InitializeComponent();
+            this.TuggingForm.Show();
 
             this.KeyPreview = true;
 
@@ -2448,12 +2450,13 @@ namespace TuggingController {
 
     }
 
-    public interface ILoggable {
+    public interface ILog {
         Logger Logger { get; }
     }
 
+    
 
-    public abstract class CanvasObject : ILoggable {
+    public abstract class CanvasObject : ILog {
         public Logger Logger { get; private set; }
 
         // Transform: Local Coordinate [Screen: Left-Top] ==> Global Coordinate [Screen: Left-Bottom, Center]
