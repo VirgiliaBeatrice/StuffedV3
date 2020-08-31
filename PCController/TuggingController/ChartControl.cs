@@ -13,7 +13,16 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace TuggingController {
+    [Flags]
+    public enum MouseStates {
+        NONE = 0b_0000_0000,
+        LEFTDOWN = 0b_0000_0001,
+        MOVE = 0b_1000_0000,
+        LEFTDRAGGING = LEFTDOWN | MOVE,
+        MOVEMASK = ~MOVE,
+    }
     public partial class ChartControl : UserControl {
+        private MouseStates _mouseState = MouseStates.NONE;
         private SKControl skControl;
         private Timer timer = new Timer();
         private int timerCount = 0;
@@ -37,21 +46,67 @@ namespace TuggingController {
 
             this.Chart = new Chart_v1();
             this.Chart.Transform.Scale = SKMatrix.MakeScale(1.0f, -1.0f);
-            this.Chart.Transform.Translation = SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
+            //this.Chart.Transform.Translation =
+                //SKMatrix.MakeTranslation(0, this.Size.Height);
+            this.Chart.Transform.Translation = 
+                SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
+
             this.Chart.Size = new SKSize(this.Size.Width, this.Size.Height);
 
             this.skControl.KeyPress += this.SkControl_KeyPress;
             this.skControl.PaintSurface += this.SKControl_PaintSurface;
+            this.skControl.MouseDown += this.SkControl_MouseDown;
+            this.skControl.MouseUp += this.SkControl_MouseUp;
+            this.skControl.MouseDoubleClick += this.SkControl_MouseDoubleClick;
+            this.skControl.MouseMove += this.SkControl_MouseMove;
 
-            this.MouseMove += this.ChartControl_MouseMove;
             this.SizeChanged += this.ChartControl_SizeChanged;
             this.KeyPress += this.ChartControl_KeyPress;
 
             this.Invalidate(true);
         }
 
+        private void SkControl_MouseUp(object sender, MouseEventArgs e) {
+            switch (e.Button) {
+                case MouseButtons.Left:
+                    this._mouseState &= ~MouseStates.LEFTDOWN;
+                    break;
+            }
+        }
+
+        private void SkControl_MouseMove(object sender, MouseEventArgs e) {
+            this._mouseState |= MouseStates.MOVE;
+
+            switch (this._mouseState) {
+                case MouseStates.LEFTDRAGGING:
+                    this.Chart.Execute(new DragAndDropBehaviorArgs(e.X, e.Y), "D&D");
+                    break;
+            }
+
+            this._mouseState &= MouseStates.MOVEMASK;
+            this.Invalidate(true);
+        }
+
+        private void SkControl_MouseDown(object sender, MouseEventArgs e) {
+            switch (e.Button) {
+                case MouseButtons.Left:
+                    this._mouseState |= MouseStates.LEFTDOWN;
+                    break;
+            }
+        }
+
+        private void SkControl_MouseDoubleClick(object sender, MouseEventArgs e) {
+            switch (e.Button) {
+                case MouseButtons.Left:
+                    this.Chart.AddEntity(e.Location);
+                    this.Invalidate(true);
+                    break;
+            }
+        }
+
         private void Timer_Tick(object sender, EventArgs e) {
-            decimal d = (decimal)((this._IsScaleUp ? 1.0f : -1.0f) * this.SmoothStep(0.0f, 10.0f, this.timerCount) * 0.1f);
+            decimal d = (decimal)((this._IsScaleUp ? 1.0f : -1.0f)
+                * this.SmoothStep(0.0f, 10.0f, this.timerCount) * 0.1f);
             var scale = (decimal)this.prevScale + d;
 
             if (this.timerCount < 10) {
@@ -123,16 +178,14 @@ namespace TuggingController {
 
         private void ChartControl_SizeChanged(object sender, EventArgs e) {
             //this.Chart.Transform.Scale = SKMatrix.MakeScale(1.0f, -1.0f);
-            this.Chart.Transform.Translation = SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
+            //this.Chart.Transform.Translation = SKMatrix.MakeTranslation(0, this.Size.Height);
+            this.Chart.Transform.Translation =
+                SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
 
             this.Chart.Size = new SKSize(this.Size.Width, this.Size.Height);
             this.skControl.Size = new Size(this.Size.Width, this.Size.Height);
 
             this.Invalidate(true);
-        }
-
-        private void ChartControl_MouseMove(object sender, MouseEventArgs e) {
-            this.skControl.Invalidate();
         }
 
         private void SKControl_PaintSurface(object sender, SKPaintSurfaceEventArgs e) {

@@ -5,32 +5,14 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 using SkiaSharp;
 
 namespace TuggingController {
 
-    [AttributeUsage(AttributeTargets.Class)]
-    public sealed class TransformAttribute : Attribute {
-        public SKMatrix Translation { get; set; }
-        public SKMatrix Scale { get; set; }
-        public SKMatrix Rotation { get; set; }
-        public SKMatrix Transform { get; set; }
-        public TransformAttribute(SKMatrix scale, SKMatrix rotation, SKMatrix translation) {
-            var mat = SKMatrix.MakeIdentity();
-
-            this.Scale = scale;
-            this.Translation = translation;
-            this.Rotation = rotation;
-
-            SKMatrix.PostConcat(ref mat, scale);
-            SKMatrix.PostConcat(ref mat, rotation);
-            SKMatrix.PostConcat(ref mat, translation);
-
-            this.Transform = mat;
-        }
-    }
-
-    // Transform Component for CanvasObject
+    /// <summary>
+    /// Transform Component for CanvasObject
+    /// </summary>
     public class Transform : IComponent {
         public static Transform WithScale(SKMatrix scale) {
             return new Transform() { Scale = scale };
@@ -47,11 +29,33 @@ namespace TuggingController {
         // Nullable Property
         public Transform Parent { get; set; }
         public ICanvasObject CanvasObject { get; set; }
+        public event EventHandler TransformChanged;
 
         // Initialized Property
-        public SKMatrix Scale { get; set; } = SKMatrix.MakeIdentity();
-        public SKMatrix Rotation { get; set; } = SKMatrix.MakeIdentity();
-        public SKMatrix Translation { get; set; } = SKMatrix.MakeIdentity();
+        private SKMatrix _scale = SKMatrix.MakeIdentity();
+        private SKMatrix _rotation = SKMatrix.MakeIdentity();
+        private SKMatrix _translation = SKMatrix.MakeIdentity();
+        public SKMatrix Scale {
+            get => this._scale;
+            set {
+                this._scale = value;
+                TransformChanged.Invoke(this, null);
+            }
+        }
+        public SKMatrix Rotation {
+            get => this._rotation;
+            set {
+                this._rotation = value;
+                TransformChanged.Invoke(this, null);
+            }
+        }
+        public SKMatrix Translation {
+            get => this._translation;
+            set {
+                this._translation = value;
+                TransformChanged.Invoke(this, null);
+            }
+        }
 
         // Order: T<-R<-S, Global(TRS)<-Local(TRS)
         public SKMatrix LocalTransformation {
@@ -90,14 +94,20 @@ namespace TuggingController {
             }
         }
 
+        public string Tag => "Transform";
 
         public Transform() : this(SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
         public Transform(SKMatrix scale, SKMatrix rotation, SKMatrix translation) {
+            this.TransformChanged += this.Transform_TransformChanged;
+
             this.Scale = scale;
             this.Translation = translation;
             this.Rotation = rotation;
+
         }
+
+        private void Transform_TransformChanged(object sender, EventArgs e) { }
 
         /// <summary>
         /// Transform a local coordinate to global coordinate.
@@ -144,6 +154,14 @@ namespace TuggingController {
 
         public SKRect InverseMapRect(SKRect rect) {
             return this.InvGlobalTransformation.MapRect(rect);
+        }
+
+        public SKRect InverseLocalMapRect(SKRect rect) {
+            return this.InvLocalTransformation.MapRect(rect);
+        }
+
+        public void Behavior(BehaviorArgs e) {
+            throw new NotImplementedException();
         }
     }
 }

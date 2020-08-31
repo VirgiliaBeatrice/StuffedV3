@@ -10,7 +10,6 @@ using SkiaSharp.Views.Desktop;
 namespace TuggingController {
     public partial class Entity_v1 : ShapeElements.IPoint {
         public Vector<float> PointVector { get; set; }
-
     }
 
     // L = V(V0) + T * V(V1 - V0)

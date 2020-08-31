@@ -2,18 +2,68 @@
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Xml.Schema;
 
 namespace TuggingController {
+    public class BehaviorArgs {
+        public BehaviorArgs() { }
+    }
+    public class DragAndDropBehaviorArgs : BehaviorArgs {
+        private SKPoint _location;
+        public SKPoint Location => this._location;
+
+        public DragAndDropBehaviorArgs(int x, int y) {
+            this._location = new SKPoint() { X = x, Y = y };
+        }
+    }
+
 
     public interface IComponent {
         ICanvasObject CanvasObject { get; set; }
+        string Tag { get; }
+
+        void Behavior(BehaviorArgs e);
     }
 
     public struct PaintComponent : IComponent {
         public ICanvasObject CanvasObject { get; set; }
+        public string Tag { get; set; }
         public SKPaint FillPaint { get; set; }
         public SKPaint StrokePaint { get; set; }
+
+        public void Behavior(BehaviorArgs e) {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class HoverComponent : IComponent {
+        public ICanvasObject CanvasObject { get; set; }
+        public string Tag { get; set; }
+
+        public void Behavior(BehaviorArgs e) {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class DragAndDropComponent : IComponent {
+        public ICanvasObject CanvasObject { get; set; }
+        public string Tag { get; } = "D&D";
+        public bool Active { get; set; } = false;
+
+        public void Behavior(BehaviorArgs e) {
+            var gPointer = ((DragAndDropBehaviorArgs)e).Location;
+            var lPointer =
+                this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
+            var distance = SKPoint.Distance(lPointer, this.CanvasObject.Location);
+
+            if (distance < 5.0f & !this.Active) {
+                this.Active = false;
+                this.CanvasObject.Location = lPointer;
+            }
+        }
     }
 
     public interface ICanvasObject {
@@ -24,6 +74,7 @@ namespace TuggingController {
         List<ICanvasObject> Children { get; set; }
         List<IComponent> Components { get; set; }
         void Draw(SKCanvas canvas);
+        void Execute(BehaviorArgs e, string tag);
         void AddComponent(IComponent component);
         void AddComponents(IEnumerable<IComponent> components);
     }
@@ -50,7 +101,7 @@ namespace TuggingController {
                 this._transform.CanvasObject = this;
             } 
         }
-        public SKPoint Location { get; set; } = new SKPoint();
+        public virtual SKPoint Location { get; set; } = new SKPoint();
         public List<ICanvasObject> Children { get; set; } = new List<ICanvasObject>();
         public List<IComponent> Components { get; set; } = new List<IComponent>();
 
@@ -71,7 +122,9 @@ namespace TuggingController {
         /// This method is called before draw anything on the canvas,
         /// and returns a global position for drawing.
         /// </summary>
-        protected abstract void Invalidate();
+        protected virtual void Invalidate() {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// <see langword="abstract"/>
@@ -79,7 +132,9 @@ namespace TuggingController {
         /// of itself need to be drawed.
         /// </summary>
         /// <param name="canvas">Target Canvas</param>
-        protected abstract void DrawThis(SKCanvas canvas);
+        protected virtual void DrawThis(SKCanvas canvas) {
+            throw new NotImplementedException();
+        }
 
         internal void SetParent(CanvasObject_v1 parent) {
             this.Transform.Parent = parent._transform;
@@ -93,6 +148,20 @@ namespace TuggingController {
 
             foreach(var child in this.Children) {
                 child.Draw(canvas);
+            }
+        }
+
+        protected virtual void ExecuteThis(BehaviorArgs e, string tag = "") {
+            throw new NotImplementedException();
+        }
+
+        public virtual void Execute(BehaviorArgs e, string tag = "") {
+            // Execute this
+            this.ExecuteThis(e, tag);
+
+            // Execute children
+            foreach(var child in this.Children) {
+                child.Execute(e, tag);
             }
         }
 
@@ -128,7 +197,7 @@ namespace TuggingController {
 
     public partial class Entity_v1 : CanvasObject_v1 {
         private SKPoint _gLocation;
-
+        private int _index;
         private float _radius = 5.0f;
         private SKPaint _fillPaint = new SKPaint {
             IsAntialias = true,
@@ -148,14 +217,16 @@ namespace TuggingController {
                 this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
             }
         }
-        public new SKPoint Location {
+        override public SKPoint Location {
             get => this.Point;
             set {
                 this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
             }
         }
 
-        public Entity_v1() : base() { }
+        public Entity_v1() : base() {
+            this.AddComponent(new DragAndDropComponent());
+        }
 
         protected override void DrawThis(SKCanvas canvas) {
             canvas.DrawCircle(this._gLocation, this._radius, this._fillPaint);
@@ -165,23 +236,58 @@ namespace TuggingController {
         protected override void Invalidate() {
             this._gLocation = this._transform.MapPoint(this.Location);
         }
+        protected override void ExecuteThis(BehaviorArgs e, string tag = "") {
+            if (tag == "") {
+                foreach (var component in this.Components) {
+                    component.Behavior(e);
+                }
+            } else {
+                var targetComponent = this.Components.Find(c => c.Tag == tag);
+                targetComponent?.Behavior(e);
+            }
+        }
+    }
+
+    public class EntityCollection_v1 : ContainerCanvasObject_v1 {
+        private List<Entity_v1> _entities = new List<Entity_v1>();
+
+        public EntityCollection_v1() : base() { }
+
+        public void Add(Entity_v1 entity) {
+            entity.SetParent(this);
+            this._entities.Add(entity);
+            this.Children.Add(entity);
+        }
+
+        public void Add(SKPoint point) {
+            var lSKPoint = this.Transform.InvGlobalTransformation.MapPoint(point);
+
+            this.Add(new Entity_v1() { Location = lSKPoint });
+        }
+
+        public void AddRange(IEnumerable<Entity_v1> entities) {
+            foreach(var e in entities) {
+                this.Add(e);
+            }
+        }
+
+        protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
 
     public class Chart_v1 : ContainerCanvasObject_v1 {
-        private Grid_v1 _grid;
+        private Grid_v1 _grid = new Grid_v1();
+        private EntityCollection_v1 _entities = new EntityCollection_v1();
         private float _scale = 1.0f;
 
         public float Scale {
             get => this._scale;
             set {
                 this._scale = value;
-                this._grid.Transform.Scale = SKMatrix.MakeScale(this._scale, -this._scale);
 
-                // TODO
-                // Transformation
-                this.Children.ForEach(child => child.Transform.Scale = SKMatrix.MakeScale(this._scale, this._scale));
-                // Validate grid's box
-                this.Size = this.Size;
+                foreach (var child in this.Children) {
+                    child.Transform.Scale = 
+                        SKMatrix.MakeScale(this._scale, this._scale);
+                }
             }
         }
 
@@ -189,29 +295,23 @@ namespace TuggingController {
             get => this.BoarderBox.Size;
             set {
                 this.BoarderBox = new SKRect() { Size = value };
-                //this.BoarderBox.Size = value;
                 this._grid.Size = value;
             }
         }
 
         public Chart_v1() : base() {
-            this._grid = new Grid_v1();
-
             this._grid.SetParent(this);
             this.Children.Add(this._grid);
 
+            this._entities.SetParent(this);
+            this.Children.Add(this._entities);
+
             // Test Purpose
-            Entity_v1[] testEntities = new Entity_v1[] {
+            this._entities.AddRange(new Entity_v1[] {
                 new Entity_v1() { Location = new SKPoint(100.0f, 100.0f)},
                 new Entity_v1() { Location = new SKPoint(-100.0f, 100.0f)},
                 new Entity_v1() { Location = new SKPoint(100.0f, -100.0f)},
-            };
-            
-            foreach(var entity in testEntities) {
-                entity.SetParent(this);
-            }
-
-            this.Children.AddRange(testEntities);
+            });
         }
         protected override void DrawThis(SKCanvas canvas) {
             var origin = new SKPoint(0.0f, 0.0f);
@@ -223,9 +323,12 @@ namespace TuggingController {
             );
         }
 
-        protected override void Invalidate() {
-            throw new NotImplementedException();
+        public void AddEntity(Point point) {
+            var gSKPoint = new SKPoint(point.X, point.Y);
+            this._entities.Add(gSKPoint);
         }
+
+        protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
 
     public class Grid_v1 : CanvasObject_v1 {
@@ -233,29 +336,39 @@ namespace TuggingController {
         private List<Line_v1> _verticalLines = new List<Line_v1>();
         private SKPoint _origin = new SKPoint();
         private int _gridScale = 50;
+        private SKSize _size = new SKSize();
 
         // Note: Coordinate is different to SKRect
         // Chart: Left-Bottom, SKRect: Left-Top
         //public new SKRect BoarderBox { get; set; } = new SKRect();
         public override SKSize Size {
-            get => this.BoarderBox.Size;
+            get => this._size;
             set {
-                this.BoarderBox = this.SetBoarderBoxFromSize(value);
+                this._size = value;
+                this.UpdateBoarderBox();
             }
         }
+
         public SKPaint BoarderPaint { get; set; } = new SKPaint() { Color = SKColors.BlueViolet, IsStroke = true, StrokeWidth = 6.0f };
 
-        public Grid_v1() : base() { }
+        public Grid_v1() : base() {
+            this.Transform.TransformChanged += this.Transform_TransformChanged;
+        }
 
-        private SKRect SetBoarderBoxFromSize(SKSize size) {
+        private void Transform_TransformChanged(object sender, EventArgs e) {
+            this.UpdateBoarderBox();
+        }
+
+        private void UpdateBoarderBox() {
             var lBox = new SKRect() {
-                Left = this.Location.X,
-                Right = this.Location.X + size.Width,
-                Top = this.Location.Y,
-                Bottom = this.Location.Y + size.Height
+                Left = this.Location.X - Math.Abs(this._size.Width) / 2,
+                Right = this.Location.X + Math.Abs(this._size.Width) / 2,
+                Bottom = this.Location.Y - Math.Abs(this._size.Height) / 2,
+                Top = this.Location.Y + Math.Abs(this._size.Height) / 2
             };
 
-            return this.Transform.InverseMapRect(lBox);
+            // gBox is standardized SKRect.
+            this.BoarderBox = this.Transform.InvLocalTransformation.MapRect(lBox);
         }
 
         private void UpdateGrid() {
@@ -291,8 +404,8 @@ namespace TuggingController {
 
             foreach (var x in gridXCoordinates) {
                 var vLine = new Line_v1() {
-                    P0 = new SKPoint(x, this.BoarderBox.Top),
-                    P1 = new SKPoint(x, this.BoarderBox.Bottom)
+                    P0 = new SKPoint(x, this.BoarderBox.Bottom),
+                    P1 = new SKPoint(x, this.BoarderBox.Top)
                 };
 
                 vLine.SetParent(this);
@@ -319,6 +432,8 @@ namespace TuggingController {
         protected override void Invalidate() {
             this.UpdateGrid();
         }
+
+        protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
 
     public partial class Line_v1 : CanvasObject_v1 {
@@ -367,5 +482,7 @@ namespace TuggingController {
             this._gP0 = this._transform.MapPoint(this.P0);
             this._gP1 = this._transform.MapPoint(this.P1);
         }
+
+        protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
 }
