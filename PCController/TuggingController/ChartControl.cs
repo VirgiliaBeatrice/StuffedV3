@@ -173,9 +173,6 @@ namespace TuggingController {
                 this._IsScaleUp = false;
                 this.timer.Start();
             }
-            else {
-                Console.WriteLine($"Scale: {this.prevScale}");
-            }
         }
 
         private void ChartControl_SizeChanged(object sender, EventArgs e) {

@@ -160,7 +160,7 @@ namespace TuggingController {
             return this.InvLocalTransformation.MapRect(rect);
         }
 
-        public void Behavior(BehaviorArgs e) {
+        public BehaviorResult Behavior(BehaviorArgs e) {
             throw new NotImplementedException();
         }
     }
