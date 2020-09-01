@@ -1,4 +1,5 @@
-﻿using NLog;
+﻿using MathNet.Spatial.Units;
+using NLog;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -11,11 +12,20 @@ namespace TuggingController {
     public class BehaviorArgs {
         public BehaviorArgs() { }
     }
+
     public class DragAndDropBehaviorArgs : BehaviorArgs {
         private SKPoint _location;
         public SKPoint Location => this._location;
 
         public DragAndDropBehaviorArgs(int x, int y) {
+            this._location = new SKPoint() { X = x, Y = y };
+        }
+    }
+    public class SelectableBehaviorArgs : BehaviorArgs {
+        private SKPoint _location;
+        public SKPoint Location => this._location;
+
+        public SelectableBehaviorArgs(int x, int y) {
             this._location = new SKPoint() { X = x, Y = y };
         }
     }
@@ -48,21 +58,47 @@ namespace TuggingController {
         }
     }
 
-    public class DragAndDropComponent : IComponent {
+    public class SelectableComponent : IComponent {
         public ICanvasObject CanvasObject { get; set; }
-        public string Tag { get; } = "D&D";
-        public bool Active { get; set; } = false;
+        public string Tag => "Select";
+        public bool IsSelected { get; set; } = false;
+        public event EventHandler SelectStatusChanged;
+
+        public SelectableComponent() {
+            this.SelectStatusChanged += this.OnSelectStatusChanged;
+        }
+
+        protected virtual void OnSelectStatusChanged(object sender, EventArgs e) { }
 
         public void Behavior(BehaviorArgs e) {
-            var gPointer = ((DragAndDropBehaviorArgs)e).Location;
+            var gPointer = ((SelectableBehaviorArgs)e).Location;
             var lPointer =
                 this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
             var distance = SKPoint.Distance(lPointer, this.CanvasObject.Location);
 
-            if (distance < 5.0f & !this.Active) {
-                this.Active = false;
-                this.CanvasObject.Location = lPointer;
+            if (distance < 5.0f) {
+                this.IsSelected = !this.IsSelected;
+                this.SelectStatusChanged.Invoke(this, null);
             }
+        }
+    }
+
+    public class DragAndDropComponent : IComponent {
+        public ICanvasObject CanvasObject { get; set; }
+        public string Tag { get; } = "D&D";
+
+        public void Behavior(BehaviorArgs e) {
+            var selComponent = (SelectableComponent)this.CanvasObject.Components.Find(c => c.Tag == "Select");
+
+            if (!selComponent.IsSelected) {
+                return;
+            }
+
+            var gPointer = ((DragAndDropBehaviorArgs)e).Location;
+            var lPointer =
+                this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
+
+            this.CanvasObject.Location = lPointer;
         }
     }
 
@@ -196,6 +232,7 @@ namespace TuggingController {
     }
 
     public partial class Entity_v1 : CanvasObject_v1 {
+        private SelectableComponent _selectableComponent;
         private SKPoint _gLocation;
         private int _index;
         private float _radius = 5.0f;
@@ -211,6 +248,12 @@ namespace TuggingController {
             StrokeWidth = 2
         };
 
+        public float Radius {
+            get => this._radius;
+            set {
+                this._radius = value;
+            }
+        }
         public SKPoint Point {
             get => SkiaExtension.SkiaHelper.ToSKPoint(this.PointVector);
             set {
@@ -225,7 +268,20 @@ namespace TuggingController {
         }
 
         public Entity_v1() : base() {
-            this.AddComponent(new DragAndDropComponent());
+            //this.AddComponent(new DragAndDropComponent());
+            this._selectableComponent = new SelectableComponent();
+            this._selectableComponent.SelectStatusChanged += this.SelectableComponent_SelectStatusChanged;
+
+            this.AddComponents(new IComponent[] {
+                new DragAndDropComponent(),
+                this._selectableComponent
+            });
+        }
+
+        private void SelectableComponent_SelectStatusChanged(object sender, EventArgs e) {
+            var component = (SelectableComponent)sender;
+
+            this.Radius += component.IsSelected ? 2.0f : -2.0f;
         }
 
         protected override void DrawThis(SKCanvas canvas) {
@@ -408,6 +464,10 @@ namespace TuggingController {
                     P1 = new SKPoint(x, this.BoarderBox.Top)
                 };
 
+                if (x == 0) {
+                    vLine.Paint.StrokeWidth = 2.0f;
+                }
+
                 vLine.SetParent(this);
                 this._verticalLines.Add(vLine);
                 this.Children.Add(vLine);
@@ -418,6 +478,10 @@ namespace TuggingController {
                     P0 = new SKPoint(this.BoarderBox.Left, y),
                     P1 = new SKPoint(this.BoarderBox.Right, y)
                 };
+
+                if (y == 0) {
+                    hLine.Paint.StrokeWidth = 2.0f;
+                }
 
                 hLine.SetParent(this);
                 this._horizontalLines.Add(hLine);
@@ -441,6 +505,12 @@ namespace TuggingController {
             Color = SKColors.Gray,
             StrokeWidth = 1,
         };
+        public SKPaint Paint {
+            get => this._paint;
+            set {
+                this._paint = value;
+            }
+        }
         protected SKPoint _gP0;
         protected SKPoint _gP1;
 

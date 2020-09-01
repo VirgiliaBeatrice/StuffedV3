@@ -70,6 +70,7 @@ namespace TuggingController {
             switch (e.Button) {
                 case MouseButtons.Left:
                     this._mouseState &= ~MouseStates.LEFTDOWN;
+                    this.Chart.Execute(new SelectableBehaviorArgs(e.X, e.Y), "Select");
                     break;
             }
         }
@@ -91,6 +92,7 @@ namespace TuggingController {
             switch (e.Button) {
                 case MouseButtons.Left:
                     this._mouseState |= MouseStates.LEFTDOWN;
+                    this.Chart.Execute(new SelectableBehaviorArgs(e.X, e.Y), "Select");
                     break;
             }
         }
@@ -196,7 +198,7 @@ namespace TuggingController {
             canvas.Clear();
 
             this.Chart.Draw(canvas);
-            canvas.DrawText("Hello World!", new SKPoint(100, 100), new SKPaint() { Color = SKColors.Black });
+            //canvas.DrawText("Hello World!", new SKPoint(100, 100), new SKPaint() { Color = SKColors.Black });
 
         }
     }
