@@ -11,7 +11,9 @@ namespace TuggingController {
         ICanvasObject CanvasObject { get; set; }
         string Tag { get; }
 
-        void Behavior(BehaviorArgs e);
+        void DefaultBehavior(BehaviorArgs e);
+        void PreventDefault(BehaviorHandler behavior);
+        void AddBehavior(BehaviorHandler behavior);
     }
 
     public struct PaintComponent : IComponent {
@@ -20,7 +22,15 @@ namespace TuggingController {
         public SKPaint FillPaint { get; set; }
         public SKPaint StrokePaint { get; set; }
 
-        public void Behavior(BehaviorArgs e) {
+        public void AddBehavior(BehaviorHandler behavior) {
+            throw new NotImplementedException();
+        }
+
+        public void DefaultBehavior(BehaviorArgs e) {
+            throw new NotImplementedException();
+        }
+
+        public void PreventDefault(BehaviorHandler behavior) {
             throw new NotImplementedException();
         }
     }
@@ -29,74 +39,106 @@ namespace TuggingController {
         public ICanvasObject CanvasObject { get; set; }
         public string Tag { get; set; }
 
-        public void Behavior(BehaviorArgs e) {
+        public void AddBehavior(BehaviorHandler behavior) {
+            throw new NotImplementedException();
+        }
+
+        public void DefaultBehavior(BehaviorArgs e) {
+            throw new NotImplementedException();
+        }
+
+        public void PreventDefault(BehaviorHandler behavior) {
             throw new NotImplementedException();
         }
     }
 
-    //public class SelectableComponent : IComponent {
-    //    public ICanvasObject CanvasObject { get; set; }
-    //    public string Tag => "Select";
-    //    public bool IsSelected { get; set; } = false;
-    //    public SKPoint ClickLocation { get; set; } = new SKPoint();
-    //    public event EventHandler SelectStatusChanged;
+    public class SelectableComponent : ILog, IComponent {
+        private ICanvasObject _canvasObject;
+        private BehaviorHandler behaviors;
 
-    //    public SelectableComponent() {
-    //        this.SelectStatusChanged += this.OnSelectStatusChanged;
-    //    }
+        public ICanvasObject CanvasObject {
+            get => this._canvasObject;
+            set {
+                this._canvasObject = value;
 
-    //    protected virtual void OnSelectStatusChanged(object sender, EventArgs e) { }
+                SetCanvasObject();
+            }
+        }
+        public string Tag => "Select";
+        public SKPoint ClickLocation { get; set; } = new SKPoint();
 
-    //public void Behavior(BehaviorArgs e) {
-    //    var type = this.CanvasObject.GetType();
+        public Logger Logger => LogManager.GetCurrentClassLogger();
 
-    //    if (type == typeof(Entity_v1)) {
-    //        return this.PointBehavior(e);
-    //    } else if (type == typeof(Grid_v1)) {
-    //        return this.RectBehavior(e);
-    //    } else {
-    //        return new BehaviorResult();
-    //    }
-    //}
+        public SelectableComponent() { }
 
-    //public void PointBehavior(BehaviorArgs e) {
-    //    var gPointer = ((SelectableBehaviorArgs)e).Location;
-    //    var lPointer =
-    //        this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
-    //    var distance = SKPoint.Distance(lPointer, this.CanvasObject.Location);
+        private void SetCanvasObject() {
+            this._canvasObject.MouseClick += this.CanvasObject_MouseClick;
 
-    //    this.ClickLocation = lPointer;
+            this.behaviors += this.DefaultBehavior;
+        }
 
-    //    if (distance < 5.0f) {
-    //        this.IsSelected = !this.IsSelected;
-    //        this.SelectStatusChanged.Invoke(this, null);
+        private void CanvasObject_MouseClick(Event @event) {
+            var e = @event as MouseEvent;
+            var target = this.CanvasObject;
 
-    //        return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
-    //    }
+            if (e.Target == target) {
+                //this.Logger.Debug($"{target.GetType()} MouseClick");
 
-    //    return new BehaviorResult();
-    //}
+                var args = new BehaviorArgs();
+                this.behaviors?.Invoke(args);
+            }
+        }
 
-    //public void RectBehavior(BehaviorArgs e) {
-    //    var gPointer = ((SelectableBehaviorArgs)e).Location;
-    //    var lPointer =
-    //        this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
-    //    var lBox = this.CanvasObject.BoarderBox;
-    //    var gBox = this.CanvasObject.Transform.GlobalTransformation.MapRect(lBox);
-    //    var isInside = gBox.Contains(gPointer);
+        public void DefaultBehavior(BehaviorArgs e) {
+            this.CanvasObject.IsSelected = !this.CanvasObject.IsSelected;
+        }
 
-    //    this.ClickLocation = lPointer;
+        //public void PointBehavior(BehaviorArgs e) {
+        //    var gPointer = ((SelectableBehaviorArgs)e).Location;
+        //    var lPointer =
+        //        this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
+        //    var distance = SKPoint.Distance(lPointer, this.CanvasObject.Location);
 
-    //    if (isInside) {
-    //        this.IsSelected = !this.IsSelected;
-    //        this.SelectStatusChanged.Invoke(this, null);
+        //    this.ClickLocation = lPointer;
 
-    //        return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
-    //    }
+        //    if (distance < 5.0f) {
+        //        this.IsSelected = !this.IsSelected;
+        //        this.SelectStatusChanged.Invoke(this, null);
 
-    //    return new BehaviorResult();
-    //}
-    //}
+        //        return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
+        //    }
+
+        //    return new BehaviorResult();
+        //}
+
+        //public void RectBehavior(BehaviorArgs e) {
+        //    var gPointer = ((SelectableBehaviorArgs)e).Location;
+        //    var lPointer =
+        //        this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
+        //    var lBox = this.CanvasObject.BoarderBox;
+        //    var gBox = this.CanvasObject.Transform.GlobalTransformation.MapRect(lBox);
+        //    var isInside = gBox.Contains(gPointer);
+
+        //    this.ClickLocation = lPointer;
+
+        //    if (isInside) {
+        //        this.IsSelected = !this.IsSelected;
+        //        this.SelectStatusChanged.Invoke(this, null);
+
+        //        return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
+        //    }
+
+        //    return new BehaviorResult();
+        //}
+
+        public void PreventDefault(BehaviorHandler behavior) {
+            throw new NotImplementedException();
+        }
+
+        public void AddBehavior(BehaviorHandler behavior) {
+            this.behaviors += behavior;
+        }
+    }
 
     public class DragAndDropComponent : ILog, IComponent {
         private ICanvasObject _canvasObject;
@@ -104,6 +146,8 @@ namespace TuggingController {
         private SKPoint _anchor;
         private SKPoint _origin;
         private SKMatrix _initTranslate;
+        private bool willExecuteDefault = true;
+
         public ICanvasObject CanvasObject {
             get => this._canvasObject;
             set {
@@ -126,15 +170,15 @@ namespace TuggingController {
             this._canvasObject.DragEnd += this.CanvasObject_DragEnd;
             this._canvasObject.Dragging += this.CanvasObject_Dragging;
 
-            this._mouseMoveBehavior += this.Behavior;
+            this._mouseMoveBehavior += this.DefaultBehavior;
         }
 
         public void PreventDefault(BehaviorHandler behavior) {
-            this._mouseMoveBehavior -= this.Behavior;
+            this._mouseMoveBehavior -= this.DefaultBehavior;
             this._mouseMoveBehavior += behavior;
         }
 
-        public void Behavior(BehaviorArgs e) {
+        public void DefaultBehavior(BehaviorArgs e) {
             var args = e as DragAndDropBehaviorArgs;
             var target = this.CanvasObject;
             var origin = args.Origin;
@@ -151,13 +195,14 @@ namespace TuggingController {
 
             if (@event.Target == target) {
                 //this.Logger.Debug($"{target.GetType()} MouseDown");
+                if (target.IsSelected) {
+                    target.Dispatcher.Capture(target);
 
-                target.Dispatcher.Capture(target);
+                    var dragEvent = e.Clone();
+                    dragEvent.Type = "DragStart";
 
-                var dragEvent = e.Clone();
-                dragEvent.Type = "DragStart";
-
-                target.Dispatcher.DispatchEvent(dragEvent);
+                    target.Dispatcher.DispatchEvent(dragEvent);
+                }
             }
         }
 
@@ -168,12 +213,14 @@ namespace TuggingController {
             if (@event.Target == target) {
                 //this.Logger.Debug($"{target.GetType()} MouseUp");
 
-                target.Dispatcher.Release();
+                if (!target.IsSelected) {
+                    target.Dispatcher.Release();
 
-                var dragEvent = e.Clone();
-                dragEvent.Type = "DragEnd";
+                    var dragEvent = e.Clone();
+                    dragEvent.Type = "DragEnd";
 
-                target.Dispatcher.DispatchEvent(dragEvent);
+                    target.Dispatcher.DispatchEvent(dragEvent);
+                }
             }
         }
 
@@ -224,6 +271,10 @@ namespace TuggingController {
             };
 
             this._mouseMoveBehavior?.Invoke(behaviorArgs);
+        }
+
+        public void AddBehavior(BehaviorHandler behavior) {
+            this._mouseMoveBehavior += behavior;
         }
     }
 }

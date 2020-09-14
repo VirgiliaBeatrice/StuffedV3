@@ -182,7 +182,15 @@ namespace TuggingController {
             return this.WorldToLocalMatrix.MapPoint(point);
         }
 
-        public void Behavior(BehaviorArgs e) {
+        public void DefaultBehavior(BehaviorArgs e) {
+            throw new NotImplementedException();
+        }
+
+        public void PreventDefault(BehaviorHandler behavior) {
+            throw new NotImplementedException();
+        }
+
+        public void AddBehavior(BehaviorHandler behavior) {
             throw new NotImplementedException();
         }
     }

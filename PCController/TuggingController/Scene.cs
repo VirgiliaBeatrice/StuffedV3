@@ -34,10 +34,7 @@ namespace TuggingController {
     }
 
     public class RootObject_v1 : CanvasObject_v1 {
-        private DragAndDropComponent dragAndDropComponent;
         private float scale;
-        private SKPoint windowOrigin = new SKPoint();
-        private SKRect window = new SKRect();
         private SKPoint translateVector = new SKPoint();
 
         private SKPoint anchor;

@@ -100,7 +100,9 @@ namespace TuggingController {
                 Button = e.Button,
             };
 
-            //this.Chart.Dispatcher.DispatchEvent(mouseEvent);
+            this.ChartScene.Dispatch(mouseEvent);
+            this.Invalidate(true);
+
         }
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {

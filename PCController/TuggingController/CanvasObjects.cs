@@ -71,6 +71,8 @@ namespace TuggingController {
     public interface ICanvasObject : ICanvasObjectNode, ICanvasObjectEvents {
         EventDispatcher<ICanvasObject> Dispatcher { get; }
 
+        bool IsSelected { get; set; }
+
         SKRect BoarderBox { get; }
         //SKSize Size { get; set; }
         //float Scale { get; set; }
@@ -299,6 +301,7 @@ namespace TuggingController {
         }
 
         protected PaintComponent PaintComponent { get; set; } = new PaintComponent();
+        public bool IsSelected { get; set; } = false;
 
         /// <summary>
         /// Constructor
@@ -453,9 +456,12 @@ namespace TuggingController {
 
     public partial class Entity_v1 : CanvasObject_v1 {
         private DragAndDropComponent _dragAndDropComponent;
+        private SelectableComponent selectableComponent;
         private SKPoint _gLocation;
         private int _index;
         private float _radius = 5.0f;
+        private float _gRadius;
+
         private SKPaint _fillPaint = new SKPaint {
             IsAntialias = true,
             Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
@@ -468,7 +474,6 @@ namespace TuggingController {
             StrokeWidth = 2
         };
 
-        private float _gRadius;
         public SKPoint Point {
             get => SkiaExtension.SkiaHelper.ToSKPoint(this.PointVector);
             set {
@@ -484,12 +489,13 @@ namespace TuggingController {
 
         public Entity_v1() : base() {
             this._dragAndDropComponent = new DragAndDropComponent();
+            this.selectableComponent = new SelectableComponent();
 
             this.AddComponents(new IComponent[] {
                 this._dragAndDropComponent,
+                this.selectableComponent,
             });
         }
-
 
         protected override void DrawThis(SKCanvas canvas) {
             canvas.DrawCircle(this._gLocation, this._radius, this._fillPaint);
@@ -507,6 +513,13 @@ namespace TuggingController {
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
             this._gLocation = worldCoordinate.TransformToDevice(this.Location);
             this._gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this._radius);
+            
+            if (this.IsSelected) {
+                this._gRadius += 2.0f;
+                this._fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
+            } else {
+                this._fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
+            }
         }
 
         protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
