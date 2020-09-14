@@ -126,7 +126,10 @@
       <DependentUpon>ChartControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Decorator.cs" />
+    <Compile Include="Event.cs" />
+    <Compile Include="Component.cs" />
     <Compile Include="QhullCSharp.cs" />
+    <Compile Include="Scene.cs" />
     <Compile Include="SkiaExtension.cs" />
     <Compile Include="SkiaHelper.cs" />
     <Compile Include="ConfigurationCanvas.cs" />

@@ -8,8 +8,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Xml.Schema;
+using System.Reflection;
+using System.Windows.Forms;
 
 namespace TuggingController {
+
     public class BehaviorArgs {
         public BehaviorArgs() { }
     }
@@ -22,9 +25,16 @@ namespace TuggingController {
     public class DragAndDropBehaviorArgs : BehaviorArgs {
         private SKPoint _location;
         public SKPoint Location => this._location;
+        public SKPoint Origin { get; set; }
+        public SKPoint Anchor { get; set; }
+        public SKMatrix InitialTranslation { get; set; }
 
         public DragAndDropBehaviorArgs(int x, int y) {
             this._location = new SKPoint() { X = x, Y = y };
+        }
+
+        public DragAndDropBehaviorArgs(SKPoint location) {
+            this._location = location;
         }
     }
 
@@ -46,97 +56,6 @@ namespace TuggingController {
     }
 
 
-    public interface IComponent {
-        ICanvasObject CanvasObject { get; set; }
-        string Tag { get; }
-
-        BehaviorResult Behavior(BehaviorArgs e);
-    }
-
-    public struct PaintComponent : IComponent {
-        public ICanvasObject CanvasObject { get; set; }
-        public string Tag { get; set; }
-        public SKPaint FillPaint { get; set; }
-        public SKPaint StrokePaint { get; set; }
-
-        public BehaviorResult Behavior(BehaviorArgs e) {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class HoverComponent : IComponent {
-        public ICanvasObject CanvasObject { get; set; }
-        public string Tag { get; set; }
-
-        public BehaviorResult Behavior(BehaviorArgs e) {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class SelectableComponent : IComponent {
-        public ICanvasObject CanvasObject { get; set; }
-        public string Tag => "Select";
-        public bool IsSelected { get; set; } = false;
-        public SKPoint ClickLocation { get; set; } = new SKPoint();
-        public event EventHandler SelectStatusChanged;
-
-        public SelectableComponent() {
-            this.SelectStatusChanged += this.OnSelectStatusChanged;
-        }
-
-        protected virtual void OnSelectStatusChanged(object sender, EventArgs e) { }
-
-        public BehaviorResult Behavior(BehaviorArgs e) {
-            var type = this.CanvasObject.GetType();
-
-            if (type == typeof(Entity_v1)) {
-                return this.PointBehavior(e);
-            } else if (type == typeof(Grid_v1)) {
-                return this.RectBehavior(e);
-            } else {
-                return new BehaviorResult();
-            }
-        }
-
-        public BehaviorResult PointBehavior(BehaviorArgs e) {
-            var gPointer = ((SelectableBehaviorArgs)e).Location;
-            var lPointer =
-                this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
-            var distance = SKPoint.Distance(lPointer, this.CanvasObject.Location);
-
-            this.ClickLocation = lPointer;
-
-            if (distance < 5.0f) {
-                this.IsSelected = !this.IsSelected;
-                this.SelectStatusChanged.Invoke(this, null);
-
-                return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
-            }
-
-            return new BehaviorResult();
-        }
-
-        public BehaviorResult RectBehavior(BehaviorArgs e) {
-            var gPointer = ((SelectableBehaviorArgs)e).Location;
-            var lPointer =
-                this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
-            var lBox = this.CanvasObject.BoarderBox;
-            var gBox = this.CanvasObject.Transform.GlobalTransformation.MapRect(lBox);
-            var isInside = gBox.Contains(gPointer);
-
-            this.ClickLocation = lPointer;
-
-            if (isInside) {
-                this.IsSelected = !this.IsSelected;
-                this.SelectStatusChanged.Invoke(this, null);
-
-                return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
-            }
-
-            return new BehaviorResult();
-        }
-    }
-
     public class DragAndDropComponentEventArgs : EventArgs {
         public SKPoint Anchor { get; set; }
         private SKPoint _newLocation;
@@ -148,64 +67,219 @@ namespace TuggingController {
         }
     }
 
-    public class DragAndDropComponent : IComponent {
-        public ICanvasObject CanvasObject { get; set; }
-        public string Tag { get; } = "D&D";
-        public event EventHandler Dragging;
 
-        public DragAndDropComponent() {
-            this.Dragging += this.OnDragging;
-        }
+    public interface ICanvasObject : ICanvasObjectNode, ICanvasObjectEvents {
+        EventDispatcher<ICanvasObject> Dispatcher { get; }
 
-        private void OnDragging(object sender, EventArgs e) { }
-
-        public BehaviorResult Behavior(BehaviorArgs e) {
-            var selComponent = (SelectableComponent)this.CanvasObject.Components.Find(c => c.Tag == "Select");
-
-            if (!selComponent.IsSelected) {
-                return new BehaviorResult();
-            }
-
-            var gPointer = ((DragAndDropBehaviorArgs)e).Location;
-            var lPointer =
-                this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
-
-            //this.CanvasObject.Location = lPointer;
-            this.Dragging.Invoke(this, new DragAndDropComponentEventArgs(lPointer, selComponent.ClickLocation));
-
-            return new BehaviorResult() { ToNext = false };
-        }
-    }
-
-    public interface ICanvasObject {
-        SKRect BoarderBox { get; set; }
-        SKSize Size { get; set; }
+        SKRect BoarderBox { get; }
+        //SKSize Size { get; set; }
+        //float Scale { get; set; }
         Transform Transform { get; set; }
         SKPoint Location { get; set; }
         SKPoint GlobalLocation { get; }
-        List<ICanvasObject> Children { get; set; }
+        //List<ICanvasObject> Children { get; set; }
         List<IComponent> Components { get; set; }
         void Draw(SKCanvas canvas);
+        void Draw(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate);
         BehaviorResult Execute(BehaviorArgs e, string tag);
         void AddComponent(IComponent component);
         void AddComponents(IEnumerable<IComponent> components);
+        void SetBoarderBoxFromParent(SKRect pBoarderBox);
+        SKSize GetSize();
     }
 
-    public abstract class CanvasObject_v1 : ILog, ICanvasObject {
+    public interface ICanvasObjectNode {
+        List<ICanvasObject> Children { get; set; }
+        bool ContainsPoint(SKPoint point);
+    }
+
+    public interface ICanvasObjectEvents {
+        event EventHandler_v1 MouseEnter;
+        event EventHandler_v1 MouseLeave;
+        event EventHandler_v1 MouseMove;
+        event EventHandler_v1 MouseUp;
+        event EventHandler_v1 MouseDown;
+        event EventHandler_v1 MouseClick;
+        event EventHandler_v1 MouseDoubleClick;
+        event EventHandler_v1 MouseWheel;
+        event EventHandler_v1 DragStart;
+        event EventHandler_v1 DragEnd;
+        event EventHandler_v1 Dragging;
+    }
+
+    public class EventDispatcher<T> where T : ICanvasObject {
+        private static EventDispatcher<T> instance = null;
+        public static EventDispatcher<T> GetSingleton() {
+            if (instance == null) {
+                instance = new EventDispatcher<T>();
+            }
+
+            return instance;
+        }
+
+        protected Queue<Event> Events { get; set; } = new Queue<Event>();
+        public ICanvasObject CapturedTarget { get; set; } = null;
+        protected bool _propagate = true;
+        public T Root { get; set; }
+
+        public EventDispatcher() { }
+
+        public EventDispatcher(T root) {
+            this.Root = root;
+        }
+
+        public void Capture(ICanvasObject target) {
+            this.CapturedTarget = target;
+            this.StopPropagate();
+        }
+
+        public void Release() {
+            this.CapturedTarget = null;
+            this._propagate = true;
+        }
+
+        public void StopPropagate() {
+            this._propagate = false;
+        }
+
+        public virtual void DispatchEvent(Event @event) {
+            Event e;
+            FieldInfo eventInfo;
+
+            if (@event.GetType() == typeof(MouseEvent)) {
+                e = ((MouseEvent)@event).Clone();
+
+                this.FindMouseEventTarget(ref e, this.Root);
+                if (e.Path.Count != 0) {
+                    e.Target = e.Path.Last();
+                }
+            } else {
+                e = @event.Clone();
+            }
+
+            eventInfo = typeof(CanvasObject_v1).GetField(e.Type, BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (eventInfo != null) {
+                if (this.CapturedTarget != null) {
+                    EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(this.CapturedTarget);
+
+                    e.CurrentTarget = this.CapturedTarget;
+                    handler?.Invoke(e);
+                } else {
+                    // Capture Phase
+                    //foreach(var node in e.Path) {
+                    //    EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(node);
+
+                    //    e.CurrentTarget = node;
+                    //    handler.Invoke(e);
+                    //}
+
+                    // Bubble Phase
+                    foreach (var node in e.Path.ToArray().Reverse()) {
+                        if (!this._propagate) {
+                            break;
+                        }
+
+                        EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(node);
+
+                        e.CurrentTarget = node;
+                        handler?.Invoke(e);
+                    }
+                }
+            }
+        }
+
+        protected void FindMouseEventTarget(ref Event @event, ICanvasObject node) {
+            var eventRef = @event as MouseEvent;
+            var pointer = eventRef.Pointer;
+            var lPointer = node.Transform.InvGlobalTransformation.MapPoint(pointer);
+
+            eventRef.CurrentTarget = node;
+
+            if (node.ContainsPoint(lPointer)) {
+                eventRef.Path.Add(node);
+
+                // Children Reversed Order - Top-most Object
+                foreach(var childNode in node.Children) {
+                    this.FindMouseEventTarget(ref @event, childNode);
+                }
+
+            }
+
+            //eventRef.Target = eventRef.Path.Last();
+        }
+    }
+
+    public abstract partial class CanvasObject_v1 {
+        public event EventHandler_v1 MouseEnter;
+        public event EventHandler_v1 MouseLeave;
+        public event EventHandler_v1 MouseMove;
+        public event EventHandler_v1 MouseUp;
+        public event EventHandler_v1 MouseDown;
+        public event EventHandler_v1 MouseClick;
+        public event EventHandler_v1 MouseDoubleClick;
+        public event EventHandler_v1 MouseWheel;
+        public event EventHandler_v1 DragStart;
+        public event EventHandler_v1 DragEnd;
+        public event EventHandler_v1 Dragging;
+
+        protected virtual void OnMouseEnter(Event @event) {
+            this.MouseEnter?.Invoke(@event);
+        }
+
+        protected virtual void OnMouseLeave(Event @event) {
+            this.MouseLeave?.Invoke(@event);
+        }
+
+        protected virtual void OnMouseMove(Event @event) {
+            this.MouseMove?.Invoke(@event);
+        }
+
+        protected virtual void OnMouseUp(Event @event) {
+            this.MouseUp?.Invoke(@event);
+        }
+
+        protected virtual void OnMouseDown(Event @event) {
+            this.MouseDown?.Invoke(@event);
+        }
+
+        protected virtual void OnMouseClick(Event @event) {
+            this.MouseClick?.Invoke(@event);
+        }
+
+        protected virtual void OnMouseDoubleClick(Event @event) {
+            this.MouseDoubleClick?.Invoke(@event);
+        }
+
+        protected virtual void OnMouseWheel(Event @event) {
+            this.MouseWheel?.Invoke(@event);
+        }
+
+        protected virtual void OnDragStart(Event @event) {
+            this.DragStart?.Invoke(@event);
+        }
+
+        protected virtual void OnDragEnd(Event @event) {
+            this.DragEnd?.Invoke(@event);
+        }
+
+        protected virtual void OnDragging(Event @event) {
+            this.Dragging?.Invoke(@event);
+        }
+    }
+
+    public abstract partial class CanvasObject_v1 : ILog, ICanvasObject {
+
         protected bool _isDebug = true;
         protected Transform _transform = new Transform();
-        //protected SKSize _size = new SKSize();
+        //protected float _scale = 1.0f;
+        protected event EventHandler ScaleChanged;
+        protected SKRect _pBoarderBox = new SKRect();
 
+        public EventDispatcher<ICanvasObject> Dispatcher => EventDispatcher<ICanvasObject>.GetSingleton();
         public Logger Logger { get; protected set; } = LogManager.GetCurrentClassLogger();
-
-        public SKRect BoarderBox { get; set; } = new SKRect();
-        public virtual SKSize Size {
-            get => this.BoarderBox.Size;
-            set {
-                var oldBoarderBox = this.BoarderBox;
-
-                oldBoarderBox.Size = value;
-            }
+        public SKRect BoarderBox {
+            get => this.Transform.InvLocalTransformation.MapRect(this._pBoarderBox);
         }
         public Transform Transform { 
             get => this._transform;
@@ -220,14 +294,43 @@ namespace TuggingController {
 
         public SKPoint GlobalLocation {
             get {
-                return this.Transform.MapPoint(this.Location);
+                return this.Transform.GlobalTransformation.MapPoint(this.Location);
             }
         }
 
         protected PaintComponent PaintComponent { get; set; } = new PaintComponent();
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         protected CanvasObject_v1() {
             this._transform.CanvasObject = this;
+
+            var config = new NLog.Config.LoggingConfiguration();
+            var logConsole = new NLog.Targets.ColoredConsoleTarget("Form1");
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, logConsole);
+            NLog.LogManager.Configuration = config;
+
+            // Register default event handler
+            //this.MouseEnter += OnMouseEnter;
+            //this.MouseLeave += OnMouseLeave;
+            //this.MouseMove += OnMouseMove;
+
+            this.ScaleChanged += OnScaleChanged;
+        }
+
+        protected virtual void OnScaleChanged(object sender, EventArgs e) { }
+
+        public virtual SKSize GetSize() {
+            return this.BoarderBox.Size;
+        }
+
+        public void SetBoarderBoxFromParent(SKRect pBoarderBox) {
+            this._pBoarderBox = pBoarderBox;
+
+            foreach (var child in this.Children) {
+                child.SetBoarderBoxFromParent(this.BoarderBox);
+            }
         }
 
         /// <summary>
@@ -235,7 +338,12 @@ namespace TuggingController {
         /// This method is called before draw anything on the canvas,
         /// and returns a global position for drawing.
         /// </summary>
+        [Obsolete("This method is obsolete.", false)]
         protected virtual void Invalidate() {
+            throw new NotImplementedException();
+        }
+
+        protected virtual void Invalidate(WorldSpaceCoordinate worldCoordinate) {
             throw new NotImplementedException();
         }
 
@@ -245,9 +353,19 @@ namespace TuggingController {
         /// of itself need to be drawed.
         /// </summary>
         /// <param name="canvas">Target Canvas</param>
+        [Obsolete("This method is obsolete.", false)]
         protected virtual void DrawThis(SKCanvas canvas) {
             throw new NotImplementedException();
         }
+
+        protected virtual void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool ContainsPoint(SKPoint point) {
+            throw new NotImplementedException();
+        }
+
 
         internal void SetParent(CanvasObject_v1 parent) {
             this.Transform.Parent = parent._transform;
@@ -305,6 +423,17 @@ namespace TuggingController {
         public CanvasObject_v1 Clone() {
             throw new NotImplementedException();
         }
+
+        public void Draw(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            // Redraw
+            // Invalidate() first, then DrawThis() and Draw() of all children.
+            this.Invalidate(worldCoordinate);
+            this.DrawThis(canvas, worldCoordinate);
+
+            foreach (var child in this.Children) {
+                child.Draw(canvas, worldCoordinate);
+            }
+        }
     }
 
     public abstract class ContainerCanvasObject_v1 : CanvasObject_v1 {
@@ -316,10 +445,13 @@ namespace TuggingController {
                 child.Draw(canvas);
             }
         }
+
+        public override bool ContainsPoint(SKPoint point) {
+            return true;
+        }
     }
 
     public partial class Entity_v1 : CanvasObject_v1 {
-        private SelectableComponent _selectableComponent;
         private DragAndDropComponent _dragAndDropComponent;
         private SKPoint _gLocation;
         private int _index;
@@ -356,29 +488,13 @@ namespace TuggingController {
         }
 
         public Entity_v1() : base() {
-            this._selectableComponent = new SelectableComponent();
             this._dragAndDropComponent = new DragAndDropComponent();
 
-            this._selectableComponent.SelectStatusChanged += this.SelectableComponent_SelectStatusChanged;
-            this._dragAndDropComponent.Dragging += this.DragAndDropComponent_Dragging;
-
             this.AddComponents(new IComponent[] {
-                this._dragAndDropComponent ,
-                this._selectableComponent
+                this._dragAndDropComponent,
             });
         }
 
-        private void DragAndDropComponent_Dragging(object sender, EventArgs e) {
-            var eArgs = (DragAndDropComponentEventArgs)e;
-
-            this.Location = eArgs.NewLocation;
-        }
-
-        private void SelectableComponent_SelectStatusChanged(object sender, EventArgs e) {
-            var component = (SelectableComponent)sender;
-
-            this.Radius += component.IsSelected ? 2.0f : -2.0f;
-        }
 
         protected override void DrawThis(SKCanvas canvas) {
             canvas.DrawCircle(this._gLocation, this._radius, this._fillPaint);
@@ -388,26 +504,25 @@ namespace TuggingController {
         protected override void Invalidate() {
             this._gLocation = this._transform.MapPoint(this.Location);
         }
-        protected override BehaviorResult ExecuteThis(BehaviorArgs e, string tag = "") {
-            BehaviorResult result = new BehaviorResult();
 
-            if (tag.Length == 0) {
-                foreach (var component in this.Components) {
-                    result = component.Behavior(e);
-                }
-            } else {
-                var targetComponent = this.Components.Find(c => c.Tag == tag);
-                result = targetComponent?.Behavior(e);
-            }
+        public override bool ContainsPoint(SKPoint point) {
+            return SKPoint.Distance(point, this.Location) <= this.Radius;
+        }
 
-            return result;
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this._gLocation = worldCoordinate.TransformToDevice(this.Location);
+        }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            canvas.DrawCircle(this._gLocation, this._radius, this._fillPaint);
+            canvas.DrawCircle(this._gLocation, this._radius, this._strokePaint);
         }
     }
 
-    public class EntityCollection_v1 : ContainerCanvasObject_v1 {
+    public class DataZone_v1 : ContainerCanvasObject_v1 {
         private List<Entity_v1> _entities = new List<Entity_v1>();
 
-        public EntityCollection_v1() : base() { }
+        public DataZone_v1() : base() { }
 
         public void Add(Entity_v1 entity) {
             entity.SetParent(this);
@@ -416,9 +531,7 @@ namespace TuggingController {
         }
 
         public void Add(SKPoint point) {
-            var lSKPoint = this.Transform.InvGlobalTransformation.MapPoint(point);
-
-            this.Add(new Entity_v1() { Location = lSKPoint });
+            this.Add(new Entity_v1() { Location = point });
         }
 
         public void AddRange(IEnumerable<Entity_v1> entities) {
@@ -427,145 +540,173 @@ namespace TuggingController {
             }
         }
 
+        public void Clear() {
+            this._entities.Clear();
+            this.Children.Clear();
+        }
+
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) { }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) { }
+
         //protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
 
-    public class Chart_v1 : ContainerCanvasObject_v1 {
+    public class MathCoordinate_v1 : CanvasObject_v1 {
         private Grid_v1 _grid = new Grid_v1();
-        private EntityCollection_v1 _entities = new EntityCollection_v1();
+        public SKPoint Origin => new SKPoint(
+            this.Transform.Translation.ScaleX,
+            this.Transform.Translation.ScaleY
+            );
+        public MathCoordinate_v1() {
+        }
+    }
+
+
+
+    public class Chart_v1 : CanvasObject_v1 {
+        //private DataZone_v1 _dataZone = new DataZone_v1();
+        private Grid_v1 _grid = new Grid_v1();
         private float _scale = 1.0f;
 
-        public float Scale {
-            get => this._scale;
-            set {
-                this._scale = value;
 
-                foreach (var child in this.Children) {
-                    child.Transform.Scale = 
-                        SKMatrix.MakeScale(this._scale, this._scale);
-                }
-            }
-        }
-
-        public override SKSize Size {
-            get => this.BoarderBox.Size;
-            set {
-                this.BoarderBox = new SKRect() { Size = value };
-                this._grid.Size = value;
-            }
-        }
 
         public Chart_v1() : base() {
+            this.Dispatcher.Root = this;
+
             this._grid.SetParent(this);
             this.Children.Add(this._grid);
 
-            this._entities.SetParent(this);
-            this.Children.Add(this._entities);
+            //this._dataZone.SetParent(this);
+            //this.Children.Add(this._dataZone);
 
             // Test Purpose
-            this._entities.AddRange(new Entity_v1[] {
-                new Entity_v1() { Location = new SKPoint(100.0f, 100.0f)},
-                new Entity_v1() { Location = new SKPoint(-100.0f, 100.0f)},
-                new Entity_v1() { Location = new SKPoint(100.0f, -100.0f)},
-            });
+            //this._dataZone.AddRange(new Entity_v1[] {
+            //    new Entity_v1() { Location = new SKPoint(100.0f, 100.0f)},
+            //    new Entity_v1() { Location = new SKPoint(-100.0f, 100.0f)},
+            //    new Entity_v1() { Location = new SKPoint(100.0f, -100.0f)},
+            //});
         }
-        protected override void DrawThis(SKCanvas canvas) {
-            var origin = new SKPoint(0.0f, 0.0f);
 
+        protected override void DrawThis(SKCanvas canvas) {
             canvas.DrawCircle(
-                this.Transform.MapPoint(origin),
+                this.GlobalLocation,
                 5.0f,
                 new SKPaint() { Color = SKColors.BlueViolet }
             );
+
+            canvas.DrawRect(
+                this.Transform.GlobalTransformation.MapRect(this.BoarderBox),
+                new SKPaint() {
+                    Color = SKColors.BlueViolet,
+                    StrokeWidth = 2.0f,
+                    IsStroke = true,
+                }
+            );
+        }
+        public void SetSize(SKSize size) {
+            var boarderBox = new SKRect() { Size = size };
+
+            this._pBoarderBox = boarderBox;
+
+            foreach (var child in this.Children) {
+                child.SetBoarderBoxFromParent(this.BoarderBox);
+            }
+        }
+
+        public void SetScale(float scale) {
+            this._scale = scale;
+
+            //this._dataZone.Transform.Scale = SKMatrix.MakeScale(this._scale, this._scale);
+            this._grid.Transform.Scale = SKMatrix.MakeScale(this._scale, this._scale);
+        }
+
+        public float GetScale() {
+            return this._scale;
         }
 
         public void AddEntity(Point point) {
             var gSKPoint = new SKPoint(point.X, point.Y);
-            this._entities.Add(gSKPoint);
+            //this._dataZone.Add(gSKPoint);
         }
 
-        //protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
+        public override bool ContainsPoint(SKPoint point) {
+            return this.BoarderBox.Contains(point);
+        }
+
+        protected override void Invalidate() { }
     }
 
     public class Grid_v1 : CanvasObject_v1 {
-        private SelectableComponent _selectableComponent;
+        //private SelectableComponent _selectableComponent;
         private DragAndDropComponent _dragAndDropComponent;
         private List<Line_v1> _horizontalLines = new List<Line_v1>();
         private List<Line_v1> _verticalLines = new List<Line_v1>();
+        private DataZone_v1 _dataZone = new DataZone_v1();
         private SKPoint _origin = new SKPoint();
         private int _gridScale = 50;
-        private SKSize _size = new SKSize();
 
         public SKPoint Anchor { get; set; } = new SKPoint();
 
         // Note: Coordinate is different to SKRect
         // Chart: Left-Bottom, SKRect: Left-Top
-        //public new SKRect BoarderBox { get; set; } = new SKRect();
-        public override SKSize Size {
-            get => this._size;
-            set {
-                this._size = value;
-                this.UpdateBoarderBox();
-            }
-        }
 
-        public SKPaint BoarderPaint { get; set; } = new SKPaint() { Color = SKColors.BlueViolet, IsStroke = true, StrokeWidth = 6.0f };
+        public SKPaint BoarderPaint { get; set; } = new SKPaint() { Color = SKColors.DarkKhaki, IsStroke = true, StrokeWidth = 6.0f };
 
         public Grid_v1() : base() {
             this.Transform.TransformChanged += this.Transform_TransformChanged;
 
-            this._selectableComponent = new SelectableComponent();
+            //this._selectableComponent = new SelectableComponent();
             this._dragAndDropComponent = new DragAndDropComponent();
 
-            this._selectableComponent.SelectStatusChanged += this.SelectableComponent_SelectStatusChanged;
-            this._dragAndDropComponent.Dragging += this.DragAndDropComponent_Dragging;
+            //this._selectableComponent.SelectStatusChanged += this.SelectableComponent_SelectStatusChanged;
 
+            // !Note! - Order
+            // 1. AddComponent
+            // 2. PreventDefault
             this.AddComponents(new IComponent[] {
-                this._selectableComponent,
+                //this._selectableComponent,
                 this._dragAndDropComponent
+            });
+            this._dragAndDropComponent.PreventDefault(DragAndDropComponent_Dragging);
+
+            this._dataZone.SetParent(this);
+            this.Children.Add(this._dataZone);
+
+            // Test Purpose
+            this._dataZone.AddRange(new Entity_v1[] {
+                new Entity_v1() { Location = new SKPoint(100.0f, 100.0f)},
+                new Entity_v1() { Location = new SKPoint(-100.0f, 100.0f)},
+                new Entity_v1() { Location = new SKPoint(100.0f, -100.0f)},
             });
         }
 
-        private void DragAndDropComponent_Dragging(object sender, EventArgs e) {
-            var eArgs = (DragAndDropComponentEventArgs)e;
-            var t = this.Transform.Translation;
-            var newLocation = eArgs.NewLocation;
-            var anchor = eArgs.Anchor;
-            var vector = newLocation - anchor;
+        private void DragAndDropComponent_Dragging(BehaviorArgs args) {
+            var dndArgs = (DragAndDropBehaviorArgs)args;
+            var t = dndArgs.InitialTranslation;
+            var newLocation = this.Transform.InvGlobalTransformation.MapPoint(dndArgs.Location);
+            var anchor = this.Transform.InvGlobalTransformation.MapPoint(dndArgs.Anchor);
+            var lVector = newLocation - anchor;
 
             SKMatrix.PostConcat(
                 ref t,
-                SKMatrix.MakeTranslation(vector.X, vector.Y)
+                SKMatrix.MakeTranslation(lVector.X, lVector.Y)
             );
 
             this.Transform.Translation = t;
         }
 
-        private void SelectableComponent_SelectStatusChanged(object sender, EventArgs e) {
-            var component = (SelectableComponent)sender;
+        //private void SelectableComponent_SelectStatusChanged(object sender, EventArgs e) {
+        //    var component = (SelectableComponent)sender;
 
-            if (component.IsSelected) {
-                this.BoarderPaint = new SKPaint() { Color = SKColors.DimGray, IsStroke = true, StrokeWidth = 6.0f };
-            } else {
-                this.BoarderPaint = new SKPaint() { Color = SKColors.BlueViolet, IsStroke = true, StrokeWidth = 6.0f };
-            }
-        }
+        //    if (component.IsSelected) {
+        //        this.BoarderPaint = new SKPaint() { Color = SKColors.DimGray, IsStroke = true, StrokeWidth = 6.0f };
+        //    } else {
+        //        this.BoarderPaint = new SKPaint() { Color = SKColors.BlueViolet, IsStroke = true, StrokeWidth = 6.0f };
+        //    }
+        //}
 
-        private void Transform_TransformChanged(object sender, EventArgs e) {
-            this.UpdateBoarderBox();
-        }
-
-        private void UpdateBoarderBox() {
-            var lBox = new SKRect() {
-                Left = this.Location.X - Math.Abs(this._size.Width) / 2,
-                Right = this.Location.X + Math.Abs(this._size.Width) / 2,
-                Bottom = this.Location.Y - Math.Abs(this._size.Height) / 2,
-                Top = this.Location.Y + Math.Abs(this._size.Height) / 2
-            };
-
-            // gBox is standardized SKRect.
-            this.BoarderBox = this.Transform.InvLocalTransformation.MapRect(lBox);
-        }
+        private void Transform_TransformChanged(object sender, EventArgs e) { }
 
         private void UpdateGrid() {
             // Clear lines
@@ -579,8 +720,13 @@ namespace TuggingController {
                 var ret = new List<int>();
                 int minInt = (int)Math.Truncate(min);
                 int maxInt = (int)Math.Truncate(max);
-                int quotient = Math.DivRem(Math.Abs(minInt), interval, out int reminder);
-                int value = minInt + reminder;
+                int quotient = Math.DivRem(minInt, interval, out int reminder);
+                int value;
+                if (minInt < 0) {
+                    value = minInt + Math.Abs(reminder);
+                } else {
+                    value = minInt + interval - reminder;
+                }
 
                 while (true) {
                     if (value > maxInt) {
@@ -627,47 +773,49 @@ namespace TuggingController {
                 this._horizontalLines.Add(hLine);
                 this.Children.Add(hLine);
             }
+
+            this.Children.Add(this._dataZone);
         }
 
         protected override void DrawThis(SKCanvas canvas) {
-            canvas.DrawRect(this.Transform.MapRect(this.BoarderBox), this.BoarderPaint);
+            var gBoarderBox = this.Transform.GlobalTransformation.MapRect(this.BoarderBox);
+
+            canvas.DrawRect(gBoarderBox, this.BoarderPaint);
         }
 
         protected override void Invalidate() {
             this.UpdateGrid();
         }
 
-        protected override BehaviorResult ExecuteThis(BehaviorArgs e, string tag = "") {
-            var result = new BehaviorResult();
+        //protected override BehaviorResult ExecuteThis(BehaviorArgs e, string tag = "") {
+        //    var result = new BehaviorResult();
 
-            if (tag == "") {
-                foreach (var component in this.Components) {
-                    result = component.Behavior(e);
-                }
-            }
-            else {
-                var targetComponent = this.Components.Find(c => c.Tag == tag);
+        //    if (tag == "") {
+        //        foreach (var component in this.Components) {
+        //            result = component.Behavior(e);
+        //        }
+        //    }
+        //    else {
+        //        var targetComponent = this.Components.Find(c => c.Tag == tag);
 
-                if (targetComponent != null) {
-                    result = targetComponent.Behavior(e);
-                }
-            }
+        //        if (targetComponent != null) {
+        //            result = targetComponent.Behavior(e);
+        //        }
+        //    }
 
-            return result;
+        //    return result;
+        //}
+
+        public override bool ContainsPoint(SKPoint point) {
+            return this.BoarderBox.Contains(point);
         }
     }
 
     public partial class Line_v1 : CanvasObject_v1 {
-        private SKPaint _paint = new SKPaint() {
+        public SKPaint Paint { get; set; } = new SKPaint() {
             Color = SKColors.Gray,
             StrokeWidth = 1,
         };
-        public SKPaint Paint {
-            get => this._paint;
-            set {
-                this._paint = value;
-            }
-        }
         protected SKPoint _gP0;
         protected SKPoint _gP1;
 
@@ -703,7 +851,30 @@ namespace TuggingController {
             canvas.DrawLine(
                 this._gP0,
                 this._gP1,
-                this._paint
+                this.Paint
+            );
+        }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            if (this._isDebug) {
+                canvas.DrawCircle(
+                    worldCoordinate.TransformToDevice(this._gP0),
+                    3.0f,
+                    new SKPaint() { Color = SKColors.Red }
+                );
+                canvas.DrawCircle(
+                    worldCoordinate.TransformToDevice(this._gP1),
+                    3.0f,
+                    new SKPaint() { Color = SKColors.DarkOliveGreen }
+                );
+            }
+
+            canvas.DrawLine(
+                worldCoordinate.TransformToDevice(this._gP0),
+                worldCoordinate.TransformToDevice(this._gP1),
+                //this._gP0,
+                //this._gP1,
+                this.Paint
             );
         }
 
@@ -712,6 +883,16 @@ namespace TuggingController {
             this._gP1 = this._transform.MapPoint(this.P1);
         }
 
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this.Invalidate();
+        }
+
+        public override bool ContainsPoint(SKPoint point) {
+            var vp = SkiaExtension.SkiaHelper.ToVector(point);
+            var v = vp - this.V0;
+            var result = v[0] * this.Direction[1] - v[1] * this.Direction[0];
+            return result == 0.0f? true : false;
+        }
         //protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
 }

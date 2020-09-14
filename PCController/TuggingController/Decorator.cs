@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
@@ -69,6 +71,15 @@ namespace TuggingController {
                 return mat;
             }
         }
+
+        public SKMatrix LocalToWorldMatrix {
+            get => this.GlobalTransformation;
+        }
+
+        public SKMatrix WorldToLocalMatrix {
+            get => this.InvGlobalTransformation;
+        }
+
         public SKMatrix GlobalTransformation {
             get {
                 var transform = this.LocalTransformation;
@@ -76,6 +87,7 @@ namespace TuggingController {
                 if (this.Parent != null) {
                     SKMatrix.PostConcat(ref transform, this.Parent.GlobalTransformation);
                 }
+
                 return transform;
             }
         }
@@ -142,26 +154,205 @@ namespace TuggingController {
             return invTransform.MapPoint(point);
         }
 
-        public SKRect MapRect(SKRect rect) {
-            var transform = this.LocalTransformation;
-
-            if(this.Parent != null) {
-                SKMatrix.PostConcat(ref transform, this.Parent.LocalTransformation);
-            }
-
-            return transform.MapRect(rect);
+        public SKRect MapRectFromParent(SKRect rect) {
+            return this.LocalTransformation.MapRect(rect);
         }
 
-        public SKRect InverseMapRect(SKRect rect) {
+        public SKRect MapRectFromGlobal(SKRect rect) {
+            return this.GlobalTransformation.MapRect(rect);
+        }
+
+        public SKRect InverseMapRectToGlobal(SKRect rect) {
             return this.InvGlobalTransformation.MapRect(rect);
         }
 
-        public SKRect InverseLocalMapRect(SKRect rect) {
+        public SKRect InverseMapRectToParent(SKRect rect) {
             return this.InvLocalTransformation.MapRect(rect);
         }
 
-        public BehaviorResult Behavior(BehaviorArgs e) {
+        public SKPoint TransformToWorldPoint(SKPoint point) {
+            return this.LocalToWorldMatrix.MapPoint(point);
+        }
+
+        public SKRect TransformToWorldRect(SKRect rect) {
+            return this.LocalToWorldMatrix.MapRect(rect);
+        }
+
+        public SKPoint TransformToLocalPoint(SKPoint point) {
+            return this.WorldToLocalMatrix.MapPoint(point);
+        }
+
+        public void Behavior(BehaviorArgs e) {
             throw new NotImplementedException();
         }
+    }
+
+    public class WorldSpaceCoordinate {
+        private SKRect _window;
+        private SKRect _device;
+        private SKRect _viewport = new SKRect() {
+            Left = -1.0f,
+            Right = 1.0f,
+            Top = 1.0f,
+            Bottom = -1.0f
+        };
+
+        private ViewTranform _viewT = new ViewTranform();
+        private ClipTransform _clipT = new ClipTransform();
+        private DeviceTransform _deviceT = new DeviceTransform();
+
+        public SKRect Window {
+            get => this._window;
+            set {
+                this._window = value;
+
+                this.UpdateClipTransform();
+            }
+        }
+        public SKRect Device {
+            get => this._device;
+            set {
+                this._device = value;
+
+                this.UpdateDeviceTransform();
+            }
+        }
+
+        public SKMatrix WorldToDeviceTransform {
+            get {
+                var transform = SKMatrix.MakeIdentity();
+
+                SKMatrix.PostConcat(ref transform, this._viewT.WorldToViewSpaceTransform);
+                SKMatrix.PostConcat(ref transform, this._clipT.ViewToNormalizedClipSpaceTransform);
+                SKMatrix.PostConcat(ref transform, this._deviceT.ClipToDeviceSpaceTransform);
+
+                return transform;
+            }
+        }
+
+        public SKMatrix DeviceToWorldTransform {
+            get {
+                this.WorldToDeviceTransform.TryInvert(out var matrix);
+
+                return matrix;
+            }
+        }
+
+        public WorldSpaceCoordinate() { }
+
+        public WorldSpaceCoordinate(SKRect window, SKRect device) {
+            this._window = window;
+            this._device = device;
+
+            this.UpdateClipTransform();
+            this.UpdateDeviceTransform();
+        }
+
+        public void SetViewTranslation(SKMatrix translation) {
+            this._viewT.Translation = translation;
+        }
+
+        private void UpdateClipTransform() {
+            this._clipT.Translation = SKMatrix.MakeTranslation(-this._window.MidX, -this._window.MidY);
+            this._clipT.Scale = SKMatrix.MakeScale(this._viewport.Width / this._window.Width, this._viewport.Height / this._window.Height);
+        }
+
+        private void UpdateDeviceTransform() {
+            this._deviceT.Scale = SKMatrix.MakeScale(this._device.Width / 2.0f, this._device.Height / 2.0f);
+            this._deviceT.Translation = SKMatrix.MakeTranslation(this._device.Width / 2.0f, -this._device.Height / 2.0f);
+        }
+
+        public SKPoint TransformToDevice(SKPoint point) {
+            return this.WorldToDeviceTransform.MapPoint(point);
+        }
+
+        public SKRect TransformToDeviceRect(SKRect rect) {
+            return this.WorldToDeviceTransform.MapRect(rect);
+        }
+
+        public SKPoint TransformToWorld(SKPoint point) {
+            return this.DeviceToWorldTransform.MapPoint(point);
+        }
+    }
+
+    public class ViewTranform {
+        private SKMatrix _translation = SKMatrix.MakeIdentity();
+        private SKMatrix _rotation = SKMatrix.MakeIdentity();
+
+        public SKMatrix WorldToViewSpaceTransform {
+            get {
+                var matrix = SKMatrix.MakeIdentity();
+
+                SKMatrix.PostConcat(ref matrix, this._rotation);
+                SKMatrix.PostConcat(ref matrix, this.Translation);
+
+                return matrix;
+            }
+        }
+        public SKMatrix ViewToWorldSpaceTransform {
+            get {
+                this.WorldToViewSpaceTransform.TryInvert(out var matrix);
+
+                return matrix;
+            }
+        }
+
+        public SKMatrix Translation { get => this._translation; set => this._translation = value; }
+
+        public ViewTranform() { }
+    }
+
+    public class ClipTransform {
+        private SKMatrix _translation = SKMatrix.MakeIdentity();
+        private SKMatrix _scale = SKMatrix.MakeIdentity();
+
+        public SKMatrix ViewToNormalizedClipSpaceTransform {
+            get {
+                var matrix = SKMatrix.MakeIdentity();
+
+                SKMatrix.PostConcat(ref matrix, this.Translation);
+                SKMatrix.PostConcat(ref matrix, this.Scale);
+
+                return matrix;
+            }
+        }
+        public SKMatrix NormalizedClipToViewSpaceTransform {
+            get {
+                this.ViewToNormalizedClipSpaceTransform.TryInvert(out var matrix);
+
+                return matrix;
+            }
+        }
+
+        public SKMatrix Translation { get => this._translation; set => this._translation = value; }
+        public SKMatrix Scale { get => this._scale; set => this._scale = value; }
+
+        public ClipTransform() { }
+    }
+
+    public class DeviceTransform {
+        private SKMatrix _scale = SKMatrix.MakeIdentity();
+        private SKMatrix _translation = SKMatrix.MakeIdentity();
+
+        public SKMatrix ClipToDeviceSpaceTransform {
+            get {
+                var matrix = SKMatrix.MakeIdentity();
+
+                SKMatrix.PostConcat(ref matrix, this.Scale);
+                SKMatrix.PostConcat(ref matrix, this.Translation);
+
+                return matrix;
+            }
+        }
+        public SKMatrix DeviceToClipSpaceTransform {
+            get {
+                this.ClipToDeviceSpaceTransform.TryInvert(out var matrix);
+
+                return matrix;
+            }
+        }
+
+        public SKMatrix Scale { get => this._scale; set => this._scale = value; }
+        public SKMatrix Translation { get => this._translation; set => this._translation = value; }
     }
 }

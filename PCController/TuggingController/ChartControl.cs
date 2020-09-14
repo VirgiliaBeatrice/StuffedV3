@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SkiaSharp;
+using SkiaSharp.Extended;
 using SkiaSharp.Views.Desktop;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -29,7 +30,9 @@ namespace TuggingController {
         private float prevScale = 0.0f;
         private bool _IsScaleUp = true;
 
-        public Chart_v1 Chart { get; set; }
+        //public Chart_v1 Chart { get; set; }
+        public ChartScene ChartScene { get; set; }
+
         public ChartControl() {
             InitializeComponent();
 
@@ -44,21 +47,29 @@ namespace TuggingController {
                 this.skControl,
             });
 
-            this.Chart = new Chart_v1();
-            this.Chart.Transform.Scale = SKMatrix.MakeScale(1.0f, -1.0f);
-            //this.Chart.Transform.Translation =
-                //SKMatrix.MakeTranslation(0, this.Size.Height);
-            this.Chart.Transform.Translation = 
-                SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
-
-            this.Chart.Size = new SKSize(this.Size.Width, this.Size.Height);
+            this.ChartScene = new ChartScene();
+            this.ChartScene.WorldSpace.Device = new SKRect() {
+                Left = -this.Size.Width / 2.0f,
+                Right = this.Size.Width / 2.0f,
+                Top = this.Size.Height / 2.0f,
+                Bottom = -this.Size.Height / 2.0f
+            };
+            this.ChartScene.WorldSpace.Window = new SKRect() {
+                Left = -this.Size.Width / 2.0f,
+                Right = this.Size.Width / 2.0f,
+                Top = this.Size.Height / 2.0f,
+                Bottom = -this.Size.Height / 2.0f
+            };
 
             this.skControl.KeyPress += this.SkControl_KeyPress;
             this.skControl.PaintSurface += this.SKControl_PaintSurface;
             this.skControl.MouseDown += this.SkControl_MouseDown;
             this.skControl.MouseUp += this.SkControl_MouseUp;
+            this.skControl.MouseClick += this.SkControl_MouseClick;
             this.skControl.MouseDoubleClick += this.SkControl_MouseDoubleClick;
             this.skControl.MouseMove += this.SkControl_MouseMove;
+
+            this.skControl.MouseWheel += this.SkControl_MouseWheel;
 
             this.SizeChanged += this.ChartControl_SizeChanged;
             this.KeyPress += this.ChartControl_KeyPress;
@@ -66,44 +77,74 @@ namespace TuggingController {
             this.Invalidate(true);
         }
 
-        private void SkControl_MouseUp(object sender, MouseEventArgs e) {
-            switch (e.Button) {
-                case MouseButtons.Left:
-                    this._mouseState &= ~MouseStates.LEFTDOWN;
-                    this.Chart.Execute(new SelectableBehaviorArgs(e.X, e.Y), "Select");
-                    break;
+        private void SkControl_MouseWheel(object sender, MouseEventArgs e) {
+            if (ModifierKeys == Keys.Control) {
+                var mouseEvent = new MouseEvent("MouseWheel") {
+                    PointerX = e.X,
+                    PointerY = e.Y,
+                    Button = e.Button,
+                    Delta = e.Delta,
+                    ModifierKey = Keys.Control
+                };
+
+                this.ChartScene.Dispatch(mouseEvent);
             }
+
+            this.Invalidate(true);
+        }
+
+        private void SkControl_MouseClick(object sender, MouseEventArgs e) {
+            var mouseEvent = new MouseEvent("MouseClick") {
+                PointerX = e.X,
+                PointerY = e.Y,
+                Button = e.Button,
+            };
+
+            //this.Chart.Dispatcher.DispatchEvent(mouseEvent);
+        }
+
+        private void SkControl_MouseUp(object sender, MouseEventArgs e) {
+            var mouseEvent = new MouseEvent("MouseUp") {
+                PointerX = e.X,
+                PointerY = e.Y,
+                Button = e.Button,
+            };
+
+            this.ChartScene.Dispatch(mouseEvent);
+            this.Invalidate(true);
         }
 
         private void SkControl_MouseMove(object sender, MouseEventArgs e) {
-            this._mouseState |= MouseStates.MOVE;
+            var mouseEvent = new MouseEvent("MouseMove") {
+                PointerX = e.X,
+                PointerY = e.Y,
+                Button = e.Button,
+            };
 
-            switch (this._mouseState) {
-                case MouseStates.LEFTDRAGGING:
-                    this.Chart.Execute(new DragAndDropBehaviorArgs(e.X, e.Y), "D&D");
-                    break;
-            }
-
-            this._mouseState &= MouseStates.MOVEMASK;
+            this.ChartScene.Dispatch(mouseEvent);
             this.Invalidate(true);
         }
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
-            switch (e.Button) {
-                case MouseButtons.Left:
-                    this._mouseState |= MouseStates.LEFTDOWN;
-                    this.Chart.Execute(new SelectableBehaviorArgs(e.X, e.Y), "Select");
-                    break;
-            }
+            var mouseEvent = new MouseEvent("MouseDown") {
+                PointerX = e.X,
+                PointerY = e.Y,
+                Button = e.Button,
+            };
+
+            this.ChartScene.Dispatch(mouseEvent);
+            this.Invalidate(true);
         }
 
         private void SkControl_MouseDoubleClick(object sender, MouseEventArgs e) {
-            switch (e.Button) {
-                case MouseButtons.Left:
-                    this.Chart.AddEntity(e.Location);
-                    this.Invalidate(true);
-                    break;
-            }
+            var mouseEvent = new MouseEvent("MouseDoubleClick") {
+                PointerX = e.X,
+                PointerY = e.Y,
+                Button = e.Button,
+            };
+
+            this.ChartScene.Dispatch(mouseEvent);
+            this.Invalidate(true);
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -118,7 +159,7 @@ namespace TuggingController {
                 this.timer.Stop();
             }
 
-            this.Chart.Scale = (float)scale;
+            //this.Chart.SetScale((float)scale);
             this.Invalidate(true);
         }
 
@@ -157,9 +198,9 @@ namespace TuggingController {
 
         private void OnKeyPlusPressed() {
             //this.Chart.Scale += 0.1f;
-            this.prevScale = this.Chart.Scale;
+            //this.prevScale = this.Chart.GetScale();
 
-            if (this.prevScale < 100.0f) {
+            if (this.prevScale < 10.0f) {
                 this._IsScaleUp = true;
                 this.timer.Start();
             }
@@ -167,9 +208,9 @@ namespace TuggingController {
 
         private void OnKeyMinusPressed() {
             //this.Chart.Scale -= 0.1f;
-            this.prevScale = this.Chart.Scale;
+            //this.prevScale = this.Chart.GetScale();
 
-            if (this.prevScale >= 0.1f) {
+            if (this.prevScale >= 0.6f) {
                 this._IsScaleUp = false;
                 this.timer.Start();
             }
@@ -178,11 +219,12 @@ namespace TuggingController {
         private void ChartControl_SizeChanged(object sender, EventArgs e) {
             //this.Chart.Transform.Scale = SKMatrix.MakeScale(1.0f, -1.0f);
             //this.Chart.Transform.Translation = SKMatrix.MakeTranslation(0, this.Size.Height);
-            this.Chart.Transform.Translation =
-                SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
+            //this.Chart.Transform.Translation =
+            //    SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
 
-            this.Chart.Size = new SKSize(this.Size.Width, this.Size.Height);
+            //this.Chart.SetSize(new SKSize(this.Size.Width, this.Size.Height));
             this.skControl.Size = new Size(this.Size.Width, this.Size.Height);
+            this.SetDeviceViewport();
 
             this.Invalidate(true);
         }
@@ -194,9 +236,25 @@ namespace TuggingController {
         private void Draw(SKCanvas canvas) {
             canvas.Clear();
 
-            this.Chart.Draw(canvas);
+            //this.Chart.Draw(canvas);
+            this.ChartScene.Update(canvas);
             //canvas.DrawText("Hello World!", new SKPoint(100, 100), new SKPaint() { Color = SKColors.Black });
 
+        }
+
+        private void SetDeviceViewport() {
+            this.ChartScene.WorldSpace.Device = new SKRect() {
+                Left = -this.Size.Width / 2.0f,
+                Right = this.Size.Width / 2.0f,
+                Top = this.Size.Height / 2.0f,
+                Bottom = -this.Size.Height / 2.0f
+            };
+            this.ChartScene.WorldSpace.Window = new SKRect() {
+                Left = -this.Size.Width / 2.0f,
+                Right = this.Size.Width / 2.0f,
+                Top = this.Size.Height / 2.0f,
+                Bottom = -this.Size.Height / 2.0f
+            };
         }
     }
 }
