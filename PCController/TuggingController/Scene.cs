@@ -71,20 +71,21 @@ namespace TuggingController {
             if (target.Dispatcher.CapturedTarget != null) {
                 var lPointer = target.Transform.TransformToLocalPoint(castArgs.Pointer);
                 var lAnchor = target.Transform.TransformToLocalPoint(this.anchor);
-                this.translateVector = castArgs.Pointer - this.anchor;
+                this.translateVector = lPointer - lAnchor;
             }
-
         }
 
         private void RootObject_v1_MouseUp(Event @event) {
             var castArgs = @event as MouseEvent;
             var target = this;
 
-            if (castArgs.CurrentTarget == target) {
-                target.Dispatcher.Release();
+            if (castArgs.Button == MouseButtons.Right) {
+                if (castArgs.CurrentTarget == target) {
+                    target.Dispatcher.Release();
 
-                this.anchor = new SKPoint();
-                this.isPan = false;
+                    this.anchor = new SKPoint();
+                    this.isPan = false;
+                }
             }
         }
 
@@ -92,11 +93,13 @@ namespace TuggingController {
             var castArgs = @event as MouseEvent;
             var target = this;
 
-            if (castArgs.CurrentTarget == target) {
-                target.Dispatcher.Capture(target);
+            if (castArgs.Button == MouseButtons.Right) {
+                if (castArgs.CurrentTarget == target) {
+                    target.Dispatcher.Capture(target);
 
-                this.anchor = castArgs.Pointer;
-                this.isPan = true;
+                    this.anchor = castArgs.Pointer;
+                    this.isPan = true;
+                }
             }
         }
 
@@ -144,8 +147,6 @@ namespace TuggingController {
                 SKMatrix translation = SKMatrix.MakeTranslation(-this.translateVector.X, -this.translateVector.Y);
                 var nWindow = translation.MapRect(worldCoordinate.Window);
                 worldCoordinate.Window = new SKRect { Bottom = nWindow.Top, Top = nWindow.Bottom, Left = nWindow.Left, Right = nWindow.Right };
-            } else {
-                //this.window = worldCoordinate.Window;
             }
         }
 

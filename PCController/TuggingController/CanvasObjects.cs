@@ -468,12 +468,7 @@ namespace TuggingController {
             StrokeWidth = 2
         };
 
-        public float Radius {
-            get => this._radius;
-            set {
-                this._radius = value;
-            }
-        }
+        private float _gRadius;
         public SKPoint Point {
             get => SkiaExtension.SkiaHelper.ToSKPoint(this.PointVector);
             set {
@@ -506,16 +501,17 @@ namespace TuggingController {
         }
 
         public override bool ContainsPoint(SKPoint point) {
-            return SKPoint.Distance(point, this.Location) <= this.Radius;
+            return SKPoint.Distance(point, this.Location) <= this._radius;
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
             this._gLocation = worldCoordinate.TransformToDevice(this.Location);
+            this._gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this._radius);
         }
 
         protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
-            canvas.DrawCircle(this._gLocation, this._radius, this._fillPaint);
-            canvas.DrawCircle(this._gLocation, this._radius, this._strokePaint);
+            canvas.DrawCircle(this._gLocation, this._gRadius, this._fillPaint);
+            canvas.DrawCircle(this._gLocation, this._gRadius, this._strokePaint);
         }
     }
 
