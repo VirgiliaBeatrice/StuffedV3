@@ -249,12 +249,15 @@ namespace TuggingController {
                 Top = this.Size.Height / 2.0f,
                 Bottom = -this.Size.Height / 2.0f
             };
-            this.ChartScene.WorldSpace.Window = new SKRect() {
-                Left = -this.Size.Width / 2.0f,
-                Right = this.Size.Width / 2.0f,
-                Top = this.Size.Height / 2.0f,
-                Bottom = -this.Size.Height / 2.0f
-            };
+
+            //var deviceWindow = new SKRect() {
+            //    Left = -this.Size.Width / 2.0f,
+            //    Right = this.Size.Width / 2.0f,
+            //    Top = this.Size.Height / 2.0f,
+            //    Bottom = -this.Size.Height / 2.0f
+            //};
+
+            //this.ChartScene.WorldSpace.Window = deviceWindow;
         }
     }
 }
