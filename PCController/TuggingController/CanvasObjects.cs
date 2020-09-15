@@ -10,6 +10,7 @@ using System.Threading;
 using System.Xml.Schema;
 using System.Reflection;
 using System.Windows.Forms;
+using Reparameterization;
 
 namespace TuggingController {
 
@@ -44,6 +45,14 @@ namespace TuggingController {
 
         public SelectableBehaviorArgs(int x, int y) {
             this._location = new SKPoint() { X = x, Y = y };
+        }
+    }
+
+    public class HoverBehaviorArgs : BehaviorArgs {
+        public bool IsInside { get; set; }
+
+        public HoverBehaviorArgs(bool isInside) {
+            this.IsInside = isInside;
         }
     }
 
@@ -109,109 +118,6 @@ namespace TuggingController {
         event EventHandler_v1 Dragging;
     }
 
-    public class EventDispatcher<T> where T : ICanvasObject {
-        private static EventDispatcher<T> instance = null;
-        public static EventDispatcher<T> GetSingleton() {
-            if (instance == null) {
-                instance = new EventDispatcher<T>();
-            }
-
-            return instance;
-        }
-
-        protected Queue<Event> Events { get; set; } = new Queue<Event>();
-        public ICanvasObject CapturedTarget { get; set; } = null;
-        protected bool _propagate = true;
-        public T Root { get; set; }
-
-        public EventDispatcher() { }
-
-        public EventDispatcher(T root) {
-            this.Root = root;
-        }
-
-        public void Capture(ICanvasObject target) {
-            this.CapturedTarget = target;
-            this.StopPropagate();
-        }
-
-        public void Release() {
-            this.CapturedTarget = null;
-            this._propagate = true;
-        }
-
-        public void StopPropagate() {
-            this._propagate = false;
-        }
-
-        public virtual void DispatchEvent(Event @event) {
-            Event e;
-            FieldInfo eventInfo;
-
-            if (@event.GetType() == typeof(MouseEvent)) {
-                e = ((MouseEvent)@event).Clone();
-
-                this.FindMouseEventTarget(ref e, this.Root);
-                if (e.Path.Count != 0) {
-                    e.Target = e.Path.Last();
-                }
-            } else {
-                e = @event.Clone();
-            }
-
-            eventInfo = typeof(CanvasObject_v1).GetField(e.Type, BindingFlags.Instance | BindingFlags.NonPublic);
-
-            if (eventInfo != null) {
-                if (this.CapturedTarget != null) {
-                    EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(this.CapturedTarget);
-
-                    e.CurrentTarget = this.CapturedTarget;
-                    handler?.Invoke(e);
-                } else {
-                    // Capture Phase
-                    //foreach(var node in e.Path) {
-                    //    EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(node);
-
-                    //    e.CurrentTarget = node;
-                    //    handler.Invoke(e);
-                    //}
-
-                    // Bubble Phase
-                    foreach (var node in e.Path.ToArray().Reverse()) {
-                        if (!this._propagate) {
-                            break;
-                        }
-
-                        EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(node);
-
-                        e.CurrentTarget = node;
-                        handler?.Invoke(e);
-                    }
-                }
-            }
-        }
-
-        protected void FindMouseEventTarget(ref Event @event, ICanvasObject node) {
-            var eventRef = @event as MouseEvent;
-            var pointer = eventRef.Pointer;
-            var lPointer = node.Transform.InvGlobalTransformation.MapPoint(pointer);
-
-            eventRef.CurrentTarget = node;
-
-            if (node.ContainsPoint(lPointer)) {
-                eventRef.Path.Add(node);
-
-                // Children Reversed Order - Top-most Object
-                foreach(var childNode in node.Children) {
-                    this.FindMouseEventTarget(ref @event, childNode);
-                }
-
-            }
-
-            //eventRef.Target = eventRef.Path.Last();
-        }
-    }
-
     public abstract partial class CanvasObject_v1 {
         public event EventHandler_v1 MouseEnter;
         public event EventHandler_v1 MouseLeave;
@@ -225,47 +131,51 @@ namespace TuggingController {
         public event EventHandler_v1 DragEnd;
         public event EventHandler_v1 Dragging;
 
-        protected virtual void OnMouseEnter(Event @event) {
+        public bool IsMouseOver { get; set; } = false;
+
+        public SKPoint PointerPosition { get; set; }
+
+        public virtual void OnMouseEnter(Event @event) {
             this.MouseEnter?.Invoke(@event);
         }
 
-        protected virtual void OnMouseLeave(Event @event) {
+        public virtual void OnMouseLeave(Event @event) {
             this.MouseLeave?.Invoke(@event);
         }
 
-        protected virtual void OnMouseMove(Event @event) {
+        public virtual void OnMouseMove(Event @event) {
             this.MouseMove?.Invoke(@event);
         }
 
-        protected virtual void OnMouseUp(Event @event) {
+        public virtual void OnMouseUp(Event @event) {
             this.MouseUp?.Invoke(@event);
         }
 
-        protected virtual void OnMouseDown(Event @event) {
+        public virtual void OnMouseDown(Event @event) {
             this.MouseDown?.Invoke(@event);
         }
 
-        protected virtual void OnMouseClick(Event @event) {
+        public virtual void OnMouseClick(Event @event) {
             this.MouseClick?.Invoke(@event);
         }
 
-        protected virtual void OnMouseDoubleClick(Event @event) {
+        public virtual void OnMouseDoubleClick(Event @event) {
             this.MouseDoubleClick?.Invoke(@event);
         }
 
-        protected virtual void OnMouseWheel(Event @event) {
+        public virtual void OnMouseWheel(Event @event) {
             this.MouseWheel?.Invoke(@event);
         }
 
-        protected virtual void OnDragStart(Event @event) {
+        public virtual void OnDragStart(Event @event) {
             this.DragStart?.Invoke(@event);
         }
 
-        protected virtual void OnDragEnd(Event @event) {
+        public virtual void OnDragEnd(Event @event) {
             this.DragEnd?.Invoke(@event);
         }
 
-        protected virtual void OnDragging(Event @event) {
+        public virtual void OnDragging(Event @event) {
             this.Dragging?.Invoke(@event);
         }
     }
@@ -462,6 +372,8 @@ namespace TuggingController {
         private float _radius = 5.0f;
         private float _gRadius;
 
+        private event EventHandler DataUpdated;
+
         private SKPaint _fillPaint = new SKPaint {
             IsAntialias = true,
             Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
@@ -478,6 +390,8 @@ namespace TuggingController {
             get => SkiaExtension.SkiaHelper.ToSKPoint(this.PointVector);
             set {
                 this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
+
+                this.DataUpdated?.Invoke(this, null);
             }
         }
         override public SKPoint Location {
@@ -530,17 +444,31 @@ namespace TuggingController {
 
     public class DataZone_v1 : ContainerCanvasObject_v1 {
         private List<Entity_v1> _entities = new List<Entity_v1>();
+        private List<Triangle_v1> triangles = new List<Triangle_v1>();
+
+        public Entity_v1 this[int index] {
+            get => this._entities[index];
+        }
 
         public DataZone_v1() : base() { }
 
         public void Add(Entity_v1 entity) {
             entity.SetParent(this);
             this._entities.Add(entity);
+
+            if (this._entities.Count == 3) {
+                this.triangles.Clear();
+                this.triangles.Add(new Triangle_v1(this[0], this[1], this[2]));
+            }
+
             this.Children.Add(entity);
+            this.Children.AddRange(this.triangles);
         }
 
         public void Add(SKPoint point) {
             this.Add(new Entity_v1() { Location = point });
+
+
         }
 
         public void AddRange(IEnumerable<Entity_v1> entities) {
@@ -554,7 +482,9 @@ namespace TuggingController {
             this.Children.Clear();
         }
 
-        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) { }
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+
+        }
 
         protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) { }
 
@@ -903,5 +833,104 @@ namespace TuggingController {
             return result == 0.0f? true : false;
         }
         //protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
+    }
+
+    public partial class Triangle_v1 : CanvasObject_v1 {
+        private SKPaint fillPaint = new SKPaint {
+            IsAntialias = true,
+            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.3f),
+            Style = SKPaintStyle.Fill
+        };
+        private bool isHovered = false;
+        private Simplex simplex;
+
+        private SKPoint _gP0;
+        private SKPoint _gP1;
+        private SKPoint _gP2;
+        private HoverComponent hoverComponent;
+
+        private Line_v1 _edge01;
+        private Line_v1 _edge12;
+        private Line_v1 _edge20;
+
+        public Entity_v1 P0 { get; set; }
+        public Entity_v1 P1 { get; set; }
+        public Entity_v1 P2 { get; set; }
+
+        public Triangle_v1(Entity_v1 p0, Entity_v1 p1, Entity_v1 p2) {
+            this.P0 = p0;
+            this.P1 = p1;
+            this.P2 = p2;
+
+            this.simplex = new Simplex(
+                new StateVector[] {
+                    new StateVector(this.P0.PointVector),
+                    new StateVector(this.P1.PointVector),
+                    new StateVector(this.P2.PointVector),
+                }
+            );
+
+            this.hoverComponent = new HoverComponent();
+
+            this.hoverComponent.PreventDefault(this.Triangle_v1_HoverBehavior);
+            this.AddComponent(this.hoverComponent);
+        }
+
+        private void UpdateSimplex() {
+            this.simplex[0].State.Vector = this.V0;
+            this.simplex[1].State.Vector = this.V1;
+            this.simplex[2].State.Vector = this.V2;
+        }
+
+        private void Triangle_v1_HoverBehavior(BehaviorArgs args) {
+            var castArgs = args as HoverBehaviorArgs;
+
+            if (castArgs.IsInside) {
+                this.isHovered = true;
+            } else {
+                this.isHovered = false;
+            }
+        }
+
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this._gP0 = worldCoordinate.TransformToDevice(this.P0.Point);
+            this._gP1 = worldCoordinate.TransformToDevice(this.P1.Point);
+            this._gP2 = worldCoordinate.TransformToDevice(this.P2.Point);
+
+            this._edge01 = new Line_v1() { P0 = this.P0.Point, P1 = this.P1.Point };
+            this._edge12 = new Line_v1() { P0 = this.P1.Point, P1 = this.P2.Point };
+            this._edge20 = new Line_v1() {
+                P0 = this.P2.Point,
+                P1 = this.P0.Point
+            };
+
+            if (this.isHovered) {
+                this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.8f);
+            } else {
+                this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.3f);
+            }
+
+            this.Children.Clear();
+            this.Children.AddRange(new Line_v1[] {
+                this._edge01, this._edge12, this._edge20
+            });
+
+            this.UpdateSimplex();
+        }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            var path = new SKPath();
+
+            path.MoveTo(this._gP0);
+            path.LineTo(this._gP1);
+            path.LineTo(this._gP2);
+            path.Close();
+
+            canvas.DrawPath(path, this.fillPaint);
+        }
+
+        public override bool ContainsPoint(SKPoint point) {
+            return this.simplex.IsInside(SkiaExtension.SkiaHelper.ToVector(point));
+        }
     }
 }

@@ -8,6 +8,12 @@ using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 
 namespace TuggingController {
+    public partial class Triangle_v1 : ShapeElements.ITriangle {
+        public Vector<float> V0 { get => this.P0.PointVector; }
+        public Vector<float> V1 { get => this.P1.PointVector; }
+        public Vector<float> V2 { get => this.P2.PointVector; }
+    }
+
     public partial class Entity_v1 : ShapeElements.IPoint {
         public Vector<float> PointVector { get; set; }
     }
@@ -64,6 +70,12 @@ namespace TuggingController {
 
         public interface IPoint {
             Vector<float> PointVector { get; set; }
+        }
+
+        public interface ITriangle {
+            Vector<float> V0 { get; }
+            Vector<float> V1 { get; }
+            Vector<float> V2 { get;  }
         }
     }
 }

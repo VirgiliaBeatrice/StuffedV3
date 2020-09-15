@@ -768,7 +768,8 @@ namespace Reparameterization {
                     (left[0] * right[1]) - (left[1] * right[0])
                 }
             );
-            normal = normal.Normalize(normal.Norm(1.0));
+            //normal = normal.Normalize(normal.Norm(1.0));
+            normal = normal.Normalize(1.0f);
             //Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
 
             return normal[2];

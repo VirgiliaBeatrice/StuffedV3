@@ -80,8 +80,8 @@ namespace TuggingController {
         private void SkControl_MouseWheel(object sender, MouseEventArgs e) {
             if (ModifierKeys == Keys.Control) {
                 var mouseEvent = new MouseEvent("MouseWheel") {
-                    PointerX = e.X,
-                    PointerY = e.Y,
+                    X = e.X,
+                    Y = e.Y,
                     Button = e.Button,
                     Delta = e.Delta,
                     ModifierKey = Keys.Control
@@ -95,8 +95,8 @@ namespace TuggingController {
 
         private void SkControl_MouseClick(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseClick") {
-                PointerX = e.X,
-                PointerY = e.Y,
+                X = e.X,
+                Y = e.Y,
                 Button = e.Button,
             };
 
@@ -107,8 +107,8 @@ namespace TuggingController {
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseUp") {
-                PointerX = e.X,
-                PointerY = e.Y,
+                X = e.X,
+                Y = e.Y,
                 Button = e.Button,
             };
 
@@ -118,9 +118,10 @@ namespace TuggingController {
 
         private void SkControl_MouseMove(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseMove") {
-                PointerX = e.X,
-                PointerY = e.Y,
+                X = e.X,
+                Y = e.Y,
                 Button = e.Button,
+                Delta = e.Delta,
             };
 
             this.ChartScene.Dispatch(mouseEvent);
@@ -129,8 +130,8 @@ namespace TuggingController {
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseDown") {
-                PointerX = e.X,
-                PointerY = e.Y,
+                X = e.X,
+                Y = e.Y,
                 Button = e.Button,
             };
 
@@ -140,8 +141,8 @@ namespace TuggingController {
 
         private void SkControl_MouseDoubleClick(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseDoubleClick") {
-                PointerX = e.X,
-                PointerY = e.Y,
+                X = e.X,
+                Y = e.Y,
                 Button = e.Button,
             };
 

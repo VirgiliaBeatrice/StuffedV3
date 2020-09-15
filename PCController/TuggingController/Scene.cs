@@ -25,12 +25,11 @@ namespace TuggingController {
 
         public void Dispatch(Event @event) {
             var e = @event as MouseEvent;
-            var sPointer = new SKPoint(e.PointerX, e.PointerY);
+            var sPointer = new SKPoint(e.X, e.Y);
             e.Pointer = this.WorldSpace.TransformToWorld(sPointer);
 
-            this.root.Dispatcher.DispatchEvent(e);
+            this.root.Dispatcher.DispatchMouseEvent(e);
         }
-
     }
 
     public class RootObject_v1 : CanvasObject_v1 {
@@ -103,7 +102,9 @@ namespace TuggingController {
         private void RootObject_v1_MouseDoubleClick(Event @event) {
             var e = @event as MouseEvent;
 
-            this.dataZone.Add(e.Pointer);
+            if (e.Button == MouseButtons.Left) {
+                this.dataZone.Add(e.Pointer);
+            }
         }
 
         private void RootObject_v1_MouseWheel(Event @event) {

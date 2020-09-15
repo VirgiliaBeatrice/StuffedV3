@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using SkiaSharp;
 using NLog;
 using NLog.Layouts;
+using NLog.LayoutRenderers;
 
 namespace TuggingController {
     public delegate void BehaviorHandler(BehaviorArgs args);
@@ -35,20 +36,104 @@ namespace TuggingController {
         }
     }
 
-    public class HoverComponent : IComponent {
-        public ICanvasObject CanvasObject { get; set; }
-        public string Tag { get; set; }
+    public class HoverComponent : ILog, IComponent {
+        private ICanvasObject _canvasObject;
+        private BehaviorHandler behaviors;
+        private bool prevState = false;
+
+        public ICanvasObject CanvasObject {
+            get => this._canvasObject;
+            set {
+                this._canvasObject = value;
+
+                SetCanvasObject();
+            }
+        }
+        public string Tag => "Hover";
+        public Logger Logger => LogManager.GetCurrentClassLogger();
+
+        private void SetCanvasObject() {
+            this.CanvasObject.MouseEnter += this.CanvasObject_MouseEnter;
+            this.CanvasObject.MouseLeave += this.CanvasObject_MouseLeave;
+
+            this.behaviors += this.DefaultBehavior;
+        }
+
+        private void CanvasObject_MouseEnter(Event @event) {
+            var e = @event as MouseEvent;
+            var target = this.CanvasObject;
+
+            if (e.Target == target) {
+                var args = new HoverBehaviorArgs(true);
+
+                this.behaviors?.Invoke(args);
+            }
+        }
+
+        private void CanvasObject_MouseLeave(Event @event) {
+            var e = @event as MouseEvent;
+            var target = this.CanvasObject;
+
+            if (e.CurrentTarget == target) {
+                var args = new HoverBehaviorArgs(false);
+
+                this.behaviors?.Invoke(args);
+            }
+        }
+
+        //private void CanvasObject_MouseMove(Event @event) {
+        //    var e = @event as MouseEvent;
+        //    var target = this.CanvasObject;
+        //    var currentState = this.CanvasObject.ContainsPoint(e.Pointer);
+
+        //    if (this.prevState != currentState) {
+        //        if (currentState) {
+        //            var enterEvent = e.Clone();
+        //            enterEvent.Type = "MouseEnter";
+
+        //            target.Dispatcher.DispatchEvent(enterEvent);
+        //        } else {
+        //            var leaveEvent = e.Clone();
+        //            leaveEvent.Type = "MouseLeave";
+
+        //            target.Dispatcher.DispatchEvent(leaveEvent);
+        //        }
+
+        //        this.prevState = currentState;
+        //    }
+        //}
+
+        //private void CanvasObject_MouseLeave(Event @event) {
+        //    var e = @event as MouseEvent;
+        //    var target = this.CanvasObject;
+
+        //    if (e.Target == target) {
+        //        var args = new HoverBehaviorArgs(false);
+
+        //        this.behaviors?.Invoke(args);
+        //    }
+        //}
+
+        //private void CanvasObject_MouseEnter(Event @event) {
+        //    var e = @event as MouseEvent;
+        //    var target = this.CanvasObject;
+
+        //    if (e.Target == target) {
+        //        var args = new HoverBehaviorArgs(true);
+
+        //        this.behaviors?.Invoke(args);
+        //    }
+        //}
 
         public void AddBehavior(BehaviorHandler behavior) {
             throw new NotImplementedException();
         }
 
-        public void DefaultBehavior(BehaviorArgs e) {
-            throw new NotImplementedException();
-        }
+        public void DefaultBehavior(BehaviorArgs e) { }
 
         public void PreventDefault(BehaviorHandler behavior) {
-            throw new NotImplementedException();
+            this.behaviors -= this.DefaultBehavior;
+            this.behaviors += behavior;
         }
     }
 
@@ -81,7 +166,7 @@ namespace TuggingController {
             var e = @event as MouseEvent;
             var target = this.CanvasObject;
 
-            if (e.Target == target) {
+            if (e.CurrentTarget == target) {
                 //this.Logger.Debug($"{target.GetType()} MouseClick");
 
                 var args = new BehaviorArgs();
@@ -92,44 +177,6 @@ namespace TuggingController {
         public void DefaultBehavior(BehaviorArgs e) {
             this.CanvasObject.IsSelected = !this.CanvasObject.IsSelected;
         }
-
-        //public void PointBehavior(BehaviorArgs e) {
-        //    var gPointer = ((SelectableBehaviorArgs)e).Location;
-        //    var lPointer =
-        //        this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
-        //    var distance = SKPoint.Distance(lPointer, this.CanvasObject.Location);
-
-        //    this.ClickLocation = lPointer;
-
-        //    if (distance < 5.0f) {
-        //        this.IsSelected = !this.IsSelected;
-        //        this.SelectStatusChanged.Invoke(this, null);
-
-        //        return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
-        //    }
-
-        //    return new BehaviorResult();
-        //}
-
-        //public void RectBehavior(BehaviorArgs e) {
-        //    var gPointer = ((SelectableBehaviorArgs)e).Location;
-        //    var lPointer =
-        //        this.CanvasObject.Transform.InvGlobalTransformation.MapPoint(gPointer);
-        //    var lBox = this.CanvasObject.BoarderBox;
-        //    var gBox = this.CanvasObject.Transform.GlobalTransformation.MapRect(lBox);
-        //    var isInside = gBox.Contains(gPointer);
-
-        //    this.ClickLocation = lPointer;
-
-        //    if (isInside) {
-        //        this.IsSelected = !this.IsSelected;
-        //        this.SelectStatusChanged.Invoke(this, null);
-
-        //        return new SelectableBehaviorResult(this.CanvasObject) { ToNext = false };
-        //    }
-
-        //    return new BehaviorResult();
-        //}
 
         public void PreventDefault(BehaviorHandler behavior) {
             throw new NotImplementedException();
@@ -145,8 +192,6 @@ namespace TuggingController {
         private BehaviorHandler _mouseMoveBehavior;
         private SKPoint _anchor;
         private SKPoint _origin;
-        private SKMatrix _initTranslate;
-        private bool willExecuteDefault = true;
 
         public ICanvasObject CanvasObject {
             get => this._canvasObject;
@@ -193,7 +238,7 @@ namespace TuggingController {
             var e = @event as MouseEvent;
             var target = this.CanvasObject;
 
-            if (@event.Target == target) {
+            if (@event.CurrentTarget == target) {
                 //this.Logger.Debug($"{target.GetType()} MouseDown");
                 if (target.IsSelected) {
                     target.Dispatcher.Capture(target);
@@ -201,7 +246,7 @@ namespace TuggingController {
                     var dragEvent = e.Clone();
                     dragEvent.Type = "DragStart";
 
-                    target.Dispatcher.DispatchEvent(dragEvent);
+                    target.Dispatcher.DispatchMouseEvent(dragEvent);
                 }
             }
         }
@@ -210,7 +255,7 @@ namespace TuggingController {
             var e = @event as MouseEvent;
             var target = this.CanvasObject;
 
-            if (@event.Target == target) {
+            if (@event.CurrentTarget == target) {
                 //this.Logger.Debug($"{target.GetType()} MouseUp");
 
                 if (!target.IsSelected) {
@@ -219,7 +264,7 @@ namespace TuggingController {
                     var dragEvent = e.Clone();
                     dragEvent.Type = "DragEnd";
 
-                    target.Dispatcher.DispatchEvent(dragEvent);
+                    target.Dispatcher.DispatchMouseEvent(dragEvent);
                 }
             }
         }
@@ -232,7 +277,7 @@ namespace TuggingController {
                 var dragEvent = e.Clone();
 
                 dragEvent.Type = "Dragging";
-                target.Dispatcher.DispatchEvent(dragEvent);
+                target.Dispatcher.DispatchMouseEvent(dragEvent);
             }
         }
 
