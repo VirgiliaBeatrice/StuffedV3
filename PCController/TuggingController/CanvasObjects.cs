@@ -11,6 +11,9 @@ using System.Xml.Schema;
 using System.Reflection;
 using System.Windows.Forms;
 using Reparameterization;
+using NLog.LayoutRenderers.Wrappers;
+using System.ComponentModel;
+using System.Text;
 
 namespace TuggingController {
 
@@ -101,7 +104,9 @@ namespace TuggingController {
 
     public interface ICanvasObjectNode {
         List<ICanvasObject> Children { get; set; }
+        //List<TreeNode> TreeNodeChildren { get; }
         bool ContainsPoint(SKPoint point);
+        TreeNode[] GetChildrenTreeNodes();
     }
 
     public interface ICanvasObjectEvents {
@@ -347,6 +352,15 @@ namespace TuggingController {
                 child.Draw(canvas, worldCoordinate);
             }
         }
+
+        public TreeNode[] GetChildrenTreeNodes() {
+            var childrenNodes = new List<TreeNode>();
+
+            foreach(var child in this.Children) {
+                childrenNodes.Add(new TreeNode(child.ToString(), child.GetChildrenTreeNodes()) { Tag = child });
+            }
+            return childrenNodes.ToArray();
+        }
     }
 
     public abstract class ContainerCanvasObject_v1 : CanvasObject_v1 {
@@ -368,11 +382,10 @@ namespace TuggingController {
         private DragAndDropComponent _dragAndDropComponent;
         private SelectableComponent selectableComponent;
         private SKPoint _gLocation;
-        private int _index;
         private float _radius = 5.0f;
         private float _gRadius;
 
-        private event EventHandler DataUpdated;
+        public int Index { get; set; }
 
         private SKPaint _fillPaint = new SKPaint {
             IsAntialias = true,
@@ -390,8 +403,6 @@ namespace TuggingController {
             get => SkiaExtension.SkiaHelper.ToSKPoint(this.PointVector);
             set {
                 this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
-
-                this.DataUpdated?.Invoke(this, null);
             }
         }
         override public SKPoint Location {
@@ -409,6 +420,13 @@ namespace TuggingController {
                 this._dragAndDropComponent,
                 this.selectableComponent,
             });
+        }
+
+        public override string ToString() {
+            StringBuilder str = new StringBuilder();
+
+            str.Append($"[Entity {this.Index}] - {this.Point}");
+            return str.ToString();
         }
 
         protected override void DrawThis(SKCanvas canvas) {
@@ -445,12 +463,23 @@ namespace TuggingController {
     public class DataZone_v1 : ContainerCanvasObject_v1 {
         private List<Entity_v1> _entities = new List<Entity_v1>();
         private List<Triangle_v1> triangles = new List<Triangle_v1>();
+        private Triangulation triangulation = new Triangulation();
 
         public Entity_v1 this[int index] {
             get => this._entities[index];
         }
 
         public DataZone_v1() : base() { }
+
+        private double[] Flatten(IEnumerable<Entity_v1> targets) {
+            var tmpList = new List<double>();
+
+            foreach(var target in targets) {
+                tmpList.AddRange(new double[] { target.Point.X, target.Point.Y });
+            }
+
+            return tmpList.ToArray();
+        }
 
         public void Add(Entity_v1 entity) {
             entity.SetParent(this);
@@ -459,16 +488,30 @@ namespace TuggingController {
             if (this._entities.Count == 3) {
                 this.triangles.Clear();
                 this.triangles.Add(new Triangle_v1(this[0], this[1], this[2]));
+            } else if (this._entities.Count > 3) {
+                var flattenPoints = this.Flatten(this._entities);
+                var triangleIndicesCollection = this.triangulation.RunDelaunay_v1(2, this._entities.Count, ref flattenPoints);
+
+                this.triangles.Clear();
+
+                foreach(var i in triangleIndicesCollection) {
+                    this.triangles.Add(new Triangle_v1(
+                        this[i[0]],
+                        this[i[1]],
+                        this[i[2]]
+                    ));
+
+                }
             }
 
-            this.Children.Add(entity);
+            this.Children.Clear();
+            this.Children.AddRange(this._entities);
             this.Children.AddRange(this.triangles);
         }
 
         public void Add(SKPoint point) {
-            this.Add(new Entity_v1() { Location = point });
-
-
+            var index = this._entities.Count + 1;
+            this.Add(new Entity_v1() { Location = point, Index = index });
         }
 
         public void AddRange(IEnumerable<Entity_v1> entities) {
@@ -489,265 +532,6 @@ namespace TuggingController {
         protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) { }
 
         //protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
-    }
-
-    public class MathCoordinate_v1 : CanvasObject_v1 {
-        private Grid_v1 _grid = new Grid_v1();
-        public SKPoint Origin => new SKPoint(
-            this.Transform.Translation.ScaleX,
-            this.Transform.Translation.ScaleY
-            );
-        public MathCoordinate_v1() {
-        }
-    }
-
-
-
-    public class Chart_v1 : CanvasObject_v1 {
-        //private DataZone_v1 _dataZone = new DataZone_v1();
-        private Grid_v1 _grid = new Grid_v1();
-        private float _scale = 1.0f;
-
-
-
-        public Chart_v1() : base() {
-            this.Dispatcher.Root = this;
-
-            this._grid.SetParent(this);
-            this.Children.Add(this._grid);
-
-            //this._dataZone.SetParent(this);
-            //this.Children.Add(this._dataZone);
-
-            // Test Purpose
-            //this._dataZone.AddRange(new Entity_v1[] {
-            //    new Entity_v1() { Location = new SKPoint(100.0f, 100.0f)},
-            //    new Entity_v1() { Location = new SKPoint(-100.0f, 100.0f)},
-            //    new Entity_v1() { Location = new SKPoint(100.0f, -100.0f)},
-            //});
-        }
-
-        protected override void DrawThis(SKCanvas canvas) {
-            canvas.DrawCircle(
-                this.GlobalLocation,
-                5.0f,
-                new SKPaint() { Color = SKColors.BlueViolet }
-            );
-
-            canvas.DrawRect(
-                this.Transform.GlobalTransformation.MapRect(this.BoarderBox),
-                new SKPaint() {
-                    Color = SKColors.BlueViolet,
-                    StrokeWidth = 2.0f,
-                    IsStroke = true,
-                }
-            );
-        }
-        public void SetSize(SKSize size) {
-            var boarderBox = new SKRect() { Size = size };
-
-            this._pBoarderBox = boarderBox;
-
-            foreach (var child in this.Children) {
-                child.SetBoarderBoxFromParent(this.BoarderBox);
-            }
-        }
-
-        public void SetScale(float scale) {
-            this._scale = scale;
-
-            //this._dataZone.Transform.Scale = SKMatrix.MakeScale(this._scale, this._scale);
-            this._grid.Transform.Scale = SKMatrix.MakeScale(this._scale, this._scale);
-        }
-
-        public float GetScale() {
-            return this._scale;
-        }
-
-        public void AddEntity(Point point) {
-            var gSKPoint = new SKPoint(point.X, point.Y);
-            //this._dataZone.Add(gSKPoint);
-        }
-
-        public override bool ContainsPoint(SKPoint point) {
-            return this.BoarderBox.Contains(point);
-        }
-
-        protected override void Invalidate() { }
-    }
-
-    public class Grid_v1 : CanvasObject_v1 {
-        //private SelectableComponent _selectableComponent;
-        private DragAndDropComponent _dragAndDropComponent;
-        private List<Line_v1> _horizontalLines = new List<Line_v1>();
-        private List<Line_v1> _verticalLines = new List<Line_v1>();
-        private DataZone_v1 _dataZone = new DataZone_v1();
-        private SKPoint _origin = new SKPoint();
-        private int _gridScale = 50;
-
-        public SKPoint Anchor { get; set; } = new SKPoint();
-
-        // Note: Coordinate is different to SKRect
-        // Chart: Left-Bottom, SKRect: Left-Top
-
-        public SKPaint BoarderPaint { get; set; } = new SKPaint() { Color = SKColors.DarkKhaki, IsStroke = true, StrokeWidth = 6.0f };
-
-        public Grid_v1() : base() {
-            this.Transform.TransformChanged += this.Transform_TransformChanged;
-
-            //this._selectableComponent = new SelectableComponent();
-            this._dragAndDropComponent = new DragAndDropComponent();
-
-            //this._selectableComponent.SelectStatusChanged += this.SelectableComponent_SelectStatusChanged;
-
-            // !Note! - Order
-            // 1. AddComponent
-            // 2. PreventDefault
-            this.AddComponents(new IComponent[] {
-                //this._selectableComponent,
-                this._dragAndDropComponent
-            });
-            this._dragAndDropComponent.PreventDefault(DragAndDropComponent_Dragging);
-
-            this._dataZone.SetParent(this);
-            this.Children.Add(this._dataZone);
-
-            // Test Purpose
-            this._dataZone.AddRange(new Entity_v1[] {
-                new Entity_v1() { Location = new SKPoint(100.0f, 100.0f)},
-                new Entity_v1() { Location = new SKPoint(-100.0f, 100.0f)},
-                new Entity_v1() { Location = new SKPoint(100.0f, -100.0f)},
-            });
-        }
-
-        private void DragAndDropComponent_Dragging(BehaviorArgs args) {
-            var dndArgs = (DragAndDropBehaviorArgs)args;
-            var t = dndArgs.InitialTranslation;
-            var newLocation = this.Transform.InvGlobalTransformation.MapPoint(dndArgs.Location);
-            var anchor = this.Transform.InvGlobalTransformation.MapPoint(dndArgs.Anchor);
-            var lVector = newLocation - anchor;
-
-            SKMatrix.PostConcat(
-                ref t,
-                SKMatrix.MakeTranslation(lVector.X, lVector.Y)
-            );
-
-            this.Transform.Translation = t;
-        }
-
-        //private void SelectableComponent_SelectStatusChanged(object sender, EventArgs e) {
-        //    var component = (SelectableComponent)sender;
-
-        //    if (component.IsSelected) {
-        //        this.BoarderPaint = new SKPaint() { Color = SKColors.DimGray, IsStroke = true, StrokeWidth = 6.0f };
-        //    } else {
-        //        this.BoarderPaint = new SKPaint() { Color = SKColors.BlueViolet, IsStroke = true, StrokeWidth = 6.0f };
-        //    }
-        //}
-
-        private void Transform_TransformChanged(object sender, EventArgs e) { }
-
-        private void UpdateGrid() {
-            // Clear lines
-            this._horizontalLines.Clear();
-            this._verticalLines.Clear();
-            this.Children.Clear();
-
-            // !Performance!
-            // TODO: overflow
-            List<int> calculate(float min, float max, int interval) {
-                var ret = new List<int>();
-                int minInt = (int)Math.Truncate(min);
-                int maxInt = (int)Math.Truncate(max);
-                int quotient = Math.DivRem(minInt, interval, out int reminder);
-                int value;
-                if (minInt < 0) {
-                    value = minInt + Math.Abs(reminder);
-                } else {
-                    value = minInt + interval - reminder;
-                }
-
-                while (true) {
-                    if (value > maxInt) {
-                        break;
-                    }
-
-                    ret.Add(value);
-
-                    value += interval;
-                }
-
-                return ret;
-            }
-
-            var gridXCoordinates = calculate(this.BoarderBox.Left, this.BoarderBox.Right, this._gridScale);
-            var gridYCoordinates = calculate(this.BoarderBox.Top, this.BoarderBox.Bottom, this._gridScale);
-
-            foreach (var x in gridXCoordinates) {
-                var vLine = new Line_v1() {
-                    P0 = new SKPoint(x, this.BoarderBox.Bottom),
-                    P1 = new SKPoint(x, this.BoarderBox.Top)
-                };
-
-                if (x == 0) {
-                    vLine.Paint.StrokeWidth = 2.0f;
-                }
-
-                vLine.SetParent(this);
-                this._verticalLines.Add(vLine);
-                this.Children.Add(vLine);
-            }
-
-            foreach (var y in gridYCoordinates) {
-                var hLine = new Line_v1() {
-                    P0 = new SKPoint(this.BoarderBox.Left, y),
-                    P1 = new SKPoint(this.BoarderBox.Right, y)
-                };
-
-                if (y == 0) {
-                    hLine.Paint.StrokeWidth = 2.0f;
-                }
-
-                hLine.SetParent(this);
-                this._horizontalLines.Add(hLine);
-                this.Children.Add(hLine);
-            }
-
-            this.Children.Add(this._dataZone);
-        }
-
-        protected override void DrawThis(SKCanvas canvas) {
-            var gBoarderBox = this.Transform.GlobalTransformation.MapRect(this.BoarderBox);
-
-            canvas.DrawRect(gBoarderBox, this.BoarderPaint);
-        }
-
-        protected override void Invalidate() {
-            this.UpdateGrid();
-        }
-
-        //protected override BehaviorResult ExecuteThis(BehaviorArgs e, string tag = "") {
-        //    var result = new BehaviorResult();
-
-        //    if (tag == "") {
-        //        foreach (var component in this.Components) {
-        //            result = component.Behavior(e);
-        //        }
-        //    }
-        //    else {
-        //        var targetComponent = this.Components.Find(c => c.Tag == tag);
-
-        //        if (targetComponent != null) {
-        //            result = targetComponent.Behavior(e);
-        //        }
-        //    }
-
-        //    return result;
-        //}
-
-        public override bool ContainsPoint(SKPoint point) {
-            return this.BoarderBox.Contains(point);
-        }
     }
 
     public partial class Line_v1 : CanvasObject_v1 {
@@ -876,6 +660,13 @@ namespace TuggingController {
             this.AddComponent(this.hoverComponent);
         }
 
+        public override string ToString() {
+            StringBuilder str = new StringBuilder();
+
+            str.Append($"[Triangle] - {this.P0}, {this.P1}, {this.P2}");
+
+            return str.ToString();
+        }
         private void UpdateSimplex() {
             this.simplex[0].State.Vector = this.V0;
             this.simplex[1].State.Vector = this.V1;

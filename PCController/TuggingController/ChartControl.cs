@@ -23,12 +23,14 @@ namespace TuggingController {
         MOVEMASK = ~MOVE,
     }
     public partial class ChartControl : UserControl {
-        private MouseStates _mouseState = MouseStates.NONE;
         private SKControl skControl;
         private Timer timer = new Timer();
         private int timerCount = 0;
         private float prevScale = 0.0f;
         private bool _IsScaleUp = true;
+
+        public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
+        public event EventHandler<EventArgs> CanvasObjectChanged;
 
         //public Chart_v1 Chart { get; set; }
         public ChartScene ChartScene { get; set; }
@@ -60,6 +62,7 @@ namespace TuggingController {
                 Top = this.Size.Height / 2.0f,
                 Bottom = -this.Size.Height / 2.0f
             };
+            this.ChartScene.CanvasTargetChanged += this.ChartScene_CanvasTargetChanged;
 
             this.skControl.KeyPress += this.SkControl_KeyPress;
             this.skControl.PaintSurface += this.SKControl_PaintSurface;
@@ -73,8 +76,19 @@ namespace TuggingController {
 
             this.SizeChanged += this.ChartControl_SizeChanged;
             this.KeyPress += this.ChartControl_KeyPress;
-
             this.Invalidate(true);
+        }
+
+        private void ChartScene_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
+            this.OnCanvasTargetChanged(e);
+        }
+
+        public virtual void OnCanvasTargetChanged(CanvasTargetChangedEventArgs e) {
+            this.CanvasTargetChanged?.Invoke(this, e);
+        }
+
+        public virtual void OnCanvasObjectChanged(EventArgs e) {
+            this.CanvasObjectChanged?.Invoke(this, e);
         }
 
         private void SkControl_MouseWheel(object sender, MouseEventArgs e) {

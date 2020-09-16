@@ -39,6 +39,13 @@ namespace TuggingController {
         }
     }
 
+    public class CanvasTargetChangedEventArgs : EventArgs {
+        public ICanvasObject Target { get; set; }
+
+        public CanvasTargetChangedEventArgs(ICanvasObject target) {
+            this.Target = target;
+        }
+    }
 
     public class EventDispatcher<T> where T : ICanvasObject {
         private static EventDispatcher<T> instance = null;
@@ -56,6 +63,8 @@ namespace TuggingController {
 
         private List<object> targets = new List<object>();
         public T Root { get; set; }
+
+        public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
 
         protected NLog.Logger Logger => NLog.LogManager.GetCurrentClassLogger();
 
@@ -79,46 +88,45 @@ namespace TuggingController {
             this._propagate = false;
         }
 
+        public virtual void OnCanvasTargetChanged(CanvasTargetChangedEventArgs e) {
+            this.CanvasTargetChanged?.Invoke(this, e);
+        }
+
         private void DispatchMouseMoveEvent(Event @event) {
             var castEvent = @event as MouseEvent;
             var newAllTargets = castEvent.Path;
 
+            var intersection = newAllTargets.Intersect(this.targets);
+            var cNew = new List<object>(newAllTargets);
+            var cOld = new List<object>(this.targets);
 
+            cNew.RemoveRange(0, intersection.Count());
+            cOld.RemoveRange(0, intersection.Count());
 
-            if (newAllTargets.Count > this.targets.Count) {
-                var newAddedTargets = new List<object>(newAllTargets);
+            foreach(var target in cOld) {
+                var mouseEvent = new MouseEvent("MouseLeave");
+                mouseEvent.CurrentTarget = target;
+                mouseEvent.Target = newAllTargets.Last();
+                mouseEvent.Pointer = castEvent.Pointer;
 
-                newAddedTargets.RemoveRange(0, this.targets.Count);
+                //this.Logger.Debug($"{target.GetType()} MouseLeave");
 
-                foreach (var target in newAddedTargets) {
-                    var mouseEvent = new MouseEvent("MouseEnter");
-                    mouseEvent.CurrentTarget = target;
-                    mouseEvent.Target = newAllTargets.Last();
-                    mouseEvent.Pointer = castEvent.Pointer;
-
-                    //this.Logger.Debug($"{target.GetType()} MouseEnter");
-
-                    (target as CanvasObject_v1).OnMouseEnter(mouseEvent);
-                }
+                (target as CanvasObject_v1).OnMouseLeave(mouseEvent);
             }
-            else if (newAllTargets.Count < this.targets.Count) {
-                var newRemovedTarget = new List<object>(this.targets);
 
-                newRemovedTarget.RemoveRange(0, newAllTargets.Count);
-                newRemovedTarget.Reverse();
+            foreach (var target in cNew) {
+                var mouseEvent = new MouseEvent("MouseEnter");
+                mouseEvent.CurrentTarget = target;
+                mouseEvent.Target = newAllTargets.Last();
+                mouseEvent.Pointer = castEvent.Pointer;
 
-                foreach (var target in newRemovedTarget) {
-                    var mouseEvent = new MouseEvent("MouseLeave");
-                    mouseEvent.CurrentTarget = target;
-                    mouseEvent.Target = newAllTargets.Last();
-                    mouseEvent.Pointer = castEvent.Pointer;
+                //this.Logger.Debug($"{target.GetType()} MouseEnter");
 
-                    //this.Logger.Debug($"{target.GetType()} MouseLeave");
-
-                    (target as CanvasObject_v1).OnMouseLeave(mouseEvent);
-                }
+                (target as CanvasObject_v1).OnMouseEnter(mouseEvent);
             }
-            else {
+
+
+            if (cNew.Count() == 0 & cOld.Count() == 0) {
                 if (this.CapturedTarget != null) {
                     var mouseEvent = new MouseEvent("MouseMove");
                     mouseEvent.CurrentTarget = this.CapturedTarget;
@@ -126,7 +134,8 @@ namespace TuggingController {
                     mouseEvent.Pointer = castEvent.Pointer;
 
                     (this.CapturedTarget as CanvasObject_v1).OnMouseMove(mouseEvent);
-                } else {
+                }
+                else {
                     foreach (var target in newAllTargets) {
                         var mouseEvent = new MouseEvent("MouseMove");
                         mouseEvent.CurrentTarget = target;
@@ -138,7 +147,69 @@ namespace TuggingController {
                         (target as CanvasObject_v1).OnMouseMove(mouseEvent);
                     }
                 }
+            } else {
+                var target = newAllTargets.Last() as ICanvasObject;
+
+                this.OnCanvasTargetChanged(new CanvasTargetChangedEventArgs(target));
             }
+
+            
+
+
+            //if (newAllTargets.Count > this.targets.Count) {
+            //    var newAddedTargets = new List<object>(newAllTargets);
+
+            //    newAddedTargets.RemoveRange(0, this.targets.Count);
+
+            //    foreach (var target in newAddedTargets) {
+            //        var mouseEvent = new MouseEvent("MouseEnter");
+            //        mouseEvent.CurrentTarget = target;
+            //        mouseEvent.Target = newAllTargets.Last();
+            //        mouseEvent.Pointer = castEvent.Pointer;
+
+            //        //this.Logger.Debug($"{target.GetType()} MouseEnter");
+
+            //        (target as CanvasObject_v1).OnMouseEnter(mouseEvent);
+            //    }
+            //}
+            //else if (newAllTargets.Count < this.targets.Count) {
+            //    var newRemovedTarget = new List<object>(this.targets);
+
+            //    newRemovedTarget.RemoveRange(0, newAllTargets.Count);
+            //    newRemovedTarget.Reverse();
+
+            //    foreach (var target in newRemovedTarget) {
+            //        var mouseEvent = new MouseEvent("MouseLeave");
+            //        mouseEvent.CurrentTarget = target;
+            //        mouseEvent.Target = newAllTargets.Last();
+            //        mouseEvent.Pointer = castEvent.Pointer;
+
+            //        //this.Logger.Debug($"{target.GetType()} MouseLeave");
+
+            //        (target as CanvasObject_v1).OnMouseLeave(mouseEvent);
+            //    }
+            //}
+            //else {
+            //    if (this.CapturedTarget != null) {
+            //        var mouseEvent = new MouseEvent("MouseMove");
+            //        mouseEvent.CurrentTarget = this.CapturedTarget;
+            //        mouseEvent.Target = this.CapturedTarget;
+            //        mouseEvent.Pointer = castEvent.Pointer;
+
+            //        (this.CapturedTarget as CanvasObject_v1).OnMouseMove(mouseEvent);
+            //    } else {
+            //        foreach (var target in newAllTargets) {
+            //            var mouseEvent = new MouseEvent("MouseMove");
+            //            mouseEvent.CurrentTarget = target;
+            //            mouseEvent.Target = newAllTargets.Last();
+            //            mouseEvent.Pointer = castEvent.Pointer;
+
+            //            //this.Logger.Debug($"{target.GetType().ToString()} MouseMove");
+
+            //            (target as CanvasObject_v1).OnMouseMove(mouseEvent);
+            //        }
+            //    }
+            //}
         }
 
         private void DispatchMouseButtonRelatedEvent(Event @event) {

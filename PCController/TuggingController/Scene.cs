@@ -11,16 +11,27 @@ using System.Windows.Forms;
 
 namespace TuggingController {
     public class ChartScene {
-        private ICanvasObject root;
+        public ICanvasObject Root { get; set; }
+        public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
 
         public WorldSpaceCoordinate WorldSpace { get; set; } = new WorldSpaceCoordinate();
 
         public ChartScene() : base() {
-            this.root = new RootObject_v1();
+            this.Root = new RootObject_v1();
+
+            this.Root.Dispatcher.CanvasTargetChanged += this.Dispatcher_CanvasTargetChanged;
+        }
+
+        private void Dispatcher_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
+            this.OnCanvasTargetChanged(e);
+        }
+
+        public void OnCanvasTargetChanged(CanvasTargetChangedEventArgs e) {
+            this.CanvasTargetChanged?.Invoke(this, e);
         }
 
         public void Update(SKCanvas canvas) {
-            this.root.Draw(canvas, this.WorldSpace);
+            this.Root.Draw(canvas, this.WorldSpace);
         }
 
         public void Dispatch(Event @event) {
@@ -28,7 +39,7 @@ namespace TuggingController {
             var sPointer = new SKPoint(e.X, e.Y);
             e.Pointer = this.WorldSpace.TransformToWorld(sPointer);
 
-            this.root.Dispatcher.DispatchMouseEvent(e);
+            this.Root.Dispatcher.DispatchMouseEvent(e);
         }
     }
 
