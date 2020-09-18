@@ -64,7 +64,6 @@ namespace TuggingController {
             };
             this.ChartScene.CanvasTargetChanged += this.ChartScene_CanvasTargetChanged;
 
-            this.skControl.KeyPress += this.SkControl_KeyPress;
             this.skControl.PaintSurface += this.SKControl_PaintSurface;
             this.skControl.MouseDown += this.SkControl_MouseDown;
             this.skControl.MouseUp += this.SkControl_MouseUp;
@@ -75,7 +74,6 @@ namespace TuggingController {
             this.skControl.MouseWheel += this.SkControl_MouseWheel;
 
             this.SizeChanged += this.ChartControl_SizeChanged;
-            this.KeyPress += this.ChartControl_KeyPress;
             this.Invalidate(true);
         }
 
@@ -195,24 +193,6 @@ namespace TuggingController {
             return x * x * (3 - 2 * x);
         }
 
-
-        private void SkControl_KeyPress(object sender, KeyPressEventArgs e) {
-            this.OnKeyPress(e);
-        }
-
-        private void ChartControl_KeyPress(object sender, KeyPressEventArgs e) {
-            Console.WriteLine(e.KeyChar);
-
-            switch(e.KeyChar) {
-                case '+':
-                    this.OnKeyPlusPressed();
-                    break;
-                case '-':
-                    this.OnKeyMinusPressed();
-                    break;
-            }
-        }
-
         private void OnKeyPlusPressed() {
             //this.Chart.Scale += 0.1f;
             //this.prevScale = this.Chart.GetScale();
@@ -234,12 +214,6 @@ namespace TuggingController {
         }
 
         private void ChartControl_SizeChanged(object sender, EventArgs e) {
-            //this.Chart.Transform.Scale = SKMatrix.MakeScale(1.0f, -1.0f);
-            //this.Chart.Transform.Translation = SKMatrix.MakeTranslation(0, this.Size.Height);
-            //this.Chart.Transform.Translation =
-            //    SKMatrix.MakeTranslation(this.Size.Width / 2, this.Size.Height / 2);
-
-            //this.Chart.SetSize(new SKSize(this.Size.Width, this.Size.Height));
             this.skControl.Size = new Size(this.Size.Width, this.Size.Height);
             this.SetDeviceViewport();
 
@@ -253,10 +227,8 @@ namespace TuggingController {
         private void Draw(SKCanvas canvas) {
             canvas.Clear();
 
-            //this.Chart.Draw(canvas);
             this.ChartScene.Update(canvas);
             //canvas.DrawText("Hello World!", new SKPoint(100, 100), new SKPaint() { Color = SKColors.Black });
-
         }
 
         private void SetDeviceViewport() {
@@ -267,14 +239,14 @@ namespace TuggingController {
                 Bottom = -this.Size.Height / 2.0f
             };
 
-            //var deviceWindow = new SKRect() {
-            //    Left = -this.Size.Width / 2.0f,
-            //    Right = this.Size.Width / 2.0f,
-            //    Top = this.Size.Height / 2.0f,
-            //    Bottom = -this.Size.Height / 2.0f
-            //};
+            var deviceWindow = new SKRect() {
+                Left = -this.Size.Width / 2.0f,
+                Right = this.Size.Width / 2.0f,
+                Top = this.Size.Height / 2.0f,
+                Bottom = -this.Size.Height / 2.0f
+            };
 
-            //this.ChartScene.WorldSpace.Window = deviceWindow;
+            this.ChartScene.WorldSpace.Window = deviceWindow;
         }
     }
 }

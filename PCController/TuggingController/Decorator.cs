@@ -197,17 +197,19 @@ namespace TuggingController {
 
     public class WorldSpaceCoordinate {
         private SKRect _window;
-        private SKRect _device;
         private SKRect _viewport = new SKRect() {
             Left = -1.0f,
             Right = 1.0f,
             Top = 1.0f,
             Bottom = -1.0f
         };
+        private SKRect _device;
 
         private ViewTranform _viewT = new ViewTranform();
         private ClipTransform _clipT = new ClipTransform();
         private DeviceTransform _deviceT = new DeviceTransform();
+
+        public float AspectRatio => Math.Abs(this._device.Width / this._device.Height);
 
         public SKRect Window {
             get => this._window;
@@ -221,6 +223,14 @@ namespace TuggingController {
             get => this._device;
             set {
                 this._device = value;
+
+                //var aspectRatio = Math.Abs(value.Width / value.Height);
+
+                //this._viewport.Left = this._viewport.Left * aspectRatio;
+                //this._viewport.Right = this._viewport.Right * aspectRatio;
+
+                //this._window.Left = this._window.Left * this.AspectRatio;
+                //this._window.Right = this.Window.Right * this.AspectRatio;
 
                 this.UpdateDeviceTransform();
             }

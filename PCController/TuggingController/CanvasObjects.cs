@@ -539,6 +539,7 @@ namespace TuggingController {
             Color = SKColors.Gray,
             StrokeWidth = 1,
         };
+
         protected SKPoint _gP0;
         protected SKPoint _gP1;
 
@@ -554,6 +555,8 @@ namespace TuggingController {
                 this.V1 = SkiaExtension.SkiaHelper.ToVector(value);
             }
         }
+
+        static public SKPaint VertexPaint = new SKPaint();
 
         public Line_v1() : base() { }
 
@@ -580,23 +583,26 @@ namespace TuggingController {
 
         protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
             if (this._isDebug) {
+                VertexPaint.Color = SKColors.Red;
+
                 canvas.DrawCircle(
-                    worldCoordinate.TransformToDevice(this._gP0),
+                    this._gP0,
                     3.0f,
-                    new SKPaint() { Color = SKColors.Red }
+                    VertexPaint
                 );
+
+                VertexPaint.Color = SKColors.DarkOliveGreen;
+
                 canvas.DrawCircle(
-                    worldCoordinate.TransformToDevice(this._gP1),
+                    this._gP1,
                     3.0f,
-                    new SKPaint() { Color = SKColors.DarkOliveGreen }
+                    VertexPaint
                 );
             }
 
             canvas.DrawLine(
-                worldCoordinate.TransformToDevice(this._gP0),
-                worldCoordinate.TransformToDevice(this._gP1),
-                //this._gP0,
-                //this._gP1,
+                this._gP0,
+                this._gP1,
                 this.Paint
             );
         }
@@ -607,7 +613,8 @@ namespace TuggingController {
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
-            this.Invalidate();
+            this._gP0 = worldCoordinate.TransformToDevice(this.P0);
+            this._gP1 = worldCoordinate.TransformToDevice(this.P1);
         }
 
         public override bool ContainsPoint(SKPoint point) {
@@ -616,7 +623,6 @@ namespace TuggingController {
             var result = v[0] * this.Direction[1] - v[1] * this.Direction[0];
             return result == 0.0f? true : false;
         }
-        //protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
 
     public partial class Triangle_v1 : CanvasObject_v1 {
@@ -633,9 +639,9 @@ namespace TuggingController {
         private SKPoint _gP2;
         private HoverComponent hoverComponent;
 
-        private Line_v1 _edge01;
-        private Line_v1 _edge12;
-        private Line_v1 _edge20;
+        private Line_v1 _edge01 = new Line_v1();
+        private Line_v1 _edge12 = new Line_v1();
+        private Line_v1 _edge20 = new Line_v1();
 
         public Entity_v1 P0 { get; set; }
         public Entity_v1 P1 { get; set; }
@@ -688,12 +694,12 @@ namespace TuggingController {
             this._gP1 = worldCoordinate.TransformToDevice(this.P1.Point);
             this._gP2 = worldCoordinate.TransformToDevice(this.P2.Point);
 
-            this._edge01 = new Line_v1() { P0 = this.P0.Point, P1 = this.P1.Point };
-            this._edge12 = new Line_v1() { P0 = this.P1.Point, P1 = this.P2.Point };
-            this._edge20 = new Line_v1() {
-                P0 = this.P2.Point,
-                P1 = this.P0.Point
-            };
+            this._edge01.P0 = this.P0.Point;
+            this._edge01.P1 = this.P1.Point;
+            this._edge12.P0 = this.P1.Point;
+            this._edge12.P1 = this.P2.Point;
+            this._edge20.P0 = this.P2.Point;
+            this._edge20.P1 = this.P0.Point;
 
             if (this.isHovered) {
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.8f);
