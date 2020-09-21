@@ -14,6 +14,9 @@ using Reparameterization;
 using NLog.LayoutRenderers.Wrappers;
 using System.ComponentModel;
 using System.Text;
+using MathNet.Numerics.LinearAlgebra.Single;
+using System.Xml.XPath;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace TuggingController {
 
@@ -625,6 +628,111 @@ namespace TuggingController {
         }
     }
 
+    public class Edge_v1 : Line_v1 { }
+
+    public class Ray_v1 : Line_v1 {
+        private SKPaint rayPaint = new SKPaint() {
+            Color = SKColors.Green,
+            StrokeWidth = 2,
+        };
+
+        public SKPoint Origin {
+            get => this.P0;
+            set {
+                this.P0 = value;
+            }
+        }
+
+        private void ClipRay(WorldSpaceCoordinate worldCoordinate) {
+            //uint outcodeOut = worldCoordinate.GetPointViewportCode(this.Origin);
+            var p0 = worldCoordinate.WorldToClipTransform.MapPoint(this.P0);
+            var p1 = worldCoordinate.WorldToClipTransform.MapPoint(this.P1);
+            var ray = new SkiaHelper.StLine() {
+                V0 = Vector.Build.Dense(new float[] { p0.X, p0.Y }),
+                V1 = Vector.Build.Dense(new float[] { p1.X, p1.Y })
+            };
+            var ymax = 1.0f;
+            var ymin = -1.0f;
+            var xmax = 1.0f;
+            var xmin = -1.0f;
+
+            var top = new SkiaHelper.StLine() {
+                V0 = Vector.Build.Dense(new float[] { xmin, ymax }),
+                V1 = Vector.Build.Dense(new float[] { xmax, ymax })
+            };
+            var bottom = new SkiaHelper.StLine() {
+                V0 = Vector.Build.Dense(new float[] { xmin, ymin }),
+                V1 = Vector.Build.Dense(new float[] { xmax, ymin })
+            };
+            var left = new SkiaHelper.StLine() {
+                V0 = Vector.Build.Dense(new float[] { xmin, ymin }),
+                V1 = Vector.Build.Dense(new float[] { xmin, ymax })
+            };
+            var right = new SkiaHelper.StLine() {
+                V0 = Vector.Build.Dense(new float[] { xmax, ymin }),
+                V1 = Vector.Build.Dense(new float[] { xmax, ymax })
+            };
+            var collection = new List<SkiaHelper.StLine>() {
+                top, bottom, left, right
+            };
+
+            var factorPairs = new List<Matrix<float>>();
+
+            foreach (var edge in collection) {
+                factorPairs.Add(SkiaHelper.CheckIsIntersected(ray, edge));
+            }
+
+            var intersections = new List<SKPoint>();
+
+            foreach (var pair in factorPairs) {
+                var result = pair[0, 0] > 0.0f & pair[1, 0] >= 0.0f & pair[1, 0] <= 1.0f;
+
+                if (result) {
+                    var newIntersection = SkiaExtension.SkiaHelper.ToVector(p0) + pair[0, 0] * ray.Direction;
+                    var wNewIntersection = worldCoordinate.ClipToWorldTransform.MapPoint(SkiaExtension.SkiaHelper.ToSKPoint(newIntersection));
+
+                    intersections.Add(wNewIntersection);
+                }
+            }
+
+            if (intersections.Count == 2) {
+                this._gP0 = worldCoordinate.TransformToDevice(intersections[0]);
+                this._gP1 = worldCoordinate.TransformToDevice(intersections[1]);
+                //this.Logger.Debug("Ray - Origin is outside, but intersected.");
+            }
+            else if (intersections.Count == 1) {
+                this._gP0 = worldCoordinate.TransformToDevice(this.P0);
+                this._gP1 = worldCoordinate.TransformToDevice(intersections[0]);
+                //this.Logger.Debug("Ray - Origin is inside.");
+            }
+            else if (intersections.Count == 0) {
+                this._gP0 = new SKPoint();
+                this._gP1 = new SKPoint();
+                //this.Logger.Debug("Ray - Origin is outside, but not intersected.");
+            }
+        }
+
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this.ClipRay(worldCoordinate);
+            //this._gP1 = worldCoordinate.TransformToDevice(this.P1);
+        }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            canvas.DrawLine(
+                this._gP0,
+                this._gP1,
+                this.rayPaint
+            );
+        }
+
+        public static Ray_v1 CreateRay(SKPoint origin, SKPoint direction) {
+            return new Ray_v1() {
+                P0 = origin,
+                P1 = origin + direction
+            };
+        }
+    }
+
     public partial class Triangle_v1 : CanvasObject_v1 {
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
@@ -642,6 +750,8 @@ namespace TuggingController {
         private Line_v1 _edge01 = new Line_v1();
         private Line_v1 _edge12 = new Line_v1();
         private Line_v1 _edge20 = new Line_v1();
+
+        private Ray_v1 _edge01Ext = new Ray_v1();
 
         public Entity_v1 P0 { get; set; }
         public Entity_v1 P1 { get; set; }
@@ -701,6 +811,9 @@ namespace TuggingController {
             this._edge20.P0 = this.P2.Point;
             this._edge20.P1 = this.P0.Point;
 
+            this._edge01Ext.P0 = this.P1.Point;
+            this._edge01Ext.P1 = this.P1.Point + SkiaExtension.SkiaHelper.ToSKPoint(this._edge01.UnitDirection);
+
             if (this.isHovered) {
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.8f);
             } else {
@@ -708,6 +821,7 @@ namespace TuggingController {
             }
 
             this.Children.Clear();
+            this.Children.Add(this._edge01Ext);
             this.Children.AddRange(new Line_v1[] {
                 this._edge01, this._edge12, this._edge20
             });

@@ -256,6 +256,25 @@ namespace TuggingController {
             }
         }
 
+        public SKMatrix WorldToClipTransform {
+            get {
+                var transform = SKMatrix.MakeIdentity();
+
+                SKMatrix.PostConcat(ref transform, this._viewT.WorldToViewSpaceTransform);
+                SKMatrix.PostConcat(ref transform, this._clipT.ViewToNormalizedClipSpaceTransform);
+
+                return transform;
+            }
+        }
+
+        public SKMatrix ClipToWorldTransform {
+            get {
+                this.WorldToClipTransform.TryInvert(out var matrix);
+
+                return matrix;
+            }
+        }
+
         public WorldSpaceCoordinate() { }
 
         public WorldSpaceCoordinate(SKRect window, SKRect device) {
@@ -290,6 +309,23 @@ namespace TuggingController {
 
         public SKPoint TransformToWorld(SKPoint point) {
             return this.DeviceToWorldTransform.MapPoint(point);
+        }
+
+        public uint GetPointViewportCode(SKPoint point) {
+            var cPoint = this.WorldToClipTransform.MapPoint(point);
+            uint result = 0b_0000;
+
+            if (cPoint.X < this._viewport.Left) {
+                result |= 0b_0001;
+            } else if (cPoint.X > this._viewport.Right) {
+                result |= 0b_0010;
+            } else if (cPoint.Y > this._viewport.Top) {
+                result |= 0b_0100;
+            } else if (cPoint.Y < this._viewport.Bottom) {
+                result |= 0b_1000;
+            }
+
+            return result;
         }
     }
 

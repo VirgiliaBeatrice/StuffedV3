@@ -3002,7 +3002,22 @@ namespace TuggingController {
             Vector<float> V1 { get; set; }
             Vector<float> Direction { get; }
             Vector<float> UnitDirection { get; }
-            float L2Norm { get; }
+            //float L2Norm { get; }
+        }
+
+        public struct StLine : ILine {
+            public Vector<float> V0 { get; set; }
+            public Vector<float> V1 { get; set; }
+            public Vector<float> Direction {
+                get {
+                    return this.V1 - this.V0;
+                }
+            }
+            public Vector<float> UnitDirection {
+                get {
+                    return this.Direction.Normalize(2.0f);
+                }
+            }
         }
 
         // L = V(V0) + T * V(V1 - V0)
@@ -3060,7 +3075,7 @@ namespace TuggingController {
         }
 
 
-        public static (float, float) GetIntersectionFactors(Line l1, Line l2) {
+        public static (float, float) GetIntersectionFactors(ILine l1, ILine l2) {
             var a = l1.V0[0] - l2.V0[0];
             var b = l1.V1[0] - l1.V0[0];
             var c = l2.V1[0] - l2.V0[0];
@@ -3084,7 +3099,6 @@ namespace TuggingController {
                     { e, c }
                 }).Determinant();
 
-
             float t, u;
 
             if (det == 0.0f) {
@@ -3098,20 +3112,20 @@ namespace TuggingController {
             return (t, u);
         }
 
-        public static LA.Matrix<float> CheckIsIntersected(SKLine line1, SKLine line2) {
+        public static Matrix<float> CheckIsIntersected(ILine line1, ILine line2) {
 
             // Line Representation: line = p + a * v
             // Solve p1 + a1 * v1 = p2 + a2 * v2
 
-            LA.Matrix<float> A = LA.Matrix<float>.Build.DenseOfArray(
+            Matrix<float> A = Matrix<float>.Build.DenseOfArray(
                 new float[,] {
-                    { line1.Direction.X, - line2.Direction.X },
-                    { line1.Direction.Y, - line2.Direction.Y }});
-            LA.Matrix<float> b = LA.Matrix<float>.Build.DenseOfArray(
+                    { line1.Direction[0], - line2.Direction[0] },
+                    { line1.Direction[1], - line2.Direction[1] }});
+            Matrix<float> b = Matrix<float>.Build.DenseOfArray(
                 new float[,] {
-                    { line2.Start.X - line1.Start.X },
-                    { line2.Start.Y - line1.Start.Y }});
-            LA.Matrix<float> x = A.Solve(b);
+                    { line2.V0[0] - line1.V0[0] },
+                    { line2.V0[1] - line1.V0[1] }});
+            Matrix<float> x = A.Solve(b);
 
             //Console.WriteLine(x.ToMatrixString());
             return x;
@@ -3188,23 +3202,23 @@ namespace TuggingController {
 
             SKPoint intersection = new SKPoint();
 
-            for (int idx = 0; idx < lineSegments.Length; idx++) {
-                LA.Matrix<float> T = CheckIsIntersected(ray, lineSegments[idx]);
-                if (ray.IsInLine(T[0, 0]) & lineSegments[idx].IsInLine(T[1, 0])) {
-                    intersection = ray.GetIntersection(T[0, 0]);
-                }
-            }
+            //for (int idx = 0; idx < lineSegments.Length; idx++) {
+                //LA.Matrix<float> T = CheckIsIntersected(ray, lineSegments[idx]);
+                //if (ray.IsInLine(T[0, 0]) & lineSegments[idx].IsInLine(T[1, 0])) {
+                    //intersection = ray.GetIntersection(T[0, 0]);
+            //    }
+            //}
 
-            if (paint == null) {
-                paint = new SKPaint {
-                    IsAntialias = true,
-                    Color = SKColors.Blue,
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = 2,
-                };
-            }
+            //if (paint == null) {
+            //    paint = new SKPaint {
+            //        IsAntialias = true,
+            //        Color = SKColors.Blue,
+            //        Style = SKPaintStyle.Stroke,
+            //        StrokeWidth = 2,
+            //    };
+            //}
 
-            canvas.DrawLine(ray.Start, intersection, paint);
+            //canvas.DrawLine(ray.Start, intersection, paint);
         }
     }
 }
