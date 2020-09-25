@@ -463,9 +463,28 @@ namespace TuggingController {
         }
     }
 
+    public class VertexIndexPair : HashSet<int> {
+
+        public override bool Equals(object obj) {
+            return obj is VertexIndexPair pair &&
+                   this.Contains(pair.ElementAt(0)) &&
+                   this.Contains(pair.ElementAt(1));
+        }
+
+        public override int GetHashCode() {
+            int hashCode = 1224354199;
+            hashCode = hashCode * -1521134295 + this.ElementAt(0).GetHashCode() + this.ElementAt(1).GetHashCode();
+
+            return hashCode;
+        }
+    }
+
     public class DataZone_v1 : ContainerCanvasObject_v1 {
         private List<Entity_v1> _entities = new List<Entity_v1>();
         private List<Triangle_v1> triangles = new List<Triangle_v1>();
+        private List<Entity_v1> extremes = new List<Entity_v1>();
+        private HashSet<Edge_v1> triangleEdges = new HashSet<Edge_v1>();
+        private List<Edge_v1> convexhullEdges = new List<Edge_v1>();
         private Triangulation triangulation = new Triangulation();
 
         public Entity_v1 this[int index] {
@@ -484,27 +503,160 @@ namespace TuggingController {
             return tmpList.ToArray();
         }
 
+        private Edge_v1 FindTriangleEdge(Entity_v1 e0, Entity_v1 e1) {
+            return this.triangleEdges.Where(edge => edge.HasVertex(e0) && edge.HasVertex(e1)).FirstOrDefault();
+        }
+
         public void Add(Entity_v1 entity) {
             entity.SetParent(this);
             this._entities.Add(entity);
 
             if (this._entities.Count == 3) {
+                var triangle = new Triangle_v1(this[0], this[1], this[2]);
+
+                triangle.Edges.Add(new Edge_v1() {
+                    E0 = this[0],
+                    E1 = this[1]
+                });
+                triangle.Edges.Add(new Edge_v1() {
+                    E0 = this[1],
+                    E1 = this[2]
+                });
+                triangle.Edges.Add(new Edge_v1() {
+                    E0 = this[2],
+                    E1 = this[0]
+                });
                 this.triangles.Clear();
-                this.triangles.Add(new Triangle_v1(this[0], this[1], this[2]));
-            } else if (this._entities.Count > 3) {
+                this.triangles.Add(triangle);
+            }
+            else if (this._entities.Count > 3) {
                 var flattenPoints = this.Flatten(this._entities);
                 var triangleIndicesCollection = this.triangulation.RunDelaunay_v1(2, this._entities.Count, ref flattenPoints);
+                var convexhullIndicesCollection = new LinkedList<int>(this.triangulation.RunConvexHull_v1(2, this._entities.Count, ref flattenPoints));
 
                 this.triangles.Clear();
+                this.extremes.Clear();
+                this.triangleEdges.Clear();
+                this.convexhullEdges.Clear();
 
+                var pairSet = new HashSet<VertexIndexPair>();
+
+                // Create all edges of triangles.
+                foreach (var i in triangleIndicesCollection) {
+                    pairSet.Add(new VertexIndexPair { i[0], i[1] });
+                    pairSet.Add(new VertexIndexPair { i[1], i[2] });
+                    pairSet.Add(new VertexIndexPair { i[2], i[0] });
+                }
+
+                foreach(var pair in pairSet) {
+                    this.triangleEdges.Add(new Edge_v1 {
+                        E0 = this[pair.ElementAt(0)],
+                        E1 = this[pair.ElementAt(1)]
+                    });
+                }
+
+                // Create triangles.
                 foreach(var i in triangleIndicesCollection) {
-                    this.triangles.Add(new Triangle_v1(
+                    var triangle = new Triangle_v1(
                         this[i[0]],
                         this[i[1]],
                         this[i[2]]
-                    ));
+                    );
 
+                    triangle.Edges.Add(this.FindTriangleEdge(this[i[0]], this[i[1]]));
+                    triangle.Edges.Add(this.FindTriangleEdge(this[i[1]], this[i[2]]));
+                    triangle.Edges.Add(this.FindTriangleEdge(this[i[2]], this[i[0]]));
+
+                    this.triangles.Add(triangle);
                 }
+
+                // Get all extremes.
+                foreach(var i in convexhullIndicesCollection) {
+                    this.extremes.Add(this[i]);
+                }
+
+                // Get all edges of convex hull.
+                for (var it = convexhullIndicesCollection.First; it != null; it = it.Next) {
+                    Entity_v1 e1;
+                    var e0 = this[it.Value];
+
+                    if (it == convexhullIndicesCollection.Last) {
+                        e1 = this[convexhullIndicesCollection.First.Value];
+                    } else {
+                        e1 = this[it.Next.Value];
+                    }
+
+                    var edge = this.triangleEdges.Where(e => e.HasVertex(e0) & e.HasVertex(e1));
+
+                    this.convexhullEdges.AddRange(edge);
+                }
+
+                var oppsiteVertices = new List<Entity_v1>();
+                var trianglesOfConvexEdge = new HashSet<Triangle_v1>();
+                
+                foreach(var edge in this.convexhullEdges) {
+                    var targetTriangle = this.triangles.Where(tri => tri.HasEdge(edge)).FirstOrDefault();
+                    var targetVertex = targetTriangle.GetRestVertices(edge).FirstOrDefault();
+
+                    trianglesOfConvexEdge.Add(targetTriangle);
+                }
+
+
+                //List<Edge_v1> ridges = new List<Edge_v1>();
+
+                foreach (var extreme in this.extremes) {
+                    var edges = this.triangleEdges.Where(edge => edge.HasVertex(extreme)).ToArray();
+                    var ridges = edges.Except(this.convexhullEdges).ToArray();
+                    var validRidges = ridges.Where(r => trianglesOfConvexEdge.Any(tri => tri.HasEdge(r))).ToArray();
+
+                    this.Logger.Debug($"Extreme {extreme} has {ridges.Count()} ridge(s).");
+                    this.Logger.Debug($"Extreme {extreme} has {validRidges.Count()} valid ridge(s).");
+
+                    foreach(var ridge in validRidges) {
+
+                        if (this.extremes.Contains(ridge.E0)) {
+                            var ray = new Ray_v1();
+
+                            ray.P0 = ridge.E0.Point;
+                            ray.P1 = ridge.E0.Point - ridge.E1.Point + ridge.E0.Point;
+
+                            ridge.Children.Add(ray);
+                        }
+
+                        if (this.extremes.Contains(ridge.E1)) {
+                            var ray = new Ray_v1();
+
+                            ray.P0 = ridge.E1.Point;
+                            ray.P1 = ridge.E1.Point - ridge.E0.Point + ridge.E1.Point;
+
+                            ridge.Children.Add(ray);
+                        }
+
+
+                    }
+                }
+
+                //List<(Entity_v1, Edge_v1, Triangle_v1)> vertexEdgeTriPairs = new List<(Entity_v1, Edge_v1, Triangle_v1)>();
+
+                //foreach (var edge in this.convexhullEdges) {
+                //    var targetTri = this.triangles.Where(tri => tri.IsEdge(edge)).First();
+                //    var targetVertex = targetTri.GetRestVertices(edge).First();
+
+                //    vertexEdgeTriPairs.Add((targetVertex, edge, targetTri));
+                //}
+
+                //foreach(var pair in vertexEdgeTriPairs) {
+                //    var ray0 = new Ray_v1();
+                //    var ray1 = new Ray_v1();
+
+                //    ray0.P0 = pair.Item1.Point;
+                //    ray0.P1 = pair.Item1.Point + pair.Item2.P0;
+                //    pair.Item3.ExtensionRays.Add(ray0);
+
+                //    ray1.P0 = pair.Item1.Point;
+                //    ray1.P1 = pair.Item1.Point + pair.Item2.P1;
+                //    pair.Item3.ExtensionRays.Add(ray1);
+                //}
             }
 
             this.Children.Clear();
@@ -513,7 +665,7 @@ namespace TuggingController {
         }
 
         public void Add(SKPoint point) {
-            var index = this._entities.Count + 1;
+            var index = this._entities.Count;
             this.Add(new Entity_v1() { Location = point, Index = index });
         }
 
@@ -628,7 +780,52 @@ namespace TuggingController {
         }
     }
 
-    public class Edge_v1 : Line_v1 { }
+    public class Edge_v1 : Line_v1 {
+        private Entity_v1 e0;
+        private Entity_v1 e1;
+
+        public Entity_v1 E0 {
+            get => this.e0;
+            set {
+                this.P0 = value.Point;
+                this.e0 = value;
+            }
+        }
+        public Entity_v1 E1 {
+            get => this.e1;
+            set {
+                this.P1 = value.Point;
+                this.e1 = value;
+            }
+        }
+
+        private Entity_v1[] Vertices => new Entity_v1[] {
+            this.E0, this.E1
+        };
+
+        public Edge_v1() : base() { }
+
+        public Edge_v1(Entity_v1 e0, Entity_v1 e1) {
+            this.E0 = e0;
+            this.E1 = e1;
+        }
+
+        public override string ToString() {
+            var str = new StringBuilder();
+
+            str.Append($"Edge - {this.E0}, {this.E1}");
+
+            return str.ToString();
+        }
+
+        public bool HasVertex(Entity_v1 target) {
+            return this.Vertices.Contains(target);
+        }
+
+        public Entity_v1[] GetVertices() {
+            return this.Vertices;
+        }
+    }
 
     public class Ray_v1 : Line_v1 {
         private SKPaint rayPaint = new SKPaint() {
@@ -714,7 +911,6 @@ namespace TuggingController {
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
             this.ClipRay(worldCoordinate);
-            //this._gP1 = worldCoordinate.TransformToDevice(this.P1);
         }
 
         protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
@@ -747,15 +943,21 @@ namespace TuggingController {
         private SKPoint _gP2;
         private HoverComponent hoverComponent;
 
-        private Line_v1 _edge01 = new Line_v1();
-        private Line_v1 _edge12 = new Line_v1();
-        private Line_v1 _edge20 = new Line_v1();
+        private Edge_v1 _edge01;
+        private Edge_v1 _edge12;
+        private Edge_v1 _edge20;
+
+        public List<Edge_v1> Edges = new List<Edge_v1>();
 
         private Ray_v1 _edge01Ext = new Ray_v1();
+        public List<Ray_v1> ExtensionRays { get; set; } = new List<Ray_v1>();
 
         public Entity_v1 P0 { get; set; }
         public Entity_v1 P1 { get; set; }
         public Entity_v1 P2 { get; set; }
+        private Entity_v1[] Vertices => new Entity_v1[] {
+            this.P0, this.P1, this.P2
+        };
 
         public Triangle_v1(Entity_v1 p0, Entity_v1 p1, Entity_v1 p2) {
             this.P0 = p0;
@@ -783,6 +985,33 @@ namespace TuggingController {
 
             return str.ToString();
         }
+
+        public bool IsVertex(Entity_v1 target) {
+            return this.Vertices.Contains(target);
+        }
+
+        public bool HasEdge(Edge_v1 target) {
+            return this.Edges.Contains(target);
+        }
+
+        public Edge_v1[] GetEdges() {
+            return new Edge_v1[] {
+                this._edge01, this._edge12, this._edge20
+            };
+        }
+
+        public Entity_v1[] GetRestVertices(Entity_v1[] testSet) {
+            var vertexSet = new List<Entity_v1>() {
+                this.P0, this.P1, this.P2
+            };
+
+            return vertexSet.Except(testSet).ToArray();
+        }
+
+        public Entity_v1[] GetRestVertices(Edge_v1 targetEdge) {
+            return this.Vertices.Except(targetEdge.GetVertices()).ToArray();
+        }
+
         private void UpdateSimplex() {
             this.simplex[0].State.Vector = this.V0;
             this.simplex[1].State.Vector = this.V1;
@@ -804,15 +1033,19 @@ namespace TuggingController {
             this._gP1 = worldCoordinate.TransformToDevice(this.P1.Point);
             this._gP2 = worldCoordinate.TransformToDevice(this.P2.Point);
 
-            this._edge01.P0 = this.P0.Point;
-            this._edge01.P1 = this.P1.Point;
-            this._edge12.P0 = this.P1.Point;
-            this._edge12.P1 = this.P2.Point;
-            this._edge20.P0 = this.P2.Point;
-            this._edge20.P1 = this.P0.Point;
+            this._edge01 = this.Edges[0];
+            this._edge12 = this.Edges[1];
+            this._edge20 = this.Edges[2];
 
-            this._edge01Ext.P0 = this.P1.Point;
-            this._edge01Ext.P1 = this.P1.Point + SkiaExtension.SkiaHelper.ToSKPoint(this._edge01.UnitDirection);
+            //this._edge01.P0 = this.P0.Point;
+            //this._edge01.P1 = this.P1.Point;
+            //this._edge12.P0 = this.P1.Point;
+            //this._edge12.P1 = this.P2.Point;
+            //this._edge20.P0 = this.P2.Point;
+            //this._edge20.P1 = this.P0.Point;
+
+            //this._edge01Ext.P0 = this.P1.Point;
+            //this._edge01Ext.P1 = this.P1.Point + SkiaExtension.SkiaHelper.ToSKPoint(this._edge01.UnitDirection);
 
             if (this.isHovered) {
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.8f);
@@ -821,7 +1054,8 @@ namespace TuggingController {
             }
 
             this.Children.Clear();
-            this.Children.Add(this._edge01Ext);
+            this.Children.AddRange(this.ExtensionRays);
+            //this.Children.Add(this._edge01Ext);
             this.Children.AddRange(new Line_v1[] {
                 this._edge01, this._edge12, this._edge20
             });
