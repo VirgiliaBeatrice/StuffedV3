@@ -97,11 +97,14 @@ namespace TuggingController {
             var newAllTargets = castEvent.Path;
 
             var intersection = newAllTargets.Intersect(this.targets);
-            var cNew = new List<object>(newAllTargets);
-            var cOld = new List<object>(this.targets);
+            var cNew = new HashSet<object>(newAllTargets);
+            var cOld = new HashSet<object>(this.targets);
 
-            cNew.RemoveRange(0, intersection.Count());
-            cOld.RemoveRange(0, intersection.Count());
+            cNew.ExceptWith(intersection);
+            cOld.ExceptWith(intersection);
+
+            //cNew.RemoveRange(0, intersection.Count());
+            //cOld.RemoveRange(0, intersection.Count());
 
             foreach(var target in cOld) {
                 var mouseEvent = new MouseEvent("MouseLeave");

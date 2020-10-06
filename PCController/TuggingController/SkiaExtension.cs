@@ -65,7 +65,7 @@ namespace TuggingController {
             Vector<float> V1 { get; set; }
             Vector<float> Direction { get; }
             Vector<float> UnitDirection { get; }
-            float L2Norm { get; }
+            //float L2Norm { get; }
         }
 
         public interface IPoint {

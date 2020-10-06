@@ -39,7 +39,6 @@ namespace TuggingController {
     public class HoverComponent : ILog, IComponent {
         private ICanvasObject _canvasObject;
         private BehaviorHandler behaviors;
-        private bool prevState = false;
 
         public ICanvasObject CanvasObject {
             get => this._canvasObject;
@@ -63,7 +62,9 @@ namespace TuggingController {
             var e = @event as MouseEvent;
             var target = this.CanvasObject;
 
-            if (e.Target == target) {
+            this.Logger.Debug($"{this.CanvasObject} enter");
+
+            if (e.CurrentTarget == target) {
                 var args = new HoverBehaviorArgs(true);
 
                 this.behaviors?.Invoke(args);
@@ -73,6 +74,8 @@ namespace TuggingController {
         private void CanvasObject_MouseLeave(Event @event) {
             var e = @event as MouseEvent;
             var target = this.CanvasObject;
+
+            this.Logger.Debug($"{this.CanvasObject} leave");
 
             if (e.CurrentTarget == target) {
                 var args = new HoverBehaviorArgs(false);

@@ -3005,7 +3005,7 @@ namespace TuggingController {
             //float L2Norm { get; }
         }
 
-        public struct StLine : ILine {
+        public struct StLine : ShapeElements.ILine {
             public Vector<float> V0 { get; set; }
             public Vector<float> V1 { get; set; }
             public Vector<float> Direction {
@@ -3112,7 +3112,7 @@ namespace TuggingController {
             return (t, u);
         }
 
-        public static Matrix<float> CheckIsIntersected(ILine line1, ILine line2) {
+        public static Matrix<float> CheckIsIntersected(ShapeElements.ILine line1, ShapeElements.ILine line2) {
 
             // Line Representation: line = p + a * v
             // Solve p1 + a1 * v1 = p2 + a2 * v2
