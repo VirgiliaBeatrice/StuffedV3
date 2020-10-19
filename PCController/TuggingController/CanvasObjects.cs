@@ -200,6 +200,7 @@ namespace TuggingController {
         protected SKRect _pBoarderBox = new SKRect();
 
         public EventDispatcher<ICanvasObject> Dispatcher => EventDispatcher<ICanvasObject>.GetSingleton();
+
         public Logger Logger { get; protected set; } = LogManager.GetCurrentClassLogger();
         public SKRect BoarderBox {
             get => this.Transform.InvLocalTransformation.MapRect(this._pBoarderBox);

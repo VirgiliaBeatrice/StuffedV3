@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SkiaSharp.Views.Desktop;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
@@ -14,10 +15,14 @@ namespace TuggingController {
         private ChartControl chartControl;
         private ToolStripStatusLabel statusLabel;
 
+        private ChartControl configControl;
+
         public TuggingControlForm() {
             InitializeComponent();
 
             this.statusLabel = new ToolStripStatusLabel();
+
+            this.configControl = new ChartControl();
 
             //this.KeyPreview = true;
             //this.ClientSize = new Size(400, 400 + this.statusStrip1.Size.Height);
@@ -26,12 +31,15 @@ namespace TuggingController {
 
             this.chartControl.Location = new Point(0, 0);
             this.chartControl.Dock = DockStyle.Fill;
-            //this.chartControl.Size = new Size(400, 400);
+
+            this.configControl.Location = new Point(0, 0);
+            this.configControl.Dock = DockStyle.Fill;
 
             //this.statusStrip1.Location = new Point(0, 400 + this.statusStrip1.Size.Height);
             this.statusStrip1.Items.Add(this.statusLabel);
 
             this.tabPage1.Controls.Add(this.chartControl);
+            this.tabPage5.Controls.Add(this.configControl);
 
             this.treeView1.NodeMouseDoubleClick += this.TreeView1_NodeMouseDoubleClick;
 

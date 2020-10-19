@@ -16,6 +16,7 @@ using NLog;
 
 
 namespace TuggingController {
+
     public class ConfigurationCanvas {
         public enum CanvasState {
             Control,
