@@ -20,6 +20,7 @@ using MathNet.Numerics.LinearAlgebra;
 using System.ServiceModel.Channels;
 using Xamarin.Forms.Internals;
 using TuggingController.ShapeElements;
+using System.Runtime.InteropServices;
 
 namespace TuggingController {
 
@@ -566,6 +567,7 @@ namespace TuggingController {
         private HashSet<Triangle_v1> outerTriangles = new HashSet<Triangle_v1>();
         private List<Edge_v1> convexhullEdges = new List<Edge_v1>();
         private Triangulation triangulation = new Triangulation();
+        private List<Ray_v1> exteriorRays = new List<Ray_v1>();
 
         public Entity_v1 this[int index] {
             get => this._entities[index];
@@ -587,6 +589,7 @@ namespace TuggingController {
             return this.triangleEdges.Where(edge => edge.HasVertex(e0) && edge.HasVertex(e1)).FirstOrDefault();
         }
 
+        #region Unused
         private void SetTriangleExtensionRay() {
             this.outerTriangles.Clear();
             //var outerTriangles = new HashSet<Triangle_v1>();
@@ -605,21 +608,24 @@ namespace TuggingController {
                             return (tri, new Entity_v1[] {
                                 it, prev, next
                             });
-                        } else if (isPrev & !isNext) {
+                        }
+                        else if (isPrev & !isNext) {
                             return (tri, new Entity_v1[] {
                                 it, prev
                             });
-                        } else if (!isPrev & isNext) {
+                        }
+                        else if (!isPrev & isNext) {
                             return (tri, new Entity_v1[] {
                                 it, next
                             });
-                        } else {
+                        }
+                        else {
                             return (null, null);
                         }
                     }
                 ).Where(item => item.Item1 != null);
 
-                foreach(var target in targets) {
+                foreach (var target in targets) {
                     var targetTri = target.Item1;
                     var targetVertices = target.Item2;
 
@@ -648,7 +654,8 @@ namespace TuggingController {
                         targetTri.Exterior.Rays.Add(ray0);
                         targetTri.Exterior.Rays.Add(ray1);
                         targetTri.Exterior.Extreme = it;
-                    } else {
+                    }
+                    else {
                         var targetVertexIt = targetVertices[0];
                         var targetVertexNeighbor = targetVertices[1];
                         var notRedundant = this.outerTriangles.Add(targetTri);
@@ -671,7 +678,7 @@ namespace TuggingController {
                                 ray0.P0 = targetVertexIt.Point;
                                 ray0.P1 = targetVertexIt.Point + targetVertexIt.Point - oppsiteVertex.Point;
                                 ray0.Color = SKColors.DarkCyan;
-                                
+
                                 targetTri.Exterior.Rays.Add(ray0);
                             }
 
@@ -686,6 +693,50 @@ namespace TuggingController {
                     }
                 }
                 //}
+            }
+        }
+        #endregion
+
+        private void SetExteriorRays() {
+            this.exteriorRays.Clear();
+            
+            foreach(var extreme in this.newExtremes) {
+                var edges = this.triangleEdges.Where(edge => edge.HasVertex(extreme.Value)).ToArray();
+                var edgeCnt = edges.Count();
+
+                if (edgeCnt == 2) {
+                    this.Logger.Debug($"No splitter for {extreme.Value}.");
+                }
+                else if (edgeCnt == 3) {
+                    this.Logger.Debug($"One splitter(Extension of edge) for {extreme.Value}.");
+
+                    var targetEdge = edges.Where(edge => !this.convexhullEdges.Contains(edge)).ElementAt(0);
+
+                    // Extend this edge
+                    var start = extreme.Value;
+                    var end = targetEdge.E0 == start ? targetEdge.E1 : targetEdge.E0;
+                    var edgeDirection = start.Point - end.Point;
+
+                    exteriorRays.Add(Ray_v1.CreateRay(start.Point, edgeDirection));
+                }
+                else if (edgeCnt > 3) {
+                    this.Logger.Debug($"Two perpendicular splitter for {extreme.Value}.");
+
+                    var prev = extreme.Prev.Value;
+                    var it = extreme.Value;
+                    var next = extreme.Next.Value;
+
+                    var dirOfEdgePrevToIt = it.PointVector - prev.PointVector;
+                    var dirOfEdgeItToNext = next.PointVector - it.PointVector;
+                    var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
+                    var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
+
+                    exteriorRays.Add(Ray_v1.CreateRay(it.Point, normalOfEdgePI));
+                    exteriorRays.Add(Ray_v1.CreateRay(it.Point, normalOfEdgeIN));
+                }
+                else {
+                    throw new Exception("Splitter Exception");
+                }
             }
         }
 
@@ -775,78 +826,14 @@ namespace TuggingController {
                     this.convexhullEdges.AddRange(edge);
                 }
 
-                //var oppsiteVertices = new List<Entity_v1>();
-                //var trianglesOfConvexEdge = new HashSet<Triangle_v1>();
-                
-                //foreach(var edge in this.convexhullEdges) {
-                //    var targetTriangle = this.triangles.Where(tri => tri.HasEdge(edge)).FirstOrDefault();
-                //    var targetVertex = targetTriangle.GetRestVertices(edge).FirstOrDefault();
-
-                //    trianglesOfConvexEdge.Add(targetTriangle);
-                //}
-
-                this.SetTriangleExtensionRay();
-
-                //List<Edge_v1> ridges = new List<Edge_v1>();
-
-                //foreach (var extreme in this.extremes) {
-                //    var edges = this.triangleEdges.Where(edge => edge.HasVertex(extreme)).ToArray();
-                //    var ridges = edges.Except(this.convexhullEdges).ToArray();
-                //    var validRidges = ridges.Where(r => trianglesOfConvexEdge.Any(tri => tri.HasEdge(r))).ToArray();
-
-                //    this.Logger.Debug($"Extreme {extreme} has {ridges.Count()} ridge(s).");
-                //    this.Logger.Debug($"Extreme {extreme} has {validRidges.Count()} valid ridge(s).");
-
-                //    foreach(var ridge in validRidges) {
-
-                //        if (this.extremes.Contains(ridge.E0)) {
-                //            var ray = new Ray_v1();
-
-                //            ray.P0 = ridge.E0.Point;
-                //            ray.P1 = ridge.E0.Point - ridge.E1.Point + ridge.E0.Point;
-
-                //            ridge.Children.Add(ray);
-                //        }
-
-                //        if (this.extremes.Contains(ridge.E1)) {
-                //            var ray = new Ray_v1();
-
-                //            ray.P0 = ridge.E1.Point;
-                //            ray.P1 = ridge.E1.Point - ridge.E0.Point + ridge.E1.Point;
-
-                //            ridge.Children.Add(ray);
-                //        }
-
-
-                //    }
-                //}
-
-                //List<(Entity_v1, Edge_v1, Triangle_v1)> vertexEdgeTriPairs = new List<(Entity_v1, Edge_v1, Triangle_v1)>();
-
-                //foreach (var edge in this.convexhullEdges) {
-                //    var targetTri = this.triangles.Where(tri => tri.IsEdge(edge)).First();
-                //    var targetVertex = targetTri.GetRestVertices(edge).First();
-
-                //    vertexEdgeTriPairs.Add((targetVertex, edge, targetTri));
-                //}
-
-                //foreach(var pair in vertexEdgeTriPairs) {
-                //    var ray0 = new Ray_v1();
-                //    var ray1 = new Ray_v1();
-
-                //    ray0.P0 = pair.Item1.Point;
-                //    ray0.P1 = pair.Item1.Point + pair.Item2.P0;
-                //    pair.Item3.ExtensionRays.Add(ray0);
-
-                //    ray1.P0 = pair.Item1.Point;
-                //    ray1.P1 = pair.Item1.Point + pair.Item2.P1;
-                //    pair.Item3.ExtensionRays.Add(ray1);
-                //}
+                //this.SetTriangleExtensionRay();
+                this.SetExteriorRays();
             }
 
             this.Children.Clear();
             this.Children.AddRange(this._entities);
             this.Children.AddRange(this.triangles);
+            this.Children.AddRange(this.exteriorRays);
         }
 
         public void Add(SKPoint point) {
