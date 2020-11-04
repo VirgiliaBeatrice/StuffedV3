@@ -62,7 +62,7 @@ namespace TuggingController {
             var e = @event as MouseEvent;
             var target = this.CanvasObject;
 
-            this.Logger.Debug($"{this.CanvasObject} enter");
+            //this.Logger.Debug($"{this.CanvasObject} enter");
 
             if (e.CurrentTarget == target) {
                 var args = new HoverBehaviorArgs(true);
@@ -75,7 +75,7 @@ namespace TuggingController {
             var e = @event as MouseEvent;
             var target = this.CanvasObject;
 
-            this.Logger.Debug($"{this.CanvasObject} leave");
+            //this.Logger.Debug($"{this.CanvasObject} leave");
 
             if (e.CurrentTarget == target) {
                 var args = new HoverBehaviorArgs(false);

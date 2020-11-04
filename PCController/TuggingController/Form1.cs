@@ -2860,6 +2860,10 @@ namespace TuggingController {
             return new SKPoint { X = p.X, Y = p.Y };
         }
 
+        public static SKPoint ToSKPoint(Vector<float> v) {
+            return new SKPoint { X = v[0], Y = v[1] };
+        }
+
         public static SKPoint GenerateZeroPoint() {
             return new SKPoint(0, 0);
         }

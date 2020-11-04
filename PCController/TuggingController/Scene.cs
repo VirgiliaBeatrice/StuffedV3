@@ -13,6 +13,7 @@ namespace TuggingController {
     public class ChartScene {
         public ICanvasObject Root { get; set; }
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
+        public event EventHandler<EventArgs> CanvasObjectChanged;
 
         public WorldSpaceCoordinate WorldSpace { get; set; } = new WorldSpaceCoordinate();
 
@@ -20,6 +21,11 @@ namespace TuggingController {
             this.Root = new RootObject_v1();
 
             this.Root.Dispatcher.CanvasTargetChanged += this.Dispatcher_CanvasTargetChanged;
+            this.Root.Dispatcher.CanvasObjectChanged += this.Dispatcher_CanvasObjectChanged;
+        }
+
+        private void Dispatcher_CanvasObjectChanged(object sender, EventArgs e) {
+            this.OnCanvasObjectChanged(e);
         }
 
         private void Dispatcher_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
@@ -28,6 +34,10 @@ namespace TuggingController {
 
         public void OnCanvasTargetChanged(CanvasTargetChangedEventArgs e) {
             this.CanvasTargetChanged?.Invoke(this, e);
+        }
+
+        public void OnCanvasObjectChanged(EventArgs e) {
+            this.CanvasObjectChanged?.Invoke(this, e);
         }
 
         public void Update(SKCanvas canvas) {

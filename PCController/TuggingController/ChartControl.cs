@@ -63,6 +63,7 @@ namespace TuggingController {
                 Bottom = -this.Size.Height / 2.0f
             };
             this.ChartScene.CanvasTargetChanged += this.ChartScene_CanvasTargetChanged;
+            this.ChartScene.CanvasObjectChanged += this.ChartScene_CanvasObjectChanged;
 
             this.skControl.PaintSurface += this.SKControl_PaintSurface;
             this.skControl.MouseDown += this.SkControl_MouseDown;
@@ -75,6 +76,10 @@ namespace TuggingController {
 
             this.SizeChanged += this.ChartControl_SizeChanged;
             this.Invalidate(true);
+        }
+
+        private void ChartScene_CanvasObjectChanged(object sender, EventArgs e) {
+            this.OnCanvasObjectChanged(e);
         }
 
         private void ChartScene_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {

@@ -1,26 +1,14 @@
-﻿using MathNet.Spatial.Units;
+﻿using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Single;
 using NLog;
+using Reparameterization;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Xml.Schema;
-using System.Reflection;
-using System.Windows.Forms;
-using Reparameterization;
-using NLog.LayoutRenderers.Wrappers;
-using System.ComponentModel;
 using System.Text;
-using MathNet.Numerics.LinearAlgebra.Single;
-using System.Xml.XPath;
-using MathNet.Numerics.LinearAlgebra;
-using System.ServiceModel.Channels;
+using System.Windows.Forms;
 using Xamarin.Forms.Internals;
-using TuggingController.ShapeElements;
-using System.Runtime.InteropServices;
 
 namespace TuggingController {
 
@@ -496,12 +484,66 @@ namespace TuggingController {
             this.AddRange(ts);
         }
 
+        public CircularListNode<T> this[int index] {
+            get { return this.collection[index]; }
+        }
+
         public override string ToString() {
             return collection.ToString();
         }
 
+        public int IndexOf(T item) {
+            return this.collection.Select(e => e.Value).ToArray().IndexOf(item);
+        }
+
         public bool Contains(T item) {
             return this.collection.Select(e => e.Value).Contains(item);
+        }
+
+        public CircularList<T> Clone() {
+            var clone = new CircularList<T>();
+
+            foreach(var node in this.collection) {
+                clone.Add(node.Value);
+            }
+
+            return clone;
+        }
+
+        public void Insert(int at, T item) {
+            if (at < 0 | at > this.collection.Count - 1) {
+                throw new Exception();
+            }
+
+            CircularListNode<T> newItem = new CircularListNode<T>() {
+                Value = item,
+            };
+
+            var nextItem = this.collection[at];
+            var prevItem = this.collection[at].Prev;
+
+            newItem.Next = nextItem;
+            newItem.Prev = prevItem;
+
+            this.collection.Insert(at, newItem);
+
+            nextItem.Prev = newItem;
+            prevItem.Next = newItem;
+        }
+
+        public void RemoveAt(int at) {
+            if (at < 0 | at > this.collection.Count - 1) {
+                throw new Exception();
+            }
+
+            var targetItem = this.collection[at];
+            var prevItem = targetItem.Prev;
+            var nextItem = targetItem.Next;
+            
+            this.collection.RemoveAt(at);
+
+            prevItem.Next = nextItem;
+            nextItem.Prev = prevItem;
         }
 
         public void AddRange(IEnumerable<T> ts) {
@@ -558,6 +600,12 @@ namespace TuggingController {
         }
     }
 
+    public struct ExteriorRay {
+        public Ray_v1 Ray { get; set; }
+        public Triangle_v1 Govorner { get; set; }
+        public Triangle_v1 ExcludedTri { get; set; }
+    }
+
     public class DataZone_v1 : ContainerCanvasObject_v1 {
         private List<Entity_v1> _entities = new List<Entity_v1>();
         private List<Triangle_v1> triangles = new List<Triangle_v1>();
@@ -567,7 +615,7 @@ namespace TuggingController {
         private HashSet<Triangle_v1> outerTriangles = new HashSet<Triangle_v1>();
         private List<Edge_v1> convexhullEdges = new List<Edge_v1>();
         private Triangulation triangulation = new Triangulation();
-        private List<Ray_v1> exteriorRays = new List<Ray_v1>();
+        private List<VoronoiRegion_v1> voronoiRegions = new List<VoronoiRegion_v1>();
 
         public Entity_v1 this[int index] {
             get => this._entities[index];
@@ -698,16 +746,28 @@ namespace TuggingController {
         #endregion
 
         private void SetExteriorRays() {
-            this.exteriorRays.Clear();
+            var exteriorRays = new List<ExteriorRay>();
+            this.voronoiRegions.Clear();
             
+            // For Order: CCW
             foreach(var extreme in this.newExtremes) {
                 var edges = this.triangleEdges.Where(edge => edge.HasVertex(extreme.Value)).ToArray();
                 var edgeCnt = edges.Count();
 
                 if (edgeCnt == 2) {
                     this.Logger.Debug($"No splitter for {extreme.Value}.");
+
+                    var prev = extreme.Prev.Value;
+                    var it = extreme.Value;
+                    var next = extreme.Next.Value;
+
+                    exteriorRays.Add(new ExteriorRay() {
+                        ExcludedTri = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it) & tri.IsVertex(next))
+                    });
                 }
                 else if (edgeCnt == 3) {
+                    // Note: this case has a special condition which needs to be handled.
+                    // Angle between ray and each neighbor edge that is less than 90 needs to be restricted.
                     this.Logger.Debug($"One splitter(Extension of edge) for {extreme.Value}.");
 
                     var targetEdge = edges.Where(edge => !this.convexhullEdges.Contains(edge)).ElementAt(0);
@@ -716,8 +776,61 @@ namespace TuggingController {
                     var start = extreme.Value;
                     var end = targetEdge.E0 == start ? targetEdge.E1 : targetEdge.E0;
                     var edgeDirection = start.Point - end.Point;
+                    var rayOfEdgeExtension = Ray_v1.CreateRay(start.Point, edgeDirection);
 
-                    exteriorRays.Add(Ray_v1.CreateRay(start.Point, edgeDirection));
+                    rayOfEdgeExtension.Color = SKColors.Green;
+                    rayOfEdgeExtension.E0 = start;
+
+                    // Compare with Normals
+                    var prev = extreme.Prev.Value;
+                    var it = extreme.Value;
+                    var next = extreme.Next.Value;
+
+                    var dirOfEdgePrevToIt = it.PointVector - prev.PointVector;
+                    var dirOfEdgeItToNext = next.PointVector - it.PointVector;
+                    var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
+                    var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
+                    var rayOfNormalPI = Ray_v1.CreateRay(it.Point, normalOfEdgePI);
+                    var rayOfNoramlIN = Ray_v1.CreateRay(it.Point, normalOfEdgeIN);
+
+                    rayOfNormalPI.E0 = it;
+                    rayOfNoramlIN.E0 = it;
+
+                    rayOfNormalPI.Color = SKColors.PowderBlue;
+                    rayOfNoramlIN.Color = SKColors.PowderBlue;
+
+                    // Recheck condition!
+                    var angleOfEdgeExtensionAndNormalPI = Math.Atan2(
+                        rayOfEdgeExtension.UnitDirection[0] * rayOfNormalPI.UnitDirection[1] - 
+                        rayOfEdgeExtension.UnitDirection[1] * rayOfNormalPI.UnitDirection[0], 
+                        rayOfEdgeExtension.UnitDirection[0] * rayOfNormalPI.UnitDirection[0] + rayOfEdgeExtension.UnitDirection[1] * rayOfNormalPI.UnitDirection[1]
+                    );
+                    var angleOfEdgeExtensionAndNormalIN = Math.Atan2(
+                        rayOfEdgeExtension.UnitDirection[0] * rayOfNoramlIN.UnitDirection[1] - 
+                        rayOfEdgeExtension.UnitDirection[1] * rayOfNoramlIN.UnitDirection[0],
+                        rayOfEdgeExtension.UnitDirection[0] * 
+                        rayOfNoramlIN.UnitDirection[0] + rayOfEdgeExtension.UnitDirection[1] *
+                        rayOfNoramlIN.UnitDirection[1]
+                    );
+
+                    var exteriorRayNormalPI = new ExteriorRay() {
+                        Ray = rayOfNormalPI,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it))
+                    };
+                    var exteriorRayNormalIN = new ExteriorRay() {
+                        Ray = rayOfNoramlIN,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(it) & tri.IsVertex(next))
+                    };
+
+                    if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == -1 & Math.Sign(angleOfEdgeExtensionAndNormalIN) == 1) {
+                        exteriorRays.Add(new ExteriorRay() {
+                            Ray = rayOfEdgeExtension
+                        });
+                    }
+                    else if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == Math.Sign(angleOfEdgeExtensionAndNormalIN)) {
+                        exteriorRays.Add(exteriorRayNormalPI);
+                        exteriorRays.Add(exteriorRayNormalIN);
+                    }
                 }
                 else if (edgeCnt > 3) {
                     this.Logger.Debug($"Two perpendicular splitter for {extreme.Value}.");
@@ -730,12 +843,55 @@ namespace TuggingController {
                     var dirOfEdgeItToNext = next.PointVector - it.PointVector;
                     var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
                     var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
+                    var rayOfNormalPI = Ray_v1.CreateRay(it.Point, normalOfEdgePI);
+                    var rayOfNoramlIN = Ray_v1.CreateRay(it.Point, normalOfEdgeIN);
 
-                    exteriorRays.Add(Ray_v1.CreateRay(it.Point, normalOfEdgePI));
-                    exteriorRays.Add(Ray_v1.CreateRay(it.Point, normalOfEdgeIN));
-                }
+                    rayOfNormalPI.Color = SKColors.PowderBlue;
+                    rayOfNormalPI.E0 = it;
+                    rayOfNoramlIN.Color = SKColors.PowderBlue;
+                    rayOfNoramlIN.E0 = it;
+
+                    exteriorRays.Add(new ExteriorRay() {
+                        Ray = rayOfNormalPI,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it))
+                    });
+                    exteriorRays.Add(new ExteriorRay() {
+                        Ray = rayOfNoramlIN,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(it) & tri.IsVertex(next))
+                    });
+                 }
                 else {
                     throw new Exception("Splitter Exception");
+                }
+            }
+
+            // Generate voronoi regions
+            for (var idx = 0; idx < exteriorRays.Count; idx ++) {
+                Triangle_v1 excludedTri = null;
+                var idx0 = idx;
+                var idx1 = idx + 1 < exteriorRays.Count ? idx + 1 : 0;
+
+                var exRay0 = exteriorRays[idx0];
+                var exRay1 = exteriorRays[idx1];
+
+                if (exRay0.ExcludedTri == null) {
+                    if (exRay1.ExcludedTri != null) {
+                        excludedTri = exRay1.ExcludedTri;
+
+                        idx1 = idx1 + 1 < exteriorRays.Count ? idx1 + 1 : 0;
+                        exRay1 = exteriorRays[idx1];
+
+                        idx++;
+                    }
+
+                    this.voronoiRegions.Add(
+                        new VoronoiRegion_v1() {
+                            Index = this.voronoiRegions.Count,
+                            ExteriorRay0 = exRay0,
+                            ExteriorRay1 = exRay1,
+                            ExcludedTri = excludedTri 
+                        }
+                    );
                 }
             }
         }
@@ -833,7 +989,9 @@ namespace TuggingController {
             this.Children.Clear();
             this.Children.AddRange(this._entities);
             this.Children.AddRange(this.triangles);
-            this.Children.AddRange(this.exteriorRays);
+            this.Children.AddRange(this.voronoiRegions);
+
+            this.Dispatcher.OnCanvasObjectChanged(null);
         }
 
         public void Add(SKPoint point) {
@@ -865,6 +1023,7 @@ namespace TuggingController {
         public SKPaint Paint { get; set; } = new SKPaint() {
             Color = SKColors.Gray,
             StrokeWidth = 1,
+            IsAntialias = true,
         };
 
         protected SKPoint _gP0;
@@ -1003,6 +1162,7 @@ namespace TuggingController {
         private SKPaint rayPaint = new SKPaint() {
             Color = SKColors.Green,
             StrokeWidth = 2,
+            IsAntialias = true,
         };
 
         public SKColor Color {
@@ -1012,10 +1172,15 @@ namespace TuggingController {
         }
 
         public float RayWidth {
+            get => this.rayPaint.StrokeWidth;
             set {
                 this.rayPaint.StrokeWidth = value;
             }
         }
+
+        public CanvasObject_v1 Lock { get; set; } = null;
+
+        public Entity_v1 E0 { get; set; }
 
         public SKPoint Origin {
             get => this.P0;
@@ -1105,6 +1270,34 @@ namespace TuggingController {
             );
         }
 
+        public bool GetLock(CanvasObject_v1 target) {
+            if (this.Lock == null) {
+                this.Lock = target;
+
+                return true;
+            }
+            else if (this.Lock != target) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+
+        public void ReleaseLock() {
+            this.Lock = null;
+        }
+
+        public bool SetRayWidth(CanvasObject_v1 target, float width) {
+            if(this.Lock == target) {
+                this.RayWidth = width;
+
+                return true;
+            }
+
+            return false;
+        }
+
         public static Ray_v1 CreateRay(SKPoint origin, SKPoint direction) {
             return new Ray_v1() {
                 P0 = origin,
@@ -1124,6 +1317,336 @@ namespace TuggingController {
         public Edge_v1 Edge { get; set; }
         public Entity_v1 Extreme { get; set; }
         public bool HasExterior => this.Edge != null | this.Extreme != null;
+    }
+
+    public class VoronoiRegion_v1 : CanvasObject_v1 {
+        private SKPaint fillPaint = new SKPaint {
+            IsAntialias = true,
+            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DarkOliveGreen, 0.3f),
+            Style = SKPaintStyle.Fill
+        };
+
+        private Ray_v1 edge0;
+        private Ray_v1 edge1;
+        private ExteriorRay exteriorRay0;
+        private ExteriorRay exteriorRay1;
+        private CircularList<SKPoint> path;
+        private bool isHovered;
+        private HoverComponent hoverComponent;
+
+        public ExteriorRay ExteriorRay0 {
+            get => this.exteriorRay0;
+            set {
+                this.exteriorRay0 = value;
+                this.edge0 = this.exteriorRay0.Ray;
+
+                this.Children.Clear();
+                this.Children.Add(this.edge0);
+            }
+        }
+        public ExteriorRay ExteriorRay1 {
+            get => this.exteriorRay1;
+            set {
+                this.exteriorRay1 = value;
+                this.edge1 = this.exteriorRay1.Ray;
+
+                this.Children.Clear();
+                this.Children.Add(this.edge1);
+            }
+        }
+
+        public Triangle_v1 ExcludedTri { get; set; }
+
+        public int Index { get; set; } = 0;
+
+        public VoronoiRegion_v1() {
+            this.hoverComponent = new HoverComponent();
+
+            this.hoverComponent.PreventDefault(this.VoronoiRegion_v1_HoverBehavior);
+            this.AddComponent(this.hoverComponent);
+        }
+
+        public override string ToString() {
+            StringBuilder str = new StringBuilder();
+
+            str.Append($"[Voronoi Region] - {this.Index}");
+
+            return str.ToString();
+        }
+
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            if (this.isHovered) {
+                if (this.edge0.GetLock(this)) {
+                    this.edge0.SetRayWidth(this, 4.0f);
+                }
+
+                if (this.edge1.GetLock(this)) {
+                    this.edge1.SetRayWidth(this, 4.0f); 
+                }
+
+                this.Clip(worldCoordinate);
+            }
+            else {
+                if (this.edge0.GetLock(this)) {
+                    this.edge0.SetRayWidth(this, 2.0f);
+                    this.edge0.ReleaseLock();
+                }
+
+                if (this.edge1.GetLock(this)) {
+                    this.edge1.SetRayWidth(this, 2.0f);
+                    this.edge1.ReleaseLock();
+                }
+            }
+
+        }
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            if (!this.isHovered) {
+                return;
+            }
+
+            var path = new SKPath();
+            var nodes = new List<SKPoint>();
+
+            foreach(var node in this.path) {
+                if (this.path.First == node) {
+                    path.MoveTo(worldCoordinate.TransformToDevice(node.Value));
+                }
+                else {
+                    path.LineTo(worldCoordinate.TransformToDevice(node.Value));
+                }
+
+                nodes.Add(worldCoordinate.TransformToDevice(node.Value));
+            }
+
+            var textPaint = new SKPaint() {
+                TextSize = 64.0f,
+                IsAntialias = true,
+                Color = new SKColor(0x42, 0x81, 0xA4),
+                IsStroke = false,
+                TextAlign = SKTextAlign.Center,
+            };
+
+            var pointPaint = new SKPaint() {
+                IsAntialias = true,
+                Color = SKColors.Blue,
+                IsStroke = true,
+                StrokeWidth = 2.0f,
+            };
+
+            path.Close();
+            canvas.DrawPath(path, this.fillPaint);
+            canvas.DrawText(this.Index.ToString(), path.Bounds.MidX, path.Bounds.MidY, textPaint);
+
+            var idx = 0;
+            nodes.ForEach(node => {
+                canvas.DrawCircle(node, 5.0f + idx * 2, pointPaint);
+                idx++;
+            });
+        }
+
+        private CircularList<SKPoint> IteratePath(CircularList<SKPoint> path, SkiaHelper.Line2D targetLine) {
+            var newPath = new CircularList<SKPoint>();
+
+            foreach (var node in path) {
+                var s = node.Value;
+                var e = node.Next.Value;
+
+                var sideOfS = SkiaHelper.GetSide(targetLine, s);
+                var sideOfE = SkiaHelper.GetSide(targetLine, e);
+
+                var l0 = new SkiaHelper.Line2D {
+                    P0 = s,
+                    P1 = e
+                };
+                var result = SkiaHelper.CheckIsIntersected(l0, targetLine);
+                var i = new SKPoint {
+                    X = result[0, 0] * l0.Direction[0] + s.X,
+                    Y = result[0, 0] * l0.Direction[1] + s.Y
+                };
+
+                if (sideOfS >= 0 & sideOfE >= 0) {
+                    // Keep E
+                    newPath.Add(e);
+                }
+                else if (sideOfS >= 0 & sideOfE < 0) {
+                    // Keep I
+                    newPath.Add(i);
+                }
+                else if (sideOfS < 0 & sideOfE >= 0) {
+                    // Keep I and E
+                    newPath.Add(i);
+                    newPath.Add(e);
+                }
+            }
+
+            return newPath;
+        }
+
+        private void Clip(WorldSpaceCoordinate worldCoordinate) {
+            var lt = new SKPoint() {
+                X = worldCoordinate.Window.Left,
+                Y = worldCoordinate.Window.Top
+            };
+            var rt = new SKPoint() {
+                X = worldCoordinate.Window.Right,
+                Y = worldCoordinate.Window.Top
+            };
+            var rb = new SKPoint() {
+                X = worldCoordinate.Window.Right,
+                Y = worldCoordinate.Window.Bottom
+            };
+            var lb = new SKPoint() {
+                X = worldCoordinate.Window.Left,
+                Y = worldCoordinate.Window.Bottom
+            };
+            var left = new SkiaHelper.Line2D { P0 = lt, P1 = lb };
+            var right = new SkiaHelper.Line2D { P0 = rb, P1 = rt };
+            var bottom = new SkiaHelper.Line2D { P0 = lb, P1 = rb };
+            var top = new SkiaHelper.Line2D { P0 = rt, P1 = lt };
+            var cornerSites = new CircularList<SKPoint> {
+                lt, rt, rb, lb
+            };
+            var boxEdges = new CircularList<SkiaHelper.Line2D> {
+                left, right, bottom, top
+            };
+
+            //SKPoint? intersectionOfEdge0 = null;
+            //var innerSiteOfEdge0 = new CircularListNode<SKPoint>();
+            //SKPoint? intersectionOfEdge1 = null;
+            //var innerSiteOfEdge1 = new CircularListNode<SKPoint>();
+
+            //foreach (var node in boxEdges) {
+            //    var result = SkiaHelper.CheckIsIntersected(edge0, node.Value);
+
+            //    if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
+            //        intersectionOfEdge0 = new SKPoint {
+            //            X = result[0, 0] * edge0.Direction[0] + edge0.P0.X,
+            //            Y = result[0, 0] * edge0.Direction[1] + edge0.P0.Y
+            //        };
+
+            //        innerSiteOfEdge0 = cornerSites[cornerSites.IndexOf(node.Value.P1)];
+            //    }
+            //}
+
+            //foreach (var node in boxEdges) {
+            //    var result = SkiaHelper.CheckIsIntersected(edge1, node.Value);
+
+            //    if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
+            //        intersectionOfEdge1 = new SKPoint {
+            //            X = result[0, 0] * edge1.Direction[0] + edge1.P0.X,
+            //            Y = result[0, 0] * edge1.Direction[1] + edge1.P0.Y
+            //        };
+
+            //        innerSiteOfEdge1 = cornerSites[cornerSites.IndexOf(node.Value.P0)];
+            //    }
+            //}
+
+            // Path
+            this.path = new CircularList<SKPoint>();
+
+            // R0
+            //if (intersectionOfEdge0 != null) {
+            //    this.path.Add(intersectionOfEdge0.Value);
+            //}
+            var factor = 10000;
+            var r0 = new SKPoint {
+                X = factor * edge0.Direction[0] + edge0.P0.X,
+                Y = factor * edge0.Direction[1] + edge0.P0.Y,
+            };
+            this.path.Add(r0);
+
+            // P or P0, P1
+            if (edge0.P0 == edge1.P0) {
+                this.path.Add(edge0.P0);
+            }
+            else {
+                this.path.Add(edge0.P0);
+
+                if (this.ExcludedTri != null) {
+                    var vertices = this.ExcludedTri.GetVertices();
+                    var targetVertex = vertices.Where(v => v.Point != edge0.P0 & v.Point != edge1.P0).ElementAt(0);
+
+                    this.path.Add(targetVertex.Point);
+                }
+
+                this.path.Add(edge1.P0);
+            }
+
+            // R1
+            //if (intersectionOfEdge1 != null) {
+            //    this.path.Add(intersectionOfEdge1.Value);
+            //}
+            var r1 = new SKPoint {
+                X = factor * edge1.Direction[0] + edge1.P0.X,
+                Y = factor * edge1.Direction[1] + edge1.P0.Y,
+            };
+            this.path.Add(r1);
+
+            // Inner sites
+            //if (edge0.Direction == edge1.Direction)
+            //var innerSites = cornerSites.Where(
+            //    site => {
+            //        var sideOfE0 = SkiaHelper.GetSide(edge0, site.Value);
+            //        var sideOfE1 = SkiaHelper.GetSide(edge1, site.Value);
+
+            //        return sideOfE0 >= 0 & sideOfE1 <= 0;
+            //    }).ToList();
+            //innerSites = innerSites.OrderByDescending(site => SkiaHelper.GetIncludedAngle(edge1.P1, site.Value, edge1.P0)).ToList();
+
+            //innerSites.ForEach(site => this.path.Add(site.Value));
+
+            // lt -> lb
+            this.path = this.IteratePath(this.path, left);
+            // rt -> rb
+            this.path = this.IteratePath(this.path, right);
+            // lb -> rb
+            this.path = this.IteratePath(this.path, bottom);
+            // lt -> rt
+            this.path = this.IteratePath(this.path, top);
+        }
+
+        public override bool ContainsPoint(SKPoint point) {
+            if (edge0.P0 == edge1.P0) {
+                //this.Logger.Debug("Situation 1: Voronoi Region has same start point");
+
+                var p = point - edge0.P0;
+                var angleOfPToE0 = SkiaHelper.GetIncludedAngle(p, edge0.P1 - edge0.P0);
+                var angleOfPToE1 = SkiaHelper.GetIncludedAngle(p, edge1.P1 - edge0.P0);
+
+                return angleOfPToE0 < 0.0f & angleOfPToE1 > 0.0f;
+            }
+            else {
+                //this.Logger.Debug("Situation 2: Voronoi Region has different start points.");
+
+                var p0 = point - edge0.P0;
+                var angleOfPToE0 = SkiaHelper.GetIncludedAngle(p0, edge0.P1 - edge0.P0);
+                var angleOfPToE = SkiaHelper.GetIncludedAngle(p0, edge1.P0 - edge0.P0);
+
+                var p1 = point - edge1.P0;
+                var angleOfPToE1 = SkiaHelper.GetIncludedAngle(p1, edge1.P1 - edge1.P0);
+
+                var result = (angleOfPToE0 < 0.0f) & (angleOfPToE > 0.0f) & (angleOfPToE1 > 0.0f);
+
+                // More elegant!
+                if (result) {
+                    if (this.ExcludedTri != null) {
+                        result = !this.ExcludedTri.ContainsPoint(point);
+                    }
+                }
+
+                return result;
+            }
+        }
+        private void VoronoiRegion_v1_HoverBehavior(BehaviorArgs args) {
+            var castArgs = args as HoverBehaviorArgs;
+
+            if (castArgs.IsInside) {
+                this.isHovered = true;
+            }
+            else {
+                this.isHovered = false;
+            }
+        }
     }
 
     public partial class Triangle_v1 : CanvasObject_v1 {
@@ -1199,6 +1722,12 @@ namespace TuggingController {
         public Edge_v1[] GetEdges() {
             return new Edge_v1[] {
                 this._edge01, this._edge12, this._edge20
+            };
+        }
+
+        public Entity_v1[] GetVertices() {
+            return new Entity_v1[] {
+                this.P0, this.P1, this.P2
             };
         }
 

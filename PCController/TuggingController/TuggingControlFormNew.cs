@@ -46,6 +46,11 @@ namespace TuggingController {
             //this.Controls.AddRange(new Control[] { this.chartControl });
 
             this.chartControl.CanvasTargetChanged += this.ChartControl_CanvasTargetChanged;
+            this.chartControl.CanvasObjectChanged += this.ChartControl_CanvasObjectChanged;
+        }
+
+        private void ChartControl_CanvasObjectChanged(object sender, EventArgs e) {
+            this.UpdateTreeview();
         }
 
         private void TreeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) {
@@ -58,7 +63,7 @@ namespace TuggingController {
         private void ChartControl_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
             this.statusLabel.Text = e.Target.ToString();
 
-            this.UpdateTreeview();
+            //this.UpdateTreeview();
         }
 
         private void TuggingControlForm_SizeChanged(object sender, EventArgs e) {

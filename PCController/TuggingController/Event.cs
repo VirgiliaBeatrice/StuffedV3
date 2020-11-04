@@ -6,6 +6,7 @@ using System.Linq;
 using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace TuggingController {
     public delegate void EventHandler_v1(Event @event);
@@ -65,6 +66,7 @@ namespace TuggingController {
         public T Root { get; set; }
 
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
+        public event EventHandler<EventArgs> CanvasObjectChanged;
 
         protected NLog.Logger Logger => NLog.LogManager.GetCurrentClassLogger();
 
@@ -90,6 +92,10 @@ namespace TuggingController {
 
         public virtual void OnCanvasTargetChanged(CanvasTargetChangedEventArgs e) {
             this.CanvasTargetChanged?.Invoke(this, e);
+        }
+
+        public virtual void OnCanvasObjectChanged(EventArgs e) {
+            this.CanvasObjectChanged?.Invoke(this, e);
         }
 
         private void DispatchMouseMoveEvent(Event @event) {
