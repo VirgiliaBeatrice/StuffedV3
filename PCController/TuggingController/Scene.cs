@@ -10,15 +10,26 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TuggingController {
-    public class ChartScene {
+
+    public interface IScene {
+        EventDispatcher<ICanvasObject> Dispatcher { get; set; }
+    }
+
+    public class ChartScene : IScene {
         public ICanvasObject Root { get; set; }
+        // TODO: https://stackoverflow.com/questions/943171/expose-and-raise-event-of-a-child-control-in-a-usercontrol-in-c-sharp
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         public event EventHandler<EventArgs> CanvasObjectChanged;
+
+        public EventDispatcher<ICanvasObject> Dispatcher { get; set; }
 
         public WorldSpaceCoordinate WorldSpace { get; set; } = new WorldSpaceCoordinate();
 
         public ChartScene() : base() {
-            this.Root = new RootObject_v1();
+            this.Root = new RootObject_v1(this);
+            this.Dispatcher = new EventDispatcher<ICanvasObject>() {
+                Root = this.Root
+            };
 
             this.Root.Dispatcher.CanvasTargetChanged += this.Dispatcher_CanvasTargetChanged;
             this.Root.Dispatcher.CanvasObjectChanged += this.Dispatcher_CanvasObjectChanged;
@@ -65,13 +76,16 @@ namespace TuggingController {
         private bool isZoom = false;
         private bool isPan = false;
 
-        public RootObject_v1() {
-            this.Dispatcher.Root = this;
+        public RootObject_v1(IScene scene) {
+            // TODO!
+            this.Scene = scene;
 
             this.grid.SetParent(this);
+            this.grid.Scene = this.Scene;
             this.Children.Add(this.grid);
 
             this.dataZone.SetParent(this);
+            this.dataZone.Scene = this.Scene;
             this.Children.Add(this.dataZone);
 
             this.MouseWheel += this.RootObject_v1_MouseWheel;

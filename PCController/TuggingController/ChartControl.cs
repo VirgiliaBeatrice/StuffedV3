@@ -14,14 +14,6 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace TuggingController {
-    [Flags]
-    public enum MouseStates {
-        NONE = 0b_0000_0000,
-        LEFTDOWN = 0b_0000_0001,
-        MOVE = 0b_1000_0000,
-        LEFTDRAGGING = LEFTDOWN | MOVE,
-        MOVEMASK = ~MOVE,
-    }
     public partial class ChartControl : UserControl {
         private SKControl skControl;
         private Timer timer = new Timer();

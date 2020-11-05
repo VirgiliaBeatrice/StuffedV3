@@ -17,7 +17,7 @@ using NLog;
 
 namespace TuggingController {
 
-    public class ConfigurationCanvas {
+    public partial class ConfigControl : UserControl {
         public enum CanvasState {
             Control,
             Edit
@@ -49,8 +49,8 @@ namespace TuggingController {
         public SKMatrix Scale { get; set; }
         public SKMatrix InverseScale { get; set; }
 
-        public ConfigurationCanvas() { }
-        public ConfigurationCanvas(float width, float height) {
+        public ConfigControl() { }
+        public ConfigControl(float width, float height) {
             this.CanvasSize = new SKSize {
                 Width = width,
                 Height = height

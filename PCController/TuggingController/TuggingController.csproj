@@ -132,7 +132,7 @@
     <Compile Include="Scene.cs" />
     <Compile Include="SkiaExtension.cs" />
     <Compile Include="SkiaHelper.cs" />
-    <Compile Include="ConfigurationCanvas.cs">
+    <Compile Include="ConfigControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Triangulation.cs" />

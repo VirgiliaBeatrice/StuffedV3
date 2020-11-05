@@ -32,7 +32,7 @@ using System.Collections;
 namespace TuggingController {
     public partial class Form1 : Form {
         public PointChart Chart;
-        public ConfigurationCanvas ConfigurationCanvas;
+        public ConfigControl ConfigurationCanvas;
         //public RobotConfiguration RobotConfiguration { get; set; }
         public RobotConfigurationSpace RobotConfigurationSpace { get; set; }
         
@@ -88,7 +88,7 @@ namespace TuggingController {
             this.Chart = new PointChart();
             //this.Chart.Entries.CollectionChanged += Entries_CollectionChanged;
 
-            this.ConfigurationCanvas = new ConfigurationCanvas(mid.X, mid.Y);
+            this.ConfigurationCanvas = new ConfigControl(mid.X, mid.Y);
             ConfigurationSpace.Location = new Point(mid.X, 0);
             ConfigurationSpace.Size = new Size(mid.X, mid.Y);
             ConfigurationSpace.PaintSurface += ConfigurationSpace_PaintSurface1;
@@ -97,7 +97,7 @@ namespace TuggingController {
             ConfigurationSpace.MouseUp += ConfigurationSpace_MouseUp;
             //ConfigurationSpace.MouseHover += (sender, e) => ConfigurationSpace.Focus();
 
-            this.comboBox1.DataSource = Enum.GetValues(typeof(ConfigurationCanvas.CanvasState));
+            this.comboBox1.DataSource = Enum.GetValues(typeof(ConfigControl.CanvasState));
             this.comboBox1.SelectedIndexChanged += this.ConfigurationSpace_ChangeState;
 
             //this.RobotConfiguration = new RobotConfiguration();
@@ -135,14 +135,14 @@ namespace TuggingController {
                     }
                     return true;
                 case Keys.E:
-                    this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Edit;
+                    this.comboBox1.SelectedItem = ConfigControl.CanvasState.Edit;
                     return true;
                 case Keys.F:
                     this.Chart.forceUpdateScale = true;
                     this.TuggingController.Invalidate();
                     return true;
                 case Keys.Escape:
-                    this.comboBox1.SelectedItem = ConfigurationCanvas.CanvasState.Control;
+                    this.comboBox1.SelectedItem = ConfigControl.CanvasState.Control;
                     return true;
                 case Keys.C:
                     this.RunConvexHullTask();
@@ -156,7 +156,7 @@ namespace TuggingController {
         }
 
         private void ConfigurationSpace_ChangeState(object sender, EventArgs e) {
-            this.ConfigurationCanvas.State = (ConfigurationCanvas.CanvasState) this.comboBox1.SelectedItem;
+            this.ConfigurationCanvas.State = (ConfigControl.CanvasState) this.comboBox1.SelectedItem;
 
             this.ConfigurationSpace.Invalidate();
         }

@@ -78,7 +78,7 @@ namespace TuggingController {
 
     public interface ICanvasObject : ICanvasObjectNode, ICanvasObjectEvents {
         EventDispatcher<ICanvasObject> Dispatcher { get; }
-
+        IScene Scene { get; set; }
         bool IsSelected { get; set; }
 
         SKRect BoarderBox { get; }
@@ -189,7 +189,7 @@ namespace TuggingController {
         protected event EventHandler ScaleChanged;
         protected SKRect _pBoarderBox = new SKRect();
 
-        public EventDispatcher<ICanvasObject> Dispatcher => EventDispatcher<ICanvasObject>.GetSingleton();
+        public EventDispatcher<ICanvasObject> Dispatcher => this.Scene.Dispatcher;
 
         public Logger Logger { get; protected set; } = LogManager.GetCurrentClassLogger();
         public SKRect BoarderBox {
@@ -214,6 +214,7 @@ namespace TuggingController {
 
         protected PaintComponent PaintComponent { get; set; } = new PaintComponent();
         public bool IsSelected { get; set; } = false;
+        public IScene Scene { get; set; }
 
         /// <summary>
         /// Constructor
@@ -284,6 +285,7 @@ namespace TuggingController {
 
         internal void SetParent(CanvasObject_v1 parent) {
             this.Transform.Parent = parent._transform;
+            this.Scene = parent.Scene;
         }
 
         public virtual void Draw(SKCanvas canvas) {
@@ -906,15 +908,15 @@ namespace TuggingController {
 
                 triangle.Edges.Add(new Edge_v1() {
                     E0 = this[0],
-                    E1 = this[1]
+                    E1 = this[1],
                 });
                 triangle.Edges.Add(new Edge_v1() {
                     E0 = this[1],
-                    E1 = this[2]
+                    E1 = this[2],
                 });
                 triangle.Edges.Add(new Edge_v1() {
                     E0 = this[2],
-                    E1 = this[0]
+                    E1 = this[0],
                 });
                 this.triangles.Clear();
                 this.triangles.Add(triangle);
@@ -988,8 +990,11 @@ namespace TuggingController {
             }
 
             this.Children.Clear();
+            this._entities.ForEach(e => e.SetParent(this));
             this.Children.AddRange(this._entities);
+            this.triangles.ForEach(tri => tri.SetParent(this));
             this.Children.AddRange(this.triangles);
+            this.voronoiRegions.ForEach(v => v.SetParent(this));
             this.Children.AddRange(this.voronoiRegions);
 
             this.Dispatcher.OnCanvasObjectChanged(null);
@@ -1342,6 +1347,7 @@ namespace TuggingController {
                 this.edge0 = this.exteriorRay0.Ray;
 
                 this.Children.Clear();
+                this.edge0.SetParent(this);
                 this.Children.Add(this.edge0);
             }
         }
@@ -1352,6 +1358,7 @@ namespace TuggingController {
                 this.edge1 = this.exteriorRay1.Ray;
 
                 this.Children.Clear();
+                this.edge1.SetParent(this);
                 this.Children.Add(this.edge1);
             }
         }
@@ -1436,13 +1443,13 @@ namespace TuggingController {
 
             path.Close();
             canvas.DrawPath(path, this.fillPaint);
-            canvas.DrawText(this.Index.ToString(), path.Bounds.MidX, path.Bounds.MidY, textPaint);
+            //canvas.DrawText(this.Index.ToString(), path.Bounds.MidX, path.Bounds.MidY, textPaint);
 
-            var idx = 0;
-            nodes.ForEach(node => {
-                canvas.DrawCircle(node, 5.0f + idx * 4, pointPaint);
-                idx++;
-            });
+            //var idx = 0;
+            //nodes.ForEach(node => {
+            //    canvas.DrawCircle(node, 5.0f + idx * 4, pointPaint);
+            //    idx++;
+            //});
         }
 
         private CircularList<SKPoint> IteratePath(CircularList<SKPoint> path, SkiaHelper.Line2D targetLine) {
@@ -1518,12 +1525,10 @@ namespace TuggingController {
                 var result = SkiaHelper.CheckIsIntersected(edge0, node.Value);
 
                 if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
-                    intersectionsOfEdge0.Add(
-                        result[0, 0],
-                        new SKPoint {
-                            X = result[0, 0] * edge0.Direction[0] + edge0.P0.X,
-                            Y = result[0, 0] * edge0.Direction[1] + edge0.P0.Y
-                    });
+                    intersectionsOfEdge0[result[0, 0]] = new SKPoint {
+                        X = result[0, 0] * edge0.Direction[0] + edge0.P0.X,
+                        Y = result[0, 0] * edge0.Direction[1] + edge0.P0.Y
+                    };
                 }
             }
 
@@ -1531,12 +1536,10 @@ namespace TuggingController {
                 var result = SkiaHelper.CheckIsIntersected(edge1, node.Value);
 
                 if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
-                    intersectionsOfEdge1.Add(
-                        result[0, 0],
-                        new SKPoint {
-                            X = result[0, 0] * edge1.Direction[0] + edge1.P0.X,
-                            Y = result[0, 0] * edge1.Direction[1] + edge1.P0.Y
-                    });
+                    intersectionsOfEdge1[result[0, 0]] = new SKPoint {
+                        X = result[0, 0] * edge1.Direction[0] + edge1.P0.X,
+                        Y = result[0, 0] * edge1.Direction[1] + edge1.P0.Y
+                    };
                 }
             }
 
@@ -1589,53 +1592,6 @@ namespace TuggingController {
 
                 this.path.Insert(targetIdx, targetVertex.Point);
             }
-
-            //var factor = 10000;
-            //var r0 = new SKPoint {
-            //    X = factor * edge0.Direction[0] + edge0.P0.X,
-            //    Y = factor * edge0.Direction[1] + edge0.P0.Y,
-            //};
-            //this.path.Add(r0);
-
-            //// P or P0, P1
-            //if (edge0.P0 == edge1.P0) {
-            //    this.path.Add(edge0.P0);
-            //}
-            //else {
-            //    this.path.Add(edge0.P0);
-
-            //    if (this.ExcludedTri != null) {
-            //        var vertices = this.ExcludedTri.GetVertices();
-            //        var targetVertex = vertices.Where(v => v.Point != edge0.P0 & v.Point != edge1.P0).ElementAt(0);
-
-            //        this.path.Add(targetVertex.Point);
-            //    }
-
-            //    this.path.Add(edge1.P0);
-            //}
-
-            //// R1
-            ////if (intersectionOfEdge1 != null) {
-            ////    this.path.Add(intersectionOfEdge1.Value);
-            ////}
-            //var r1 = new SKPoint {
-            //    X = factor * edge1.Direction[0] + edge1.P0.X,
-            //    Y = factor * edge1.Direction[1] + edge1.P0.Y,
-            //};
-            //this.path.Add(r1);
-
-            //// Inner sites
-            ////if (edge0.Direction == edge1.Direction)
-            ////var innerSites = cornerSites.Where(
-            ////    site => {
-            ////        var sideOfE0 = SkiaHelper.GetSide(edge0, site.Value);
-            ////        var sideOfE1 = SkiaHelper.GetSide(edge1, site.Value);
-
-            ////        return sideOfE0 >= 0 & sideOfE1 <= 0;
-            ////    }).ToList();
-            ////innerSites = innerSites.OrderByDescending(site => SkiaHelper.GetIncludedAngle(edge1.P1, site.Value, edge1.P0)).ToList();
-
-            ////innerSites.ForEach(site => this.path.Add(site.Value));
 
             // lt -> lb
             this.path = this.IteratePath(this.path, left);
@@ -1810,6 +1766,10 @@ namespace TuggingController {
             this._edge12 = this.Edges[1];
             this._edge20 = this.Edges[2];
 
+            var edgeCollection = new Line_v1[] {
+                this._edge01, this._edge12, this._edge20
+            };
+
             if (this.isHovered) {
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.8f);
             } else {
@@ -1817,10 +1777,10 @@ namespace TuggingController {
             }
 
             this.Children.Clear();
+            this.Exterior.Rays.ForEach(r => r.SetParent(this));
             this.Children.AddRange(this.Exterior.Rays);
-            this.Children.AddRange(new Line_v1[] {
-                this._edge01, this._edge12, this._edge20
-            });
+            edgeCollection.ForEach(e => e.SetParent(this));
+            this.Children.AddRange(edgeCollection);
 
             this.UpdateSimplex();
         }
