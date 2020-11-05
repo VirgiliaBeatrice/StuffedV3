@@ -5,6 +5,7 @@ using Reparameterization;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -1439,7 +1440,7 @@ namespace TuggingController {
 
             var idx = 0;
             nodes.ForEach(node => {
-                canvas.DrawCircle(node, 5.0f + idx * 2, pointPaint);
+                canvas.DrawCircle(node, 5.0f + idx * 4, pointPaint);
                 idx++;
             });
         }
@@ -1468,7 +1469,7 @@ namespace TuggingController {
                     // Keep E
                     newPath.Add(e);
                 }
-                else if (sideOfS >= 0 & sideOfE < 0) {
+                else if (sideOfS > 0 & sideOfE < 0) {
                     // Keep I
                     newPath.Add(i);
                 }
@@ -1510,90 +1511,131 @@ namespace TuggingController {
                 left, right, bottom, top
             };
 
-            //SKPoint? intersectionOfEdge0 = null;
-            //var innerSiteOfEdge0 = new CircularListNode<SKPoint>();
-            //SKPoint? intersectionOfEdge1 = null;
-            //var innerSiteOfEdge1 = new CircularListNode<SKPoint>();
+            var intersectionsOfEdge0 = new SortedDictionary<float, SKPoint>();
+            var intersectionsOfEdge1 = new SortedDictionary<float, SKPoint>();
 
-            //foreach (var node in boxEdges) {
-            //    var result = SkiaHelper.CheckIsIntersected(edge0, node.Value);
+            foreach (var node in boxEdges) {
+                var result = SkiaHelper.CheckIsIntersected(edge0, node.Value);
 
-            //    if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
-            //        intersectionOfEdge0 = new SKPoint {
-            //            X = result[0, 0] * edge0.Direction[0] + edge0.P0.X,
-            //            Y = result[0, 0] * edge0.Direction[1] + edge0.P0.Y
-            //        };
+                if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
+                    intersectionsOfEdge0.Add(
+                        result[0, 0],
+                        new SKPoint {
+                            X = result[0, 0] * edge0.Direction[0] + edge0.P0.X,
+                            Y = result[0, 0] * edge0.Direction[1] + edge0.P0.Y
+                    });
+                }
+            }
 
-            //        innerSiteOfEdge0 = cornerSites[cornerSites.IndexOf(node.Value.P1)];
-            //    }
-            //}
+            foreach (var node in boxEdges) {
+                var result = SkiaHelper.CheckIsIntersected(edge1, node.Value);
 
-            //foreach (var node in boxEdges) {
-            //    var result = SkiaHelper.CheckIsIntersected(edge1, node.Value);
-
-            //    if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
-            //        intersectionOfEdge1 = new SKPoint {
-            //            X = result[0, 0] * edge1.Direction[0] + edge1.P0.X,
-            //            Y = result[0, 0] * edge1.Direction[1] + edge1.P0.Y
-            //        };
-
-            //        innerSiteOfEdge1 = cornerSites[cornerSites.IndexOf(node.Value.P0)];
-            //    }
-            //}
+                if (result[0, 0] >= 0.0f & result[1, 0] <= 1.0f & result[1, 0] >= 0.0f) {
+                    intersectionsOfEdge1.Add(
+                        result[0, 0],
+                        new SKPoint {
+                            X = result[0, 0] * edge1.Direction[0] + edge1.P0.X,
+                            Y = result[0, 0] * edge1.Direction[1] + edge1.P0.Y
+                    });
+                }
+            }
 
             // Path
             this.path = new CircularList<SKPoint>();
 
-            // R0
-            //if (intersectionOfEdge0 != null) {
-            //    this.path.Add(intersectionOfEdge0.Value);
-            //}
-            var factor = 10000;
-            var r0 = new SKPoint {
-                X = factor * edge0.Direction[0] + edge0.P0.X,
-                Y = factor * edge0.Direction[1] + edge0.P0.Y,
-            };
-            this.path.Add(r0);
+            // Intersections that edge1 intersects with window box. (Reverse)
+            this.path.AddRange(intersectionsOfEdge1.Values.ToArray().Reverse());
 
             // P or P0, P1
             if (edge0.P0 == edge1.P0) {
                 this.path.Add(edge0.P0);
             }
             else {
-                this.path.Add(edge0.P0);
-
-                if (this.ExcludedTri != null) {
-                    var vertices = this.ExcludedTri.GetVertices();
-                    var targetVertex = vertices.Where(v => v.Point != edge0.P0 & v.Point != edge1.P0).ElementAt(0);
-
-                    this.path.Add(targetVertex.Point);
-                }
-
                 this.path.Add(edge1.P0);
+                this.path.Add(edge0.P0);
             }
 
-            // R1
-            //if (intersectionOfEdge1 != null) {
-            //    this.path.Add(intersectionOfEdge1.Value);
-            //}
-            var r1 = new SKPoint {
-                X = factor * edge1.Direction[0] + edge1.P0.X,
-                Y = factor * edge1.Direction[1] + edge1.P0.Y,
-            };
-            this.path.Add(r1);
+            // Intersections that edge0 intersects with window box.
+            this.path.AddRange(intersectionsOfEdge0.Values.ToArray());
 
             // Inner sites
-            //if (edge0.Direction == edge1.Direction)
-            //var innerSites = cornerSites.Where(
-            //    site => {
-            //        var sideOfE0 = SkiaHelper.GetSide(edge0, site.Value);
-            //        var sideOfE1 = SkiaHelper.GetSide(edge1, site.Value);
+            var innerSites = cornerSites.Where(
+                site => {
+                    var sideOfE0 = SkiaHelper.GetSide(edge0, site.Value);
+                    var sideOfE1 = SkiaHelper.GetSide(edge1, site.Value);
 
-            //        return sideOfE0 >= 0 & sideOfE1 <= 0;
-            //    }).ToList();
-            //innerSites = innerSites.OrderByDescending(site => SkiaHelper.GetIncludedAngle(edge1.P1, site.Value, edge1.P0)).ToList();
+                    return sideOfE0 >= 0 & sideOfE1 <= 0;
+                }).ToList().Select(e => e.Value).ToList();
 
-            //innerSites.ForEach(site => this.path.Add(site.Value));
+            innerSites.ForEach(site => this.path.Add(site));
+
+            var centroid = new SKPoint {
+                X = this.path.Select(node => node.Value.X).Sum() / this.path.Count(),
+                Y = this.path.Select(node => node.Value.Y).Sum() / this.path.Count()
+            };
+
+            this.path = new CircularList<SKPoint>(this.path.OrderBy(
+                node => SkiaHelper.GetIncludedAngle(
+                    centroid + new SKPoint(1.0f, 0.0f),
+                    node.Value,
+                    centroid)
+                ).Select(node => node.Value));
+
+            // Exclude triangle's vertex
+            if (this.ExcludedTri != null) {
+                var vertices = this.ExcludedTri.GetVertices();
+                var targetVertex = vertices.Where(v => v.Point != edge0.P0 & v.Point != edge1.P0).ElementAt(0);
+                var targetIdx = this.path.IndexOf(edge0.P0);
+
+                this.path.Insert(targetIdx, targetVertex.Point);
+            }
+
+            //var factor = 10000;
+            //var r0 = new SKPoint {
+            //    X = factor * edge0.Direction[0] + edge0.P0.X,
+            //    Y = factor * edge0.Direction[1] + edge0.P0.Y,
+            //};
+            //this.path.Add(r0);
+
+            //// P or P0, P1
+            //if (edge0.P0 == edge1.P0) {
+            //    this.path.Add(edge0.P0);
+            //}
+            //else {
+            //    this.path.Add(edge0.P0);
+
+            //    if (this.ExcludedTri != null) {
+            //        var vertices = this.ExcludedTri.GetVertices();
+            //        var targetVertex = vertices.Where(v => v.Point != edge0.P0 & v.Point != edge1.P0).ElementAt(0);
+
+            //        this.path.Add(targetVertex.Point);
+            //    }
+
+            //    this.path.Add(edge1.P0);
+            //}
+
+            //// R1
+            ////if (intersectionOfEdge1 != null) {
+            ////    this.path.Add(intersectionOfEdge1.Value);
+            ////}
+            //var r1 = new SKPoint {
+            //    X = factor * edge1.Direction[0] + edge1.P0.X,
+            //    Y = factor * edge1.Direction[1] + edge1.P0.Y,
+            //};
+            //this.path.Add(r1);
+
+            //// Inner sites
+            ////if (edge0.Direction == edge1.Direction)
+            ////var innerSites = cornerSites.Where(
+            ////    site => {
+            ////        var sideOfE0 = SkiaHelper.GetSide(edge0, site.Value);
+            ////        var sideOfE1 = SkiaHelper.GetSide(edge1, site.Value);
+
+            ////        return sideOfE0 >= 0 & sideOfE1 <= 0;
+            ////    }).ToList();
+            ////innerSites = innerSites.OrderByDescending(site => SkiaHelper.GetIncludedAngle(edge1.P1, site.Value, edge1.P0)).ToList();
+
+            ////innerSites.ForEach(site => this.path.Add(site.Value));
 
             // lt -> lb
             this.path = this.IteratePath(this.path, left);
