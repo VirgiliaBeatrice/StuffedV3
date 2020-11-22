@@ -100,6 +100,7 @@ namespace TuggingController {
 
     public interface ICanvasObjectNode {
         List<ICanvasObject> Children { get; set; }
+        bool IsNodeVisible { get; set; }
         //List<TreeNode> TreeNodeChildren { get; }
         bool ContainsPoint(SKPoint point);
         TreeNode[] GetChildrenTreeNodes();
@@ -205,7 +206,6 @@ namespace TuggingController {
         protected bool _isDebug = true;
         protected Transform _transform = new Transform();
         //protected float _scale = 1.0f;
-        protected event EventHandler ScaleChanged;
         protected SKRect _pBoarderBox = new SKRect();
 
         public EventDispatcher<ICanvasObject> Dispatcher => this.Scene.Dispatcher;
@@ -233,6 +233,7 @@ namespace TuggingController {
 
         protected PaintComponent PaintComponent { get; set; } = new PaintComponent();
         public bool IsSelected { get; set; } = false;
+        public bool IsNodeVisible { get; set; } = true;
 
         private IScene scene;
         public IScene Scene {
@@ -259,11 +260,7 @@ namespace TuggingController {
             //this.MouseEnter += OnMouseEnter;
             //this.MouseLeave += OnMouseLeave;
             //this.MouseMove += OnMouseMove;
-
-            this.ScaleChanged += OnScaleChanged;
         }
-
-        protected virtual void OnScaleChanged(object sender, EventArgs e) { }
 
         public virtual SKSize GetSize() {
             return this.BoarderBox.Size;
@@ -384,13 +381,16 @@ namespace TuggingController {
             var childrenNodes = new List<TreeNode>();
 
             foreach(var child in this.Children) {
-                childrenNodes.Add(new TreeNode(child.ToString(), child.GetChildrenTreeNodes()) { Tag = child });
+                if (child.IsNodeVisible) {
+                    childrenNodes.Add(new TreeNode(child.ToString(),    child.GetChildrenTreeNodes()) { Tag = child });
+                }
             }
             return childrenNodes.ToArray();
         }
     }
 
     public abstract class ContainerCanvasObject_v1 : CanvasObject_v1 {
+        public new bool IsNodeVisible { get; set; } = false;
         public override void Draw(SKCanvas canvas) {
             // Redraw
             // Invalidate() first, then DrawThis() and Draw() of all children.
@@ -1961,8 +1961,12 @@ namespace TuggingController {
         private IEnumerator<Action<SKCanvas>> addToPhaseItor;
 
         public LineSegmentObject_v1() : base() {
-            this.P0 = new PointObject_v1();
-            this.P1 = new PointObject_v1();
+            this.P0 = new PointObject_v1() {
+                IsNodeVisible = false,
+            };
+            this.P1 = new PointObject_v1() {
+                IsNodeVisible = false,
+            };
 
             this.P0.SetParent(this);
             this.P1.SetParent(this);

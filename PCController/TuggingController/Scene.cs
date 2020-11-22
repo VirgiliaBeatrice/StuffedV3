@@ -77,8 +77,8 @@ namespace TuggingController {
 
         private SKPoint anchor;
 
-        private Grid_v2 grid = new Grid_v2();
-        private DataZone_v1 dataZone = new DataZone_v1();
+        private Grid_v2 grid = new Grid_v2() { IsNodeVisible = false };
+        private DataZone_v1 dataZone = new DataZone_v1() { IsNodeVisible = false };
         private float zoomFactor = 1.5f;
         private bool isZoom = false;
         private bool isPan = false;
@@ -164,8 +164,6 @@ namespace TuggingController {
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
-            
-
             if (this.isZoom) {
                 SKMatrix scale2 = SKMatrix.MakeScale(this.scale, this.scale);
 
@@ -251,7 +249,8 @@ namespace TuggingController {
             foreach (var x in gridXCoordinates) {
                 var vLine = new Line_v1() {
                     P0 = new SKPoint(x, this.window.Bottom),
-                    P1 = new SKPoint(x, this.window.Top)
+                    P1 = new SKPoint(x, this.window.Top),
+                    IsNodeVisible = false,
                 };
 
                 if (x == 0) {
@@ -266,7 +265,8 @@ namespace TuggingController {
             foreach (var y in gridYCoordinates) {
                 var hLine = new Line_v1() {
                     P0 = new SKPoint(this.window.Left, y),
-                    P1 = new SKPoint(this.window.Right, y)
+                    P1 = new SKPoint(this.window.Right, y),
+                    IsNodeVisible = false,
                 };
 
                 if (y == 0) {
