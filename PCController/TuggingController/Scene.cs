@@ -188,7 +188,7 @@ namespace TuggingController {
             }
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) { }
+        protected override void DrawThis(SKCanvas canvas) { }
 
         public override bool ContainsPoint(SKPoint point) {
             return true;
@@ -197,6 +197,7 @@ namespace TuggingController {
 
     public class Grid_v2 : CanvasObject_v1 {
         private SKRect window;
+        private SKRect gWindow;
 
         private List<Line_v1> horizontalLines = new List<Line_v1>();
         private List<Line_v1> verticalLines = new List<Line_v1>();
@@ -279,18 +280,14 @@ namespace TuggingController {
             }
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
-            var screenRect = worldCoordinate.TransformToDeviceRect(this.window);
-
-            canvas.DrawRect(screenRect, this.boarderPaint);
-        }
-
-        protected override void Invalidate() {
-            this.CalculateGridInWindow();
+        protected override void DrawThis(SKCanvas canvas) {
+            canvas.DrawRect(this.gWindow, this.boarderPaint);
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
             this.window = worldCoordinate.Window;
+            this.gWindow = worldCoordinate.TransformToDeviceRect(this.window);
+
             this.CalculateGridInWindow();
         }
 

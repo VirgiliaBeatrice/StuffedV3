@@ -82,20 +82,17 @@ namespace TuggingController {
         bool IsSelected { get; set; }
 
         SKRect BoarderBox { get; }
-        //SKSize Size { get; set; }
-        //float Scale { get; set; }
         Transform Transform { get; set; }
         SKPoint Location { get; set; }
         SKPoint GlobalLocation { get; }
-        //List<ICanvasObject> Children { get; set; }
         List<IComponent> Components { get; set; }
-        void Draw(SKCanvas canvas);
+        //void Draw(SKCanvas canvas);
         void Draw(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate);
         BehaviorResult Execute(BehaviorArgs e, string tag);
         void AddComponent(IComponent component);
         void AddComponents(IEnumerable<IComponent> components);
         void SetBoarderBoxFromParent(SKRect pBoarderBox);
-        SKSize GetSize();
+        //SKSize GetSize();
     }
 
     public interface ICanvasObjectNode {
@@ -262,9 +259,9 @@ namespace TuggingController {
             //this.MouseMove += OnMouseMove;
         }
 
-        public virtual SKSize GetSize() {
-            return this.BoarderBox.Size;
-        }
+        //public virtual SKSize GetSize() {
+        //    return this.BoarderBox.Size;
+        //}
 
         public void SetBoarderBoxFromParent(SKRect pBoarderBox) {
             this._pBoarderBox = pBoarderBox;
@@ -279,11 +276,6 @@ namespace TuggingController {
         /// This method is called before draw anything on the canvas,
         /// and returns a global position for drawing.
         /// </summary>
-        [Obsolete("This method is obsolete.", false)]
-        protected virtual void Invalidate() {
-            throw new NotImplementedException();
-        }
-
         protected virtual void Invalidate(WorldSpaceCoordinate worldCoordinate) {
             throw new NotImplementedException();
         }
@@ -294,12 +286,7 @@ namespace TuggingController {
         /// of itself need to be drawed.
         /// </summary>
         /// <param name="canvas">Target Canvas</param>
-        [Obsolete("This method is obsolete.", false)]
         protected virtual void DrawThis(SKCanvas canvas) {
-            throw new NotImplementedException();
-        }
-
-        protected virtual void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
             throw new NotImplementedException();
         }
 
@@ -313,16 +300,16 @@ namespace TuggingController {
             this.Scene = parent.Scene;
         }
 
-        public virtual void Draw(SKCanvas canvas) {
-            // Redraw
-            // Invalidate() first, then DrawThis() and Draw() of all children.
-            this.Invalidate();
-            this.DrawThis(canvas);
+        //public virtual void Draw(SKCanvas canvas) {
+        //    // Redraw
+        //    // Invalidate() first, then DrawThis() and Draw() of all children.
+        //    this.Invalidate();
+        //    this.DrawThis(canvas);
 
-            foreach(var child in this.Children) {
-                child.Draw(canvas);
-            }
-        }
+        //    foreach(var child in this.Children) {
+        //        child.Draw(canvas);
+        //    }
+        //}
 
         protected virtual BehaviorResult ExecuteThis(BehaviorArgs e, string tag = "") { return new BehaviorResult(); }
 
@@ -370,7 +357,7 @@ namespace TuggingController {
             // Redraw
             // Invalidate() first, then DrawThis() and Draw() of all children.
             this.Invalidate(worldCoordinate);
-            this.DrawThis(canvas, worldCoordinate);
+            this.DrawThis(canvas);
 
             foreach (var child in this.Children) {
                 child.Draw(canvas, worldCoordinate);
@@ -391,14 +378,14 @@ namespace TuggingController {
 
     public abstract class ContainerCanvasObject_v1 : CanvasObject_v1 {
         public new bool IsNodeVisible { get; set; } = false;
-        public override void Draw(SKCanvas canvas) {
-            // Redraw
-            // Invalidate() first, then DrawThis() and Draw() of all children.
+        //public override void Draw(SKCanvas canvas) {
+        //    // Redraw
+        //    // Invalidate() first, then DrawThis() and Draw() of all children.
 
-            foreach (var child in this.Children) {
-                child.Draw(canvas);
-            }
-        }
+        //    foreach (var child in this.Children) {
+        //        child.Draw(canvas);
+        //    }
+        //}
 
         public override bool ContainsPoint(SKPoint point) {
             return true;
@@ -406,7 +393,7 @@ namespace TuggingController {
     }
 
     public partial class Entity_v1 : CanvasObject_v1 {
-        private DragAndDropComponent _dragAndDropComponent;
+        private DragAndDropComponent dragAndDropComponent;
         private SelectableComponent selectableComponent;
         private SKPoint _gLocation;
         private float _radius = 5.0f;
@@ -414,12 +401,12 @@ namespace TuggingController {
 
         public int Index { get; set; }
 
-        private SKPaint _fillPaint = new SKPaint {
+        private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
             Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
             Style = SKPaintStyle.Fill
         };
-        private SKPaint _strokePaint = new SKPaint {
+        private SKPaint strokePaint = new SKPaint {
             IsAntialias = true,
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke,
@@ -440,11 +427,11 @@ namespace TuggingController {
         }
 
         public Entity_v1() : base() {
-            this._dragAndDropComponent = new DragAndDropComponent();
+            this.dragAndDropComponent = new DragAndDropComponent();
             this.selectableComponent = new SelectableComponent();
 
             this.AddComponents(new IComponent[] {
-                this._dragAndDropComponent,
+                this.dragAndDropComponent,
                 this.selectableComponent,
             });
         }
@@ -454,15 +441,6 @@ namespace TuggingController {
 
             str.Append($"[Entity {this.Index}] - {this.Point}");
             return str.ToString();
-        }
-
-        protected override void DrawThis(SKCanvas canvas) {
-            canvas.DrawCircle(this._gLocation, this._radius, this._fillPaint);
-            canvas.DrawCircle(this._gLocation, this._radius, this._strokePaint);
-        }
-
-        protected override void Invalidate() {
-            this._gLocation = this._transform.MapPoint(this.Location);
         }
 
         public override bool ContainsPoint(SKPoint point) {
@@ -475,15 +453,15 @@ namespace TuggingController {
             
             if (this.IsSelected) {
                 this._gRadius += 2.0f;
-                this._fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
+                this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
             } else {
-                this._fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
+                this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
             }
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
-            canvas.DrawCircle(this._gLocation, this._gRadius, this._fillPaint);
-            canvas.DrawCircle(this._gLocation, this._gRadius, this._strokePaint);
+        protected override void DrawThis(SKCanvas canvas) {
+            canvas.DrawCircle(this._gLocation, this._gRadius, this.fillPaint);
+            canvas.DrawCircle(this._gLocation, this._gRadius, this.strokePaint);
         }
     }
 
@@ -1048,7 +1026,7 @@ namespace TuggingController {
 
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) { }
+        protected override void DrawThis(SKCanvas canvas) { }
 
         //protected override void ExecuteThis(BehaviorArgs e, string tag = "") { }
     }
@@ -1082,27 +1060,6 @@ namespace TuggingController {
 
         protected override void DrawThis(SKCanvas canvas) {
             if (this._isDebug) {
-                canvas.DrawCircle(
-                    this._gP0,
-                    3.0f,
-                    new SKPaint() { Color = SKColors.Brown }
-                );
-                canvas.DrawCircle(
-                    this._gP1,
-                    3.0f,
-                    new SKPaint() { Color = SKColors.DarkOliveGreen }
-                );
-            }
-
-            canvas.DrawLine(
-                this._gP0,
-                this._gP1,
-                this.Paint
-            );
-        }
-
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
-            if (this._isDebug) {
                 VertexPaint.Color = SKColors.Red;
 
                 canvas.DrawCircle(
@@ -1125,11 +1082,6 @@ namespace TuggingController {
                 this._gP1,
                 this.Paint
             );
-        }
-
-        protected override void Invalidate() {
-            this._gP0 = this._transform.MapPoint(this.P0);
-            this._gP1 = this._transform.MapPoint(this.P1);
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
@@ -1296,7 +1248,7 @@ namespace TuggingController {
             this.ClipRay(worldCoordinate);
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+        protected override void DrawThis(SKCanvas canvas) {
             canvas.DrawLine(
                 this._gP0,
                 this._gP1,
@@ -1359,12 +1311,13 @@ namespace TuggingController {
             Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DarkOliveGreen, 0.3f),
             Style = SKPaintStyle.Fill
         };
+        private CircularList<SKPoint> path = new CircularList<SKPoint>();
+        private CircularList<SKPoint> gPath = new CircularList<SKPoint>();
 
         private Ray_v1 edge0;
         private Ray_v1 edge1;
         private ExteriorRay exteriorRay0;
         private ExteriorRay exteriorRay1;
-        private CircularList<SKPoint> path;
         private bool isHovered;
         private HoverComponent hoverComponent;
 
@@ -1411,6 +1364,12 @@ namespace TuggingController {
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this.gPath.Clear();
+
+            foreach (var node in this.path) {
+                this.gPath.Add(worldCoordinate.TransformToDevice(node.Value));
+            }
+
             if (this.isHovered) {
                 if (this.edge0.GetLock(this)) {
                     this.edge0.SetRayWidth(this, 4.0f);
@@ -1435,7 +1394,7 @@ namespace TuggingController {
             }
 
         }
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+        protected override void DrawThis(SKCanvas canvas) {
             if (!this.isHovered) {
                 return;
             }
@@ -1443,15 +1402,15 @@ namespace TuggingController {
             var path = new SKPath();
             var nodes = new List<SKPoint>();
 
-            foreach(var node in this.path) {
-                if (this.path.First == node) {
-                    path.MoveTo(worldCoordinate.TransformToDevice(node.Value));
+            foreach(var node in this.gPath) {
+                if (this.gPath.First == node) {
+                    path.MoveTo(node.Value);
                 }
                 else {
-                    path.LineTo(worldCoordinate.TransformToDevice(node.Value));
+                    path.LineTo(node.Value);
                 }
 
-                nodes.Add(worldCoordinate.TransformToDevice(node.Value));
+                nodes.Add(node.Value);
             }
 
             var textPaint = new SKPaint() {
@@ -1572,22 +1531,22 @@ namespace TuggingController {
             }
 
             // Path
-            this.path = new CircularList<SKPoint>();
+            var path = new CircularList<SKPoint>();
 
             // Intersections that edge1 intersects with window box. (Reverse)
-            this.path.AddRange(intersectionsOfEdge1.Values.ToArray().Reverse());
+            path.AddRange(intersectionsOfEdge1.Values.ToArray().Reverse());
 
             // P or P0, P1
             if (edge0.P0 == edge1.P0) {
-                this.path.Add(edge0.P0);
+                path.Add(edge0.P0);
             }
             else {
-                this.path.Add(edge1.P0);
-                this.path.Add(edge0.P0);
+                path.Add(edge1.P0);
+                path.Add(edge0.P0);
             }
 
             // Intersections that edge0 intersects with window box.
-            this.path.AddRange(intersectionsOfEdge0.Values.ToArray());
+            path.AddRange(intersectionsOfEdge0.Values.ToArray());
 
             // Inner sites
             var innerSites = cornerSites.Where(
@@ -1598,14 +1557,14 @@ namespace TuggingController {
                     return sideOfE0 >= 0 & sideOfE1 <= 0;
                 }).ToList().Select(e => e.Value).ToList();
 
-            innerSites.ForEach(site => this.path.Add(site));
+            innerSites.ForEach(site => path.Add(site));
 
             var centroid = new SKPoint {
-                X = this.path.Select(node => node.Value.X).Sum() / this.path.Count(),
-                Y = this.path.Select(node => node.Value.Y).Sum() / this.path.Count()
+                X = path.Select(node => node.Value.X).Sum() / path.Count(),
+                Y = path.Select(node => node.Value.Y).Sum() / path.Count()
             };
 
-            this.path = new CircularList<SKPoint>(this.path.OrderBy(
+            path = new CircularList<SKPoint>(path.OrderBy(
                 node => SkiaHelper.GetIncludedAngle(
                     centroid + new SKPoint(1.0f, 0.0f),
                     node.Value,
@@ -1616,19 +1575,21 @@ namespace TuggingController {
             if (this.ExcludedTri != null) {
                 var vertices = this.ExcludedTri.GetVertices();
                 var targetVertex = vertices.Where(v => v.Point != edge0.P0 & v.Point != edge1.P0).ElementAt(0);
-                var targetIdx = this.path.IndexOf(edge0.P0);
+                var targetIdx = path.IndexOf(edge0.P0);
 
-                this.path.Insert(targetIdx, targetVertex.Point);
+                path.Insert(targetIdx, targetVertex.Point);
             }
 
             // lt -> lb
-            this.path = this.IteratePath(this.path, left);
+            path = this.IteratePath(path, left);
             // rt -> rb
-            this.path = this.IteratePath(this.path, right);
+            path = this.IteratePath(path, right);
             // lb -> rb
-            this.path = this.IteratePath(this.path, bottom);
+            path = this.IteratePath(path, bottom);
             // lt -> rt
-            this.path = this.IteratePath(this.path, top);
+            path = this.IteratePath(path, top);
+
+            this.path = path;
         }
 
         public override bool ContainsPoint(SKPoint point) {
@@ -1813,7 +1774,7 @@ namespace TuggingController {
             this.UpdateSimplex();
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+        protected override void DrawThis(SKCanvas canvas) {
             var path = new SKPath();
 
             path.MoveTo(this._gP0);
@@ -1932,7 +1893,7 @@ namespace TuggingController {
             }
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+        protected override void DrawThis(SKCanvas canvas) {
             if (!this.IsVisible) {
                 return;
             }
@@ -2087,7 +2048,7 @@ namespace TuggingController {
             }
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+        protected override void DrawThis(SKCanvas canvas) {
             if (this.addToPhaseItor.Current != null) {
                 this.addToPhaseItor.Current?.Invoke(canvas);
             } else {
@@ -2214,7 +2175,7 @@ namespace TuggingController {
             this.gCenteoidShapeRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(5.0f);
         }
 
-        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+        protected override void DrawThis(SKCanvas canvas) {
             if (this.addToPhaseItor.Current != null) {
                 this.addToPhaseItor.Current?.Invoke(canvas);
             } else {
