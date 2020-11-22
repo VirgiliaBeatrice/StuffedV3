@@ -1,4 +1,5 @@
-﻿using SkiaSharp.Views.Desktop;
+﻿using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,8 +15,8 @@ namespace TuggingController {
     public partial class TuggingControlForm : Form {
         private ChartControl chartControl;
         private ToolStripStatusLabel statusLabel;
-
-        private ChartControl configControl;
+        public ChartControl configControl;
+        private CanvasObjectPropertyForm propertyForm;
 
         public TuggingControlForm() {
             InitializeComponent();
@@ -23,8 +24,21 @@ namespace TuggingController {
             this.statusLabel = new ToolStripStatusLabel();
 
             this.configControl = new ChartControl();
+            this.configControl.ChartScene = new ConfigScene();
+            this.configControl.ChartScene.WorldSpace.Device = new SKRect() {
+                Left = -this.configControl.Size.Width / 2.0f,
+                Right = this.configControl.Size.Width / 2.0f,
+                Top = this.configControl.Size.Height / 2.0f,
+                Bottom = -this.configControl.Size.Height / 2.0f
+            };
+            this.configControl.ChartScene.WorldSpace.Window = new SKRect() {
+                Left = -this.configControl.Size.Width / 2.0f,
+                Right = this.configControl.Size.Width / 2.0f,
+                Top = this.configControl.Size.Height / 2.0f,
+                Bottom = -this.configControl.Size.Height / 2.0f
+            };
 
-            //this.KeyPreview = true;
+            this.KeyPreview = true;
             //this.ClientSize = new Size(400, 400 + this.statusStrip1.Size.Height);
             this.SizeChanged += this.TuggingControlForm_SizeChanged;
             this.chartControl = new ChartControl();
@@ -47,6 +61,19 @@ namespace TuggingController {
 
             this.chartControl.CanvasTargetChanged += this.ChartControl_CanvasTargetChanged;
             this.chartControl.CanvasObjectChanged += this.ChartControl_CanvasObjectChanged;
+
+            this.propertyForm = new CanvasObjectPropertyForm() {
+                Parent = this,
+            };
+            this.KeyDown += this.TuggingControlForm_KeyDown;
+
+        }
+
+        private void TuggingControlForm_KeyDown(object sender, KeyEventArgs e) {
+            if (e.KeyCode == Keys.Space) {
+                this.propertyForm.Show();
+                e.Handled = true;
+            }
         }
 
         private void ChartControl_CanvasObjectChanged(object sender, EventArgs e) {
@@ -83,11 +110,5 @@ namespace TuggingController {
             this.treeView1.EndUpdate();
             this.treeView1.ExpandAll();
         }
-
-        //protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
-        //    Console.WriteLine(msg);
-        //    Console.WriteLine($"{this.chartControl.Focused}");
-        //    return base.ProcessCmdKey(ref msg, keyData);
-        //}
     }
 }

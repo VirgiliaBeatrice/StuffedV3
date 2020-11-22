@@ -35,6 +35,20 @@ namespace TuggingController {
             }
         }
 
+        public static int GetSide(SKPoint p0, SKPoint p1, SKPoint target) {
+            var result = GetIncludedAngle(p1 - p0, target - p0);
+
+            if (result == 0) {
+                return 0;
+            }
+            else if (result > 0.0f) {
+                return 1;
+            }
+            else {
+                return -1;
+            }
+        }
+
         // v0 x v1 = |v0||v1|sin(theta)
         public static double CrossProduct(SKPoint v0, SKPoint v1) {
             return v0.X * v1.Y - v0.Y * v1.X;

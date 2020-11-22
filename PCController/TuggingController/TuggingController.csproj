@@ -118,6 +118,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CanvasObjectPropertyForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CanvasObjectPropertyForm.Designer.cs">
+      <DependentUpon>CanvasObjectPropertyForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="CanvasObjects.cs" />
     <Compile Include="ChartControl.cs">
       <SubType>UserControl</SubType>
@@ -125,6 +131,7 @@
     <Compile Include="ChartControl.Designer.cs">
       <DependentUpon>ChartControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="ConfigScene.cs" />
     <Compile Include="Decorator.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="Component.cs" />
@@ -150,6 +157,9 @@
     <Compile Include="TuggingControlFormNew.Designer.cs">
       <DependentUpon>TuggingControlFormNew.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="CanvasObjectPropertyForm.resx">
+      <DependentUpon>CanvasObjectPropertyForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ChartControl.resx">
       <DependentUpon>ChartControl.cs</DependentUpon>
     </EmbeddedResource>

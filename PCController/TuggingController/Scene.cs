@@ -12,7 +12,14 @@ using System.Windows.Forms;
 namespace TuggingController {
 
     public interface IScene {
+        ICanvasObject Root { get; set; }
+        WorldSpaceCoordinate WorldSpace { get; set; }
         EventDispatcher<ICanvasObject> Dispatcher { get; set; }
+        event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
+        event EventHandler<EventArgs> CanvasObjectChanged;
+
+        void Dispatch(Event @event);
+        void Update(SKCanvas canvas);
     }
 
     public class ChartScene : IScene {
@@ -134,7 +141,7 @@ namespace TuggingController {
             }
         }
 
-        private void RootObject_v1_MouseDoubleClick(Event @event) {
+        protected virtual void RootObject_v1_MouseDoubleClick(Event @event) {
             var e = @event as MouseEvent;
 
             if (e.Button == MouseButtons.Left) {

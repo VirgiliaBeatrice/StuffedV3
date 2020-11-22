@@ -9,6 +9,7 @@ namespace TuggingController {
     public delegate void BehaviorHandler(BehaviorArgs args);
 
     public interface IComponent {
+        bool Enabled { get; set; }
         ICanvasObject CanvasObject { get; set; }
         string Tag { get; }
 
@@ -22,6 +23,7 @@ namespace TuggingController {
         public string Tag { get; set; }
         public SKPaint FillPaint { get; set; }
         public SKPaint StrokePaint { get; set; }
+        public bool Enabled { get; set; }
 
         public void AddBehavior(BehaviorHandler behavior) {
             throw new NotImplementedException();
@@ -50,6 +52,8 @@ namespace TuggingController {
         }
         public string Tag => "Hover";
         public Logger Logger => LogManager.GetCurrentClassLogger();
+
+        public bool Enabled { get; set; } = true;
 
         private void SetCanvasObject() {
             this.CanvasObject.MouseEnter += this.CanvasObject_MouseEnter;
@@ -157,6 +161,8 @@ namespace TuggingController {
 
         public Logger Logger => LogManager.GetCurrentClassLogger();
 
+        public bool Enabled { get; set; } = true;
+
         public SelectableComponent() { }
 
         private void SetCanvasObject() {
@@ -207,6 +213,8 @@ namespace TuggingController {
         public string Tag { get; } = "D&D";
 
         public Logger Logger => LogManager.GetCurrentClassLogger();
+
+        public bool Enabled { get; set; } = true;
 
         public DragAndDropComponent() { }
 
@@ -323,6 +331,39 @@ namespace TuggingController {
 
         public void AddBehavior(BehaviorHandler behavior) {
             this._mouseMoveBehavior += behavior;
+        }
+    }
+
+    public class AddToComponent : ILog, IComponent {
+        private ICanvasObject canvasObject;
+        private BehaviorHandler behaviors;
+        public ICanvasObject CanvasObject {
+            get => this.canvasObject;
+            set {
+                this.canvasObject = value;
+            }
+        }
+
+        public AddToComponent() {
+            this.behaviors += this.DefaultBehavior;
+        }
+
+        public string Tag => "AddTo";
+
+        public Logger Logger => LogManager.GetCurrentClassLogger();
+
+        public bool Enabled { get; set; } = false;
+
+        public void AddBehavior(BehaviorHandler behavior) {
+            throw new NotImplementedException();
+        }
+
+        public void DefaultBehavior(BehaviorArgs e) {
+            throw new NotImplementedException();
+        }
+
+        public void PreventDefault(BehaviorHandler behavior) {
+            throw new NotImplementedException();
         }
     }
 }

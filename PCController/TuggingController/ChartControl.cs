@@ -15,17 +15,17 @@ using System.Security.Cryptography;
 
 namespace TuggingController {
     public partial class ChartControl : UserControl {
-        private SKControl skControl;
-        private Timer timer = new Timer();
-        private int timerCount = 0;
-        private float prevScale = 0.0f;
-        private bool _IsScaleUp = true;
+        protected SKControl skControl;
+        protected Timer timer = new Timer();
+        protected int timerCount = 0;
+        protected float prevScale = 0.0f;
+        protected bool _IsScaleUp = true;
 
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         public event EventHandler<EventArgs> CanvasObjectChanged;
 
         //public Chart_v1 Chart { get; set; }
-        public ChartScene ChartScene { get; set; }
+        public IScene ChartScene { get; set; }
 
         public ChartControl() {
             InitializeComponent();
@@ -63,18 +63,24 @@ namespace TuggingController {
             this.skControl.MouseClick += this.SkControl_MouseClick;
             this.skControl.MouseDoubleClick += this.SkControl_MouseDoubleClick;
             this.skControl.MouseMove += this.SkControl_MouseMove;
-
             this.skControl.MouseWheel += this.SkControl_MouseWheel;
+            this.skControl.KeyDown += this.SkControl_KeyDown;
+
+            this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
             this.SizeChanged += this.ChartControl_SizeChanged;
             this.Invalidate(true);
         }
 
-        private void ChartScene_CanvasObjectChanged(object sender, EventArgs e) {
+        private void SkControl_MouseEnter(object sender, EventArgs e) {
+            this.skControl.Focus();
+        }
+
+        protected void ChartScene_CanvasObjectChanged(object sender, EventArgs e) {
             this.OnCanvasObjectChanged(e);
         }
 
-        private void ChartScene_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
+        protected void ChartScene_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
             this.OnCanvasTargetChanged(e);
         }
 
@@ -86,7 +92,8 @@ namespace TuggingController {
             this.CanvasObjectChanged?.Invoke(this, e);
         }
 
-        private void SkControl_MouseWheel(object sender, MouseEventArgs e) {
+
+        protected void SkControl_MouseWheel(object sender, MouseEventArgs e) {
             if (ModifierKeys == Keys.Control) {
                 var mouseEvent = new MouseEvent("MouseWheel") {
                     X = e.X,
@@ -102,7 +109,7 @@ namespace TuggingController {
             this.Invalidate(true);
         }
 
-        private void SkControl_MouseClick(object sender, MouseEventArgs e) {
+        protected void SkControl_MouseClick(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseClick") {
                 X = e.X,
                 Y = e.Y,
@@ -114,7 +121,7 @@ namespace TuggingController {
 
         }
 
-        private void SkControl_MouseUp(object sender, MouseEventArgs e) {
+        protected void SkControl_MouseUp(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseUp") {
                 X = e.X,
                 Y = e.Y,
@@ -125,7 +132,7 @@ namespace TuggingController {
             this.Invalidate(true);
         }
 
-        private void SkControl_MouseMove(object sender, MouseEventArgs e) {
+        protected void SkControl_MouseMove(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseMove") {
                 X = e.X,
                 Y = e.Y,
@@ -137,7 +144,7 @@ namespace TuggingController {
             this.Invalidate(true);
         }
 
-        private void SkControl_MouseDown(object sender, MouseEventArgs e) {
+        protected void SkControl_MouseDown(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseDown") {
                 X = e.X,
                 Y = e.Y,
@@ -148,7 +155,7 @@ namespace TuggingController {
             this.Invalidate(true);
         }
 
-        private void SkControl_MouseDoubleClick(object sender, MouseEventArgs e) {
+        protected void SkControl_MouseDoubleClick(object sender, MouseEventArgs e) {
             var mouseEvent = new MouseEvent("MouseDoubleClick") {
                 X = e.X,
                 Y = e.Y,
@@ -156,6 +163,17 @@ namespace TuggingController {
             };
 
             this.ChartScene.Dispatch(mouseEvent);
+            this.Invalidate(true);
+        }
+
+        protected void SkControl_KeyDown(object sender, KeyEventArgs e) {
+            var keyEvent = new KeyEvent("KeyDown") {
+                KeyCode = e.KeyCode,
+            };
+
+            Console.WriteLine($"KeyCode: {keyEvent.KeyCode}");
+
+            this.ChartScene.Dispatch(keyEvent);
             this.Invalidate(true);
         }
 
@@ -210,25 +228,25 @@ namespace TuggingController {
             }
         }
 
-        private void ChartControl_SizeChanged(object sender, EventArgs e) {
+        protected void ChartControl_SizeChanged(object sender, EventArgs e) {
             this.skControl.Size = new Size(this.Size.Width, this.Size.Height);
             this.SetDeviceViewport();
 
             this.Invalidate(true);
         }
 
-        private void SKControl_PaintSurface(object sender, SKPaintSurfaceEventArgs e) {
+        protected void SKControl_PaintSurface(object sender, SKPaintSurfaceEventArgs e) {
             this.Draw(e.Surface.Canvas);
         }
 
-        private void Draw(SKCanvas canvas) {
+        protected virtual void Draw(SKCanvas canvas) {
             canvas.Clear();
 
             this.ChartScene.Update(canvas);
             //canvas.DrawText("Hello World!", new SKPoint(100, 100), new SKPaint() { Color = SKColors.Black });
         }
 
-        private void SetDeviceViewport() {
+        protected void SetDeviceViewport() {
             this.ChartScene.WorldSpace.Device = new SKRect() {
                 Left = -this.Size.Width / 2.0f,
                 Right = this.Size.Width / 2.0f,

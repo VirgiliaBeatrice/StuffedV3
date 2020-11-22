@@ -108,6 +108,8 @@ namespace TuggingController {
 
         public string Tag => "Transform";
 
+        public bool Enabled { get; set; } = true;
+
         public Transform() : this(SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity(), SKMatrix.MakeIdentity()) { }
 
         public Transform(SKMatrix scale, SKMatrix rotation, SKMatrix translation) {

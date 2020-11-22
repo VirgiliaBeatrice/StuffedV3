@@ -117,6 +117,10 @@ namespace TuggingController {
         event EventHandler_v1 DragStart;
         event EventHandler_v1 DragEnd;
         event EventHandler_v1 Dragging;
+
+        event EventHandler_v1 KeyDown;
+        event EventHandler_v1 KeyPress;
+        event EventHandler_v1 KeyUp;
     }
 
     public abstract partial class CanvasObject_v1 {
@@ -131,6 +135,9 @@ namespace TuggingController {
         public event EventHandler_v1 DragStart;
         public event EventHandler_v1 DragEnd;
         public event EventHandler_v1 Dragging;
+        public event EventHandler_v1 KeyDown;
+        public event EventHandler_v1 KeyPress;
+        public event EventHandler_v1 KeyUp;
 
         public bool IsMouseOver { get; set; } = false;
 
@@ -179,6 +186,18 @@ namespace TuggingController {
         public virtual void OnDragging(Event @event) {
             this.Dragging?.Invoke(@event);
         }
+
+        public virtual void OnKeyDown(Event @event) {
+            this.KeyDown?.Invoke(@event);
+        }
+
+        public virtual void OnKeyPress(Event @event) {
+            this.KeyPress?.Invoke(@event);
+        }
+
+        public virtual void OnKeyUp(Event @event) {
+            this.KeyUp?.Invoke(@event);
+        }
     }
 
     public abstract partial class CanvasObject_v1 : ILog, ICanvasObject {
@@ -214,7 +233,16 @@ namespace TuggingController {
 
         protected PaintComponent PaintComponent { get; set; } = new PaintComponent();
         public bool IsSelected { get; set; } = false;
-        public IScene Scene { get; set; }
+
+        private IScene scene;
+        public IScene Scene {
+            get => this.scene;
+            set {
+                this.scene = value;
+
+                this.Children.ForEach(child => child.Scene = this.scene);
+            }
+        }
 
         /// <summary>
         /// Constructor
@@ -1853,6 +1881,395 @@ namespace TuggingController {
             }
 
             return false;
+        }
+    }
+
+    public class PointObject_v1 : CanvasObject_v1 {
+        public bool IsVisible { get; set; } = true;
+        public SKPoint Point {
+            get => this.Location;
+            set {
+                this.Location = value;
+            }
+        }
+
+        private SKPaint fillPaint = new SKPaint {
+            IsAntialias = true,
+            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Coral, 0.8f),
+            Style = SKPaintStyle.Fill
+        };
+        private SKPaint strokePaint = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+        private float radius = 5.0f;
+
+        private SKPoint gPoint;
+        private float gRadius;
+
+        public PointObject_v1() : base() {
+            var dragAndDropComponent = new DragAndDropComponent();
+            var selectableComponent = new SelectableComponent();
+
+            this.AddComponent(dragAndDropComponent);
+            this.AddComponent(selectableComponent);
+        }
+
+        public override bool ContainsPoint(SKPoint point) {
+            return this.IsVisible? SKPoint.Distance(point, this.Point) <= this.radius : false;
+        }
+
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this.gPoint = worldCoordinate.TransformToDevice(this.Point);
+            this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.radius);
+
+            if (this.IsSelected) {
+                this.fillPaint.Color = SKColors.Blue;
+            } else {
+                this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Coral, 0.8f);
+            }
+        }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            if (!this.IsVisible) {
+                return;
+            }
+
+            canvas.DrawCircle(this.gPoint, this.gRadius, fillPaint);
+            canvas.DrawCircle(this.gPoint, this.gRadius, strokePaint);
+        }
+    }
+
+    public class LineSegmentObject_v1 : CanvasObject_v1 {
+        public PointObject_v1 P0 { get; set; }
+        public PointObject_v1 P1 { get; set; }
+
+        private SKPaint strokePaint = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+        private CircularList<SKPoint> extremes = new CircularList<SKPoint>();
+        private CircularList<SKPoint> gExtremes = new CircularList<SKPoint>();
+
+        private SKPoint gP0;
+        private SKPoint gP1;
+        private List<Action<SKCanvas>> addToPhases;
+        private IEnumerator<Action<SKCanvas>> addToPhaseItor;
+
+        public LineSegmentObject_v1() : base() {
+            this.P0 = new PointObject_v1();
+            this.P1 = new PointObject_v1();
+
+            this.P0.SetParent(this);
+            this.P1.SetParent(this);
+            this.Children.Add(this.P0);
+            this.Children.Add(this.P1);
+
+            var selectableComponent = new SelectableComponent();
+
+            this.AddComponent(selectableComponent);
+        }
+
+
+        public void StartAddToBehavior() {
+            this.MouseClick += this.LineSegmentObject_v1_MouseClick;
+            this.MouseMove += this.LineSegmentObject_v1_MouseMove;
+
+            this.addToPhases = new List<Action<SKCanvas>>() {
+                this.DrawAddToPhase0,
+                this.DrawAddToPhase1,
+            };
+            this.addToPhaseItor = this.addToPhases.GetEnumerator();
+            this.Dispatcher.Lock(this);
+            this.addToPhaseItor.MoveNext();
+        }
+
+        public void StopAddToBehavior() {
+            this.MouseClick -= this.LineSegmentObject_v1_MouseClick;
+            this.MouseMove -= this.LineSegmentObject_v1_MouseMove;
+
+            this.Dispatcher.Unlock();
+        }
+
+        private void LineSegmentObject_v1_MouseClick(Event @event) {
+            var e = @event as MouseEvent;
+
+            this.addToPhaseItor.MoveNext();
+
+            if (this.addToPhaseItor.Current == null) {
+                this.StopAddToBehavior();
+            }
+        }
+
+        private void LineSegmentObject_v1_MouseMove(Event @event) {
+            var e = @event as MouseEvent;
+            var action = this.addToPhaseItor.Current;
+
+            if (action.Method.Name.Contains("Phase0")) {
+                this.P0.Point = e.Pointer;
+
+            }
+            else if (action.Method.Name.Contains("Phase1")) {
+                this.P1.Point = e.Pointer;
+            }
+        }
+
+        public override bool ContainsPoint(SKPoint point) {
+            var l = this.P1.Point - this.P0.Point;
+            var normal = new SKPoint {
+                X = l.Y, Y = -l.X
+            };
+            normal = SKPoint.Normalize(normal);
+
+            var rect = SKRect.Create(
+                this.P0.Point,
+                new SKSize { Height = 10.0f, Width = l.Length }
+            );
+
+            this.extremes = new CircularList<SKPoint> {
+                new SKPoint {
+                    X = this.P0.Point.X + normal.X * 5.0f,
+                    Y = this.P0.Point.Y + normal.Y * 5.0f
+                },
+                new SKPoint {
+                    X = this.P1.Point.X + normal.X * 5.0f,
+                    Y = this.P1.Point.Y + normal.Y * 5.0f
+                },
+                new SKPoint {
+                    X = this.P1.Point.X - normal.X * 5.0f,
+                    Y = this.P1.Point.Y - normal.Y * 5.0f
+                },
+                new SKPoint {
+                    X = this.P0.Point.X - normal.X * 5.0f,
+                    Y = this.P0.Point.Y - normal.Y * 5.0f
+                },
+            };
+
+            var result = true;
+
+            foreach (var node in this.extremes) {
+                var prev = node.Prev.Value;
+                var it = node.Value;
+                var side = SkiaHelper.GetSide(prev, it, point);
+
+                result &= (side >= 0);
+            }
+
+            return result;
+        }
+
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this.gP0 = worldCoordinate.TransformToDevice(this.P0.Point);
+            this.gP1 = worldCoordinate.TransformToDevice(this.P1.Point);
+
+            if (this.extremes.Count() != 0) {
+                this.gExtremes.Clear();
+
+                foreach (var node in this.extremes) {
+                    this.gExtremes.Add(worldCoordinate.TransformToDevice(node.Value));
+                }
+            }
+
+            if (this.IsSelected) {
+                this.P0.IsVisible = true;
+                this.P1.IsVisible = true;
+            } else {
+                this.P0.IsVisible = false;
+                this.P1.IsVisible = false;
+            }
+        }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            if (this.addToPhaseItor.Current != null) {
+                this.addToPhaseItor.Current?.Invoke(canvas);
+            } else {
+                // Invalidate Method also needed to be subscribed
+                //this.P0.IsVisible = false;
+                //this.P1.IsVisible = false;
+
+                strokePaint.PathEffect = null;
+
+                canvas.DrawLine(this.gP0, this.gP1, strokePaint);
+
+                if (this.gExtremes.Count() != 0) {
+                    var path = new SKPath();
+
+                    path.MoveTo(this.gExtremes[0].Value);
+                    path.LineTo(this.gExtremes[1].Value);
+                    path.LineTo(this.gExtremes[2].Value);
+                    path.LineTo(this.gExtremes[3].Value);
+
+                    path.Close();
+
+                    canvas.DrawPath(path, strokePaint);
+                }
+            }
+        }
+
+        private void DrawAddToPhase0(SKCanvas canvas) {
+            // Invalidate Method also needed to be subscribed
+            this.P1.IsVisible = false;
+        }
+        private void DrawAddToPhase1(SKCanvas canvas) {
+            // Invalidate Method also needed to be subscribed
+            this.P1.IsVisible = true;
+
+            strokePaint.PathEffect = SKPathEffect.CreateDash(new float[] { 5.0f, 5.0f }, 0.0f);
+
+            canvas.DrawLine(this.gP0, this.gP1, strokePaint);
+        }
+    }
+
+    public class CircleObject_v1 : CanvasObject_v1 {
+        public SKPoint Center {
+            get => this.Location;
+            set {
+                this.Location = value;
+            }
+        }
+        public float Radius { get; set; } = 50.0f;
+        public SKPoint VirtualEnd { get; set; } = new SKPoint();
+
+        private SKPoint gCenter;
+        private SKPoint gVirtualEnd;
+        private float gRadius;
+        private float gCenteoidShapeRadius;
+        private float gVirtualCircleRadius;
+        private List<Action<SKCanvas>> addToPhases;
+        private IEnumerator<Action<SKCanvas>> addToPhaseItor;
+
+        public CircleObject_v1() : base() {
+            var dragAndDropComponent = new DragAndDropComponent();
+            var selectableComponent = new SelectableComponent();
+
+            this.AddComponent(dragAndDropComponent);
+            this.AddComponent(selectableComponent);
+        }
+
+        public void StartAddToBehavior() {
+            this.MouseClick += this.CircleObject_v1_MouseClick;
+            this.MouseMove += this.CircleObject_v1_MouseMove;
+
+            this.addToPhases = new List<Action<SKCanvas>>() {
+                this.DrawAddToPhase0,
+                this.DrawAddToPhase1,
+            };
+            this.addToPhaseItor = this.addToPhases.GetEnumerator();
+            this.Dispatcher.Lock(this);
+            this.addToPhaseItor.MoveNext();
+        }
+
+        public void StopAddToBehavior() {
+            this.MouseClick -= this.CircleObject_v1_MouseClick;
+            this.MouseMove -= this.CircleObject_v1_MouseMove;
+
+            this.Dispatcher.Unlock();
+        }
+
+        private void CircleObject_v1_MouseClick(Event @event) {
+            var e = @event as MouseEvent;
+
+            this.addToPhaseItor.MoveNext();
+
+            if (this.addToPhaseItor.Current == null) {
+                this.StopAddToBehavior();
+            }
+            else {
+                this.Center = e.Pointer;
+            }
+        }
+
+        private void CircleObject_v1_MouseMove(Event @event) {
+            var e = @event as MouseEvent;
+            var action = this.addToPhaseItor.Current;
+
+            if (action.Method.Name.Contains("Phase0")) {
+                this.Center = e.Pointer;
+
+            }
+            else if (action.Method.Name.Contains("Phase1")) {
+                this.VirtualEnd = e.Pointer;
+                this.Radius = SKPoint.Distance(this.Center, e.Pointer);
+            }
+        }
+
+        public override bool ContainsPoint(SKPoint point) {
+            return SKPoint.Distance(point, this.Center) <= this.Radius;
+        }
+
+        protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
+            this.gCenter = worldCoordinate.TransformToDevice(this.Center);
+            this.gVirtualEnd = worldCoordinate.TransformToDevice(this.VirtualEnd);
+            this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
+
+            this.gVirtualCircleRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(50.0f);
+            this.gCenteoidShapeRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(5.0f);
+        }
+
+        protected override void DrawThis(SKCanvas canvas, WorldSpaceCoordinate worldCoordinate) {
+            if (this.addToPhaseItor.Current != null) {
+                this.addToPhaseItor.Current?.Invoke(canvas);
+            } else {
+                var _fillPaint = new SKPaint {
+                    IsAntialias = true,
+                    Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
+                    Style = SKPaintStyle.Fill
+                };
+                var _strokePaint = new SKPaint {
+                    IsAntialias = true,
+                    Color = SKColors.Black,
+                    Style = SKPaintStyle.Stroke,
+                    StrokeWidth = 2
+                };
+
+                canvas.DrawCircle(this.gCenter, this.gRadius, _fillPaint);
+                canvas.DrawCircle(this.gCenter, this.gRadius, _strokePaint);
+            }
+        }
+
+        private void DrawAddToPhase0(SKCanvas canvas) {
+            var _fillPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Coral, 0.8f),
+                Style = SKPaintStyle.Fill
+            };
+            var _strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                PathEffect = SKPathEffect.CreateDash(new float[] { 5.0f, 5.0f }, 0.0f),
+                StrokeWidth = 2
+            };
+
+            canvas.DrawCircle(this.gCenter, this.gVirtualCircleRadius, _strokePaint);
+
+            _strokePaint.PathEffect = null;
+
+            canvas.DrawCircle(this.gCenter, this.gCenteoidShapeRadius, _fillPaint);
+            canvas.DrawCircle(this.gCenter, this.gCenteoidShapeRadius, _strokePaint);
+        }
+
+        private void DrawAddToPhase1(SKCanvas canvas) {
+            var _fillPaint = new SKPaint {
+                IsAntialias = true,
+                Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Coral, 0.8f),
+                Style = SKPaintStyle.Fill
+            };
+            var _strokePaint = new SKPaint {
+                IsAntialias = true,
+                Color = SKColors.Black,
+                Style = SKPaintStyle.Stroke,
+                PathEffect = SKPathEffect.CreateDash(new float[] { 5.0f, 5.0f }, 0.0f),
+                StrokeWidth = 2
+            };
+
+            canvas.DrawCircle(this.gCenter, this.gRadius, _fillPaint);
+            canvas.DrawLine(this.gCenter, this.gVirtualEnd, _strokePaint);
+            canvas.DrawCircle(this.gCenter, this.gRadius, _strokePaint);
         }
     }
 }
