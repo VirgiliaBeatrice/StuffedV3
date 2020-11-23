@@ -39,12 +39,7 @@ namespace TuggingController {
     }
 
     public class SelectableBehaviorArgs : BehaviorArgs {
-        private SKPoint _location;
-        public SKPoint Location => this._location;
-
-        public SelectableBehaviorArgs(int x, int y) {
-            this._location = new SKPoint() { X = x, Y = y };
-        }
+        public SKPoint Location { get; set; }
     }
 
     public class HoverBehaviorArgs : BehaviorArgs {
@@ -2098,6 +2093,17 @@ namespace TuggingController {
         }
         public float Radius { get; set; } = 50.0f;
         public SKPoint VirtualEnd { get; set; } = new SKPoint();
+        public SKPaint FillPaint = new SKPaint {
+            IsAntialias = true,
+            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
+            Style = SKPaintStyle.Fill
+        };
+        public SKPaint StrokePaint = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
 
         private SKPoint gCenter;
         private SKPoint gVirtualEnd;
@@ -2107,12 +2113,26 @@ namespace TuggingController {
         private List<Action<SKCanvas>> addToPhases;
         private IEnumerator<Action<SKCanvas>> addToPhaseItor;
 
-        public CircleObject_v1() : base() {
-            var dragAndDropComponent = new DragAndDropComponent();
-            var selectableComponent = new SelectableComponent();
+        private HoverBehavior hover;
+        private SelectableBehavior selectable;
 
-            this.AddComponent(dragAndDropComponent);
-            this.AddComponent(selectableComponent);
+        public CircleObject_v1() : base() {
+            this.hover = new HoverBehavior { CanvasObject = this };
+            this.selectable = new SelectableBehavior { CanvasObject = this };
+
+            this.hover.Subscribe();
+            this.selectable.Subscribe();
+
+            this.hover.RegisterBehavior(this.OnHovered);
+            //var dragAndDropComponent = new DragAndDropComponent();
+            //var selectableComponent = new SelectableComponent();
+
+            //this.AddComponent(dragAndDropComponent);
+            //this.AddComponent(selectableComponent);
+        }
+
+        private void OnHovered(BehaviorArgs args) {
+            this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
         }
 
         public void StartAddToBehavior() {
@@ -2167,32 +2187,43 @@ namespace TuggingController {
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
-            this.gCenter = worldCoordinate.TransformToDevice(this.Center);
-            this.gVirtualEnd = worldCoordinate.TransformToDevice(this.VirtualEnd);
-            this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
+            if (this.addToPhaseItor.Current != null) {
+                this.gCenter = worldCoordinate.TransformToDevice(this.Center);
+                this.gVirtualEnd = worldCoordinate.TransformToDevice(this.VirtualEnd);
+                this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
 
-            this.gVirtualCircleRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(50.0f);
-            this.gCenteoidShapeRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(5.0f);
+                this.gVirtualCircleRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(50.0f);
+                this.gCenteoidShapeRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(5.0f);
+            }
+            else {
+                this.InvalidateOnDefault(worldCoordinate);
+            }
+        }
+
+        private void InvalidateOnDefault(WorldSpaceCoordinate worldCoordinate) {
+            if (this.IsMouseOver) {
+                this.StrokePaint.Color = SKColors.AliceBlue;
+            } else {
+                this.StrokePaint.Color = SKColors.Black;
+            }
+
+            if (this.IsSelected) {
+                this.Radius = 52.0f;
+                this.FillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Blue, 0.8f);
+            } else {
+                this.FillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
+                this.Radius = 50.0f;
+            }
+
+            this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
         }
 
         protected override void DrawThis(SKCanvas canvas) {
             if (this.addToPhaseItor.Current != null) {
                 this.addToPhaseItor.Current?.Invoke(canvas);
             } else {
-                var _fillPaint = new SKPaint {
-                    IsAntialias = true,
-                    Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
-                    Style = SKPaintStyle.Fill
-                };
-                var _strokePaint = new SKPaint {
-                    IsAntialias = true,
-                    Color = SKColors.Black,
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = 2
-                };
-
-                canvas.DrawCircle(this.gCenter, this.gRadius, _fillPaint);
-                canvas.DrawCircle(this.gCenter, this.gRadius, _strokePaint);
+                canvas.DrawCircle(this.gCenter, this.gRadius, this.FillPaint);
+                canvas.DrawCircle(this.gCenter, this.gRadius, this.StrokePaint);
             }
         }
 
@@ -2236,5 +2267,9 @@ namespace TuggingController {
             canvas.DrawLine(this.gCenter, this.gVirtualEnd, _strokePaint);
             canvas.DrawCircle(this.gCenter, this.gRadius, _strokePaint);
         }
+    }
+
+    public class StateManager {
+
     }
 }
