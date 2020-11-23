@@ -30,9 +30,16 @@ namespace TuggingController {
             this.Dispatcher = new EventDispatcher<ICanvasObject>() {
                 Root = this.Root,
             };
-            
-            // Register event handlers of dispatcher
 
+            // Register event handlers of dispatcher
+            this.Dispatcher.TargetUnlocked += this.Dispatcher_TargetUnlocked;
+
+        }
+
+        private void Dispatcher_TargetUnlocked(object sender, EventArgs e) {
+            var target = (e as TargetUnlockedEventArgs).Target as CircleObject_v1;
+
+            target.ChangeState("DefaultBehaviors");
         }
 
         public void Update(SKCanvas canvas) {
@@ -69,12 +76,26 @@ namespace TuggingController {
                         break;
                     case Keys.C:
                         this.Mode = DrawingMode.Circle;
+                        this.AddCircleObject();
                         break;
                     case Keys.Escape:
                         this.Mode = DrawingMode.None;
                         break;
                 }
             }
+        }
+
+        private void AddCircleObject() {
+            var circle = new CircleObject_v1() {
+                Center = this.Dispatcher.Pointer,
+            };
+
+            circle.SetParent(this.Root as CanvasObject_v1);
+            circle.Scene = this;
+            this.Root.Children.Add(circle);
+
+            circle.ChangeState("AddToBehaviors");
+            this.Dispatcher.Lock(circle);
         }
     }
 
@@ -96,7 +117,9 @@ namespace TuggingController {
                     circle.Scene = this.Scene;
                     this.Children.Add(circle);
 
-                    circle.StartAddToBehavior();
+                    circle.ChangeState("AddToBehaviors");
+                    this.Dispatcher.Lock(circle);
+                    //circle.StartAddToBehavior();
                     break;
                 case DrawingMode.Line:
                     var lineSeg = new LineSegmentObject_v1();

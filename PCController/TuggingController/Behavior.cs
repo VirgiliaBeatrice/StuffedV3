@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SkiaSharp;
 
 namespace TuggingController {
     /// <summary>
@@ -97,6 +98,77 @@ namespace TuggingController {
 
         public override void Unsubscribe() {
             this.CanvasObject.MouseClick -= this.OnMouseClick;
+        }
+    }
+
+    public class AddableBehaviorArgs : BehaviorArgs {
+        public string PhaseName { get; set; }
+        public SKPoint Point { get; set; }
+    }
+
+    public class AddableBehavior : BaseBehavior {
+        public override string Tag => "Addable";
+        public List<Action<SKCanvas>> PhaseCollection = new List<Action<SKCanvas>>();
+
+        public IEnumerator<Action<SKCanvas>> PhaseEnumerator = null;
+
+        public void AddPhaseCallback(Action<SKCanvas> action) {
+            this.PhaseCollection.Add(action);
+            this.PhaseEnumerator = this.PhaseCollection.GetEnumerator();
+            this.PhaseEnumerator.MoveNext();
+        }
+
+        public override void Subscribe() {
+            this.CanvasObject.MouseClick += OnMouseClick;
+            this.CanvasObject.MouseMove += OnMouseMove;
+        }
+
+        public override void Unsubscribe() {
+            this.CanvasObject.MouseClick -= OnMouseClick;
+            this.CanvasObject.MouseMove -= OnMouseMove;
+        }
+
+        private void OnMouseClick(Event @event) {
+            var e = @event as MouseEvent;
+
+            //if (this.PhaseEnumerator == null) {
+            //    this.PhaseEnumerator = this.PhaseCollection.GetEnumerator();
+            //}
+
+            if (this.PhaseEnumerator.Current == this.PhaseCollection.Last()) {
+                this.PhaseEnumerator = this.PhaseCollection.GetEnumerator();
+                this.CanvasObject.Dispatcher.Unlock();
+                this.CanvasObject.Dispatcher.OnTargetUnlocked(new TargetUnlockedEventArgs(this.CanvasObject));
+            }
+            else {
+                this.PhaseEnumerator.MoveNext();
+            }
+
+
+        }
+
+        private void OnMouseMove(Event @event) {
+            var e = @event as MouseEvent;
+            var action = this.PhaseEnumerator?.Current;
+
+            if (action != null) {
+                this.behavior?.Invoke(
+                    new AddableBehaviorArgs {
+                        PhaseName = action.Method.Name,
+                        Point = e.Pointer,
+                    }
+                );
+            }
+
+
+            //if (action.Method.Name.Contains("Phase0")) {
+            //    this.Center = e.Pointer;
+
+            //}
+            //else if (action.Method.Name.Contains("Phase1")) {
+            //    this.VirtualEnd = e.Pointer;
+            //    this.Radius = SKPoint.Distance(this.Center, e.Pointer);
+            //}
         }
     }
 }

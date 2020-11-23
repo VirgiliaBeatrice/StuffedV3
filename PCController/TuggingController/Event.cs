@@ -55,6 +55,14 @@ namespace TuggingController {
         }
     }
 
+    public class TargetUnlockedEventArgs : EventArgs {
+        public ICanvasObject Target { get; set; }
+
+        public TargetUnlockedEventArgs(ICanvasObject target) {
+            this.Target = target;
+        }
+    }
+
     public class EventDispatcher<T> where T : ICanvasObject {
         private static EventDispatcher<T> instance = null;
         public static EventDispatcher<T> GetSingleton() {
@@ -67,6 +75,8 @@ namespace TuggingController {
 
         public ICanvasObject CapturedTarget { get; set; } = null;
         public ICanvasObject LockedTarget { get; set; } = null;
+        public SKPoint Pointer { get; set; } = new SKPoint();
+
         protected bool _propagate = true;
 
         private List<object> targets = new List<object>();
@@ -74,6 +84,8 @@ namespace TuggingController {
 
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         public event EventHandler<EventArgs> CanvasObjectChanged;
+        public event EventHandler<EventArgs> TargetUnlocked;
+
 
         protected NLog.Logger Logger => NLog.LogManager.GetCurrentClassLogger();
 
@@ -113,9 +125,15 @@ namespace TuggingController {
             this.CanvasObjectChanged?.Invoke(this, e);
         }
 
+        public virtual void OnTargetUnlocked(EventArgs e) {
+            this.TargetUnlocked?.Invoke(this, e);
+        }
+
         private void DispatchMouseMoveEvent(Event @event) {
             var castEvent = @event as MouseEvent;
             var newAllTargets = castEvent.Path;
+
+            this.Pointer = castEvent.Pointer;
 
             var intersection = newAllTargets.Intersect(this.targets);
             var cNew = new HashSet<object>(newAllTargets);

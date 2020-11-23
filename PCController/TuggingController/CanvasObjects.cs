@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Xamarin.Forms.Internals;
+using System.Reflection;
 
 namespace TuggingController {
 
@@ -2105,81 +2106,64 @@ namespace TuggingController {
             StrokeWidth = 2
         };
 
+        private StateManager stateManager = new StateManager();
+
         private SKPoint gCenter;
         private SKPoint gVirtualEnd;
         private float gRadius;
         private float gCenteoidShapeRadius;
         private float gVirtualCircleRadius;
-        private List<Action<SKCanvas>> addToPhases;
-        private IEnumerator<Action<SKCanvas>> addToPhaseItor;
+        //private List<Action<SKCanvas>> addToPhases;
+        //private IEnumerator<Action<SKCanvas>> addToPhaseItor;
 
         private HoverBehavior hover;
         private SelectableBehavior selectable;
+        private AddableBehavior addable;
 
         public CircleObject_v1() : base() {
             this.hover = new HoverBehavior { CanvasObject = this };
             this.selectable = new SelectableBehavior { CanvasObject = this };
-
-            this.hover.Subscribe();
-            this.selectable.Subscribe();
+            this.addable = new AddableBehavior { CanvasObject = this };
 
             this.hover.RegisterBehavior(this.OnHovered);
-            //var dragAndDropComponent = new DragAndDropComponent();
-            //var selectableComponent = new SelectableComponent();
+            this.addable.RegisterBehavior(this.OnAddToCanvas);
 
-            //this.AddComponent(dragAndDropComponent);
-            //this.AddComponent(selectableComponent);
+            this.addable.AddPhaseCallback(this.DrawAddToPhase0);
+            this.addable.AddPhaseCallback(this.DrawAddToPhase1);
+
+            this.stateManager.DefaultBehaviors.AddRange(
+                new BaseBehavior[] {
+                    this.hover,
+                    this.selectable,
+                }
+            );
+            this.stateManager.AddToBehaviors.AddRange(
+                new BaseBehavior[] {
+                    this.addable,
+                }
+            );
+
+            this.stateManager.Initialize();
         }
 
         private void OnHovered(BehaviorArgs args) {
             this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
         }
 
-        public void StartAddToBehavior() {
-            this.MouseClick += this.CircleObject_v1_MouseClick;
-            this.MouseMove += this.CircleObject_v1_MouseMove;
+        private void OnAddToCanvas(BehaviorArgs args) {
+            var castArgs = args as AddableBehaviorArgs;
 
-            this.addToPhases = new List<Action<SKCanvas>>() {
-                this.DrawAddToPhase0,
-                this.DrawAddToPhase1,
-            };
-            this.addToPhaseItor = this.addToPhases.GetEnumerator();
-            this.Dispatcher.Lock(this);
-            this.addToPhaseItor.MoveNext();
-        }
-
-        public void StopAddToBehavior() {
-            this.MouseClick -= this.CircleObject_v1_MouseClick;
-            this.MouseMove -= this.CircleObject_v1_MouseMove;
-
-            this.Dispatcher.Unlock();
-        }
-
-        private void CircleObject_v1_MouseClick(Event @event) {
-            var e = @event as MouseEvent;
-
-            this.addToPhaseItor.MoveNext();
-
-            if (this.addToPhaseItor.Current == null) {
-                this.StopAddToBehavior();
+            if (castArgs.PhaseName.Contains("Phase0")) {
+                this.Center = castArgs.Point;
             }
-            else {
-                this.Center = e.Pointer;
+            else if (castArgs.PhaseName.Contains("Phase1")) {
+                this.VirtualEnd = castArgs.Point;
+                this.Radius = SKPoint.Distance(this.Center, castArgs.Point);
             }
         }
 
-        private void CircleObject_v1_MouseMove(Event @event) {
-            var e = @event as MouseEvent;
-            var action = this.addToPhaseItor.Current;
-
-            if (action.Method.Name.Contains("Phase0")) {
-                this.Center = e.Pointer;
-
-            }
-            else if (action.Method.Name.Contains("Phase1")) {
-                this.VirtualEnd = e.Pointer;
-                this.Radius = SKPoint.Distance(this.Center, e.Pointer);
-            }
+        public void ChangeState(string state) {
+            this.stateManager.ChangeState(state);
         }
 
         public override bool ContainsPoint(SKPoint point) {
@@ -2187,16 +2171,11 @@ namespace TuggingController {
         }
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
-            if (this.addToPhaseItor.Current != null) {
-                this.gCenter = worldCoordinate.TransformToDevice(this.Center);
-                this.gVirtualEnd = worldCoordinate.TransformToDevice(this.VirtualEnd);
-                this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
-
-                this.gVirtualCircleRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(50.0f);
-                this.gCenteoidShapeRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(5.0f);
-            }
-            else {
+            if (this.stateManager.CurrentState == "DefaultBehaviors") {
                 this.InvalidateOnDefault(worldCoordinate);
+            }
+            else if (this.stateManager.CurrentState == "AddToBehaviors") {
+                this.InvalidateOnAddTo(worldCoordinate);
             }
         }
 
@@ -2208,22 +2187,30 @@ namespace TuggingController {
             }
 
             if (this.IsSelected) {
-                this.Radius = 52.0f;
                 this.FillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Blue, 0.8f);
             } else {
                 this.FillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
-                this.Radius = 50.0f;
             }
 
             this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
         }
 
+        private void InvalidateOnAddTo(WorldSpaceCoordinate worldCoordinate) {
+            this.gCenter = worldCoordinate.TransformToDevice(this.Center);
+            this.gVirtualEnd = worldCoordinate.TransformToDevice(this.VirtualEnd);
+            this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
+
+            this.gVirtualCircleRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(50.0f);
+            this.gCenteoidShapeRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(5.0f);
+        }
+
         protected override void DrawThis(SKCanvas canvas) {
-            if (this.addToPhaseItor.Current != null) {
-                this.addToPhaseItor.Current?.Invoke(canvas);
-            } else {
+            if (this.stateManager.CurrentState == "DefaultBehaviors") {
                 canvas.DrawCircle(this.gCenter, this.gRadius, this.FillPaint);
                 canvas.DrawCircle(this.gCenter, this.gRadius, this.StrokePaint);
+            }
+            else if (this.stateManager.CurrentState == "AddToBehaviors") {
+                this.addable.PhaseEnumerator.Current?.Invoke(canvas);
             }
         }
 
@@ -2270,6 +2257,26 @@ namespace TuggingController {
     }
 
     public class StateManager {
+        public List<BaseBehavior> DefaultBehaviors { get; set; } = new List<BaseBehavior>();
+        public List<BaseBehavior> AddToBehaviors { get; set; } = new List<BaseBehavior>();
 
+        public string CurrentState = "DefaultBehaviors";
+
+        public void Initialize() {
+            this.DefaultBehaviors.ForEach(b => b.Subscribe());
+        }
+
+        public void ChangeState(string state) {
+            var oldBehaviors = typeof(StateManager).GetProperty($"{this.CurrentState}").GetValue(this);
+
+            // Unsubscribe old behaviors
+            (oldBehaviors as List<BaseBehavior>).ForEach(b => b.Unsubscribe());
+
+            this.CurrentState = state;
+            var newBehaviors = typeof(StateManager).GetProperty($"{this.CurrentState}").GetValue(this);
+
+            // Subscribe new behaviors
+            (newBehaviors as List<BaseBehavior>).ForEach(b => b.Subscribe());
+        }
     }
 }
