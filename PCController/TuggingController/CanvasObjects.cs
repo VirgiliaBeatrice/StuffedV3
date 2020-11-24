@@ -2119,11 +2119,13 @@ namespace TuggingController {
         private HoverBehavior hover;
         private SelectableBehavior selectable;
         private AddableBehavior addable;
+        private DnDBehavior dnd;
 
         public CircleObject_v1() : base() {
             this.hover = new HoverBehavior { CanvasObject = this };
             this.selectable = new SelectableBehavior { CanvasObject = this };
             this.addable = new AddableBehavior { CanvasObject = this };
+            this.dnd = new DnDBehavior { CanvasObject = this };
 
             this.hover.RegisterBehavior(this.OnHovered);
             this.addable.RegisterBehavior(this.OnAddToCanvas);
@@ -2135,6 +2137,7 @@ namespace TuggingController {
                 new BaseBehavior[] {
                     this.hover,
                     this.selectable,
+                    this.dnd,
                 }
             );
             this.stateManager.AddToBehaviors.AddRange(
@@ -2193,6 +2196,7 @@ namespace TuggingController {
             }
 
             this.gRadius = worldCoordinate.WorldToDeviceTransform.MapRadius(this.Radius);
+            this.gCenter = worldCoordinate.TransformToDevice(this.Center);
         }
 
         private void InvalidateOnAddTo(WorldSpaceCoordinate worldCoordinate) {

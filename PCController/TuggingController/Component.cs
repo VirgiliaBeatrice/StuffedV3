@@ -333,37 +333,4 @@ namespace TuggingController {
             this._mouseMoveBehavior += behavior;
         }
     }
-
-    public class AddToComponent : ILog, IComponent {
-        private ICanvasObject canvasObject;
-        private BehaviorHandler behaviors;
-        public ICanvasObject CanvasObject {
-            get => this.canvasObject;
-            set {
-                this.canvasObject = value;
-            }
-        }
-
-        public AddToComponent() {
-            this.behaviors += this.DefaultBehavior;
-        }
-
-        public string Tag => "AddTo";
-
-        public Logger Logger => LogManager.GetCurrentClassLogger();
-
-        public bool Enabled { get; set; } = false;
-
-        public void AddBehavior(BehaviorHandler behavior) {
-            throw new NotImplementedException();
-        }
-
-        public void DefaultBehavior(BehaviorArgs e) {
-            throw new NotImplementedException();
-        }
-
-        public void PreventDefault(BehaviorHandler behavior) {
-            throw new NotImplementedException();
-        }
-    }
 }

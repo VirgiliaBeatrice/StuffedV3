@@ -104,38 +104,38 @@ namespace TuggingController {
         public ConfigSceneRootObject(IScene scene) : base(scene) {
         }
 
-        protected override void RootObject_v1_MouseDoubleClick(Event @event) {
-            var e = @event as MouseEvent;
+        //protected override void RootObject_v1_MouseDoubleClick(Event @event) {
+        //    var e = @event as MouseEvent;
 
-            switch (e.AddtionalParameters as DrawingMode?) {
-                case DrawingMode.Circle:
-                    var circle = new CircleObject_v1() {
-                        Center = e.Pointer,
-                    };
+        //    switch (e.AddtionalParameters as DrawingMode?) {
+        //        case DrawingMode.Circle:
+        //            var circle = new CircleObject_v1() {
+        //                Center = e.Pointer,
+        //            };
 
-                    circle.SetParent(this);
-                    circle.Scene = this.Scene;
-                    this.Children.Add(circle);
+        //            circle.SetParent(this);
+        //            circle.Scene = this.Scene;
+        //            this.Children.Add(circle);
 
-                    circle.ChangeState("AddToBehaviors");
-                    this.Dispatcher.Lock(circle);
-                    //circle.StartAddToBehavior();
-                    break;
-                case DrawingMode.Line:
-                    var lineSeg = new LineSegmentObject_v1();
+        //            circle.ChangeState("AddToBehaviors");
+        //            this.Dispatcher.Lock(circle);
+        //            //circle.StartAddToBehavior();
+        //            break;
+        //        case DrawingMode.Line:
+        //            var lineSeg = new LineSegmentObject_v1();
 
-                    lineSeg.SetParent(this);
-                    lineSeg.Scene = this.Scene;
-                    lineSeg.P0.Point = e.Pointer;
-                    this.Children.Add(lineSeg);
+        //            lineSeg.SetParent(this);
+        //            lineSeg.Scene = this.Scene;
+        //            lineSeg.P0.Point = e.Pointer;
+        //            this.Children.Add(lineSeg);
 
-                    lineSeg.StartAddToBehavior();
-                    break;
-                case DrawingMode.None:
-                    break;
-            }
+        //            lineSeg.StartAddToBehavior();
+        //            break;
+        //        case DrawingMode.None:
+        //            break;
+        //    }
 
             //base.RootObject_v1_MouseDoubleClick(@event);
-        }
+        //}
     }
 }
