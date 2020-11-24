@@ -30,7 +30,7 @@ namespace TuggingController {
 
         // Nullable Property
         public Transform Parent { get; set; }
-        public ICanvasObject CanvasObject { get; set; }
+        public CanvasObject_v1 CanvasObject { get; set; }
         public event EventHandler TransformChanged;
 
         // Initialized Property

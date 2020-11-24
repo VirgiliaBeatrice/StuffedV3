@@ -132,6 +132,7 @@
     <Compile Include="ChartControl.Designer.cs">
       <DependentUpon>ChartControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="ChartScene.cs" />
     <Compile Include="ConfigScene.cs" />
     <Compile Include="Decorator.cs" />
     <Compile Include="Event.cs" />

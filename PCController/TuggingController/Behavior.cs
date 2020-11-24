@@ -13,7 +13,7 @@ namespace TuggingController {
     public abstract class BaseBehavior : ILog {
         protected Behavior behavior;
 
-        public ICanvasObject CanvasObject { get; set; }
+        public CanvasObject_v1 CanvasObject { get; set; }
         public string State { get; set; }
 
         public abstract string Tag { get; }
@@ -39,7 +39,7 @@ namespace TuggingController {
             var target = this.CanvasObject;
 
             if (e.CurrentTarget == target) {
-                this.behavior?.Invoke(new HoverBehaviorArgs(true));
+                this.behavior?.Invoke(new HoverBehaviorArgs(true) { Location = e.Pointer });
             }
         }
 
@@ -48,7 +48,7 @@ namespace TuggingController {
             var target = this.CanvasObject;
 
             if (e.CurrentTarget == target) {
-                this.behavior?.Invoke(new HoverBehaviorArgs(false));
+                this.behavior?.Invoke(new HoverBehaviorArgs(false) { Location = e.Pointer });
             }
         }
 
@@ -66,25 +66,18 @@ namespace TuggingController {
     public class SelectableBehavior : BaseBehavior {
         public override string Tag => "Selectable";
 
-        public SelectableBehavior() {
-            this.behavior += this.OnSelect;
-        }
+        public SelectableBehavior() { }
 
         protected void OnMouseClick(Event @event) {
             var e = @event as MouseEvent;
-            var target = this.CanvasObject;
 
-            if (e.CurrentTarget == target) {
-                var args = new SelectableBehaviorArgs {
-                    Location = e.Pointer,
-                };
-
-                this.behavior?.Invoke(args);
+            if (this.CanvasObject.ContainsPoint(e.Pointer)) {
+                this.CanvasObject.IsSelected = !this.CanvasObject.IsSelected;
             }
-        }
-
-        private void OnSelect(BehaviorArgs args) {
-            this.CanvasObject.IsSelected = !this.CanvasObject.IsSelected;
+            else {
+                this.CanvasObject.IsSelected = false;
+                this.CanvasObject.Dispatcher.Release();
+            }
         }
 
         public override void Subscribe() {
@@ -128,8 +121,9 @@ namespace TuggingController {
 
             if (this.PhaseEnumerator.Current == this.PhaseCollection.Last()) {
                 this.PhaseEnumerator = this.PhaseCollection.GetEnumerator();
-                this.CanvasObject.Dispatcher.Unlock();
-                this.CanvasObject.Dispatcher.OnTargetUnlocked(new TargetUnlockedEventArgs(this.CanvasObject));
+
+                this.CanvasObject.ChangeState("DefaultBehaviors");
+                this.CanvasObject.Dispatcher.Release();
             }
             else {
                 this.PhaseEnumerator.MoveNext();
@@ -158,54 +152,7 @@ namespace TuggingController {
         private SKPoint origin;
 
         public DnDBehavior() {
-            this.behavior += this.OnDnD;
-        }
-
-        protected void OnMouseDown(Event @event) {
-            var e = @event as MouseEvent;
-            var target = this.CanvasObject;
-
-            if (@event.CurrentTarget == target) {
-                //this.Logger.Debug($"{target.GetType()} MouseDown");
-                if (target.IsSelected) {
-                    target.Dispatcher.Capture(target);
-
-                    var dragEvent = e.Clone();
-                    dragEvent.Type = "DragStart";
-
-                    target.Dispatcher.DispatchMouseEvent(dragEvent);
-                }
-            }
-        }
-
-        protected void OnMouseUp(Event @event) {
-            var e = @event as MouseEvent;
-            var target = this.CanvasObject;
-
-            if (@event.CurrentTarget == target) {
-                //this.Logger.Debug($"{target.GetType()} MouseUp");
-
-                if (!target.IsSelected) {
-                    target.Dispatcher.Release();
-
-                    var dragEvent = e.Clone();
-                    dragEvent.Type = "DragEnd";
-
-                    target.Dispatcher.DispatchMouseEvent(dragEvent);
-                }
-            }
-        }
-
-        protected void OnMouseMove(Event @event) {
-            var e = @event as MouseEvent;
-            var target = this.CanvasObject;
-
-            if (target.Dispatcher.CapturedTarget != null) {
-                var dragEvent = e.Clone();
-
-                dragEvent.Type = "Dragging";
-                target.Dispatcher.DispatchMouseEvent(dragEvent);
-            }
+            //this.behavior += this.OnDnD;
         }
 
         protected void OnDragStart(Event @event) {
@@ -241,34 +188,22 @@ namespace TuggingController {
                 Anchor = this.anchor,
                 Origin = this.origin,
             };
+            var lPointer = target.Transform.WorldToLocalMatrix.MapPoint(behaviorArgs.Location);
+            var lAnchor = target.Transform.WorldToLocalMatrix.MapPoint(this.anchor);
+            var translation = lPointer - lAnchor;
+
+            behaviorArgs.Translation = translation;
 
             this.behavior?.Invoke(behaviorArgs);
         }
 
-        public void OnDnD(BehaviorArgs args) {
-            var castArgs = args as DragAndDropBehaviorArgs;
-            var target = this.CanvasObject;
-            var origin = castArgs.Origin;
-            var lPointer = target.Transform.WorldToLocalMatrix.MapPoint(castArgs.Location);
-            var lAnchor = target.Transform.WorldToLocalMatrix.MapPoint(this.anchor);
-            var translationVector = lPointer - lAnchor;
-
-            target.Location = origin + translationVector;
-        }
-
         public override void Subscribe() {
-            this.CanvasObject.MouseMove += this.OnMouseMove;
-            this.CanvasObject.MouseDown += this.OnMouseDown;
-            this.CanvasObject.MouseUp += this.OnMouseUp;
             this.CanvasObject.DragStart += this.OnDragStart;
             this.CanvasObject.Dragging += this.OnDragging;
             this.CanvasObject.DragEnd += this.OnDragEnd;
         }
 
         public override void Unsubscribe() {
-            this.CanvasObject.MouseMove -= this.OnMouseMove;
-            this.CanvasObject.MouseDown -= this.OnMouseDown;
-            this.CanvasObject.MouseUp -= this.OnMouseUp;
             this.CanvasObject.DragStart -= this.OnDragStart;
             this.CanvasObject.Dragging -= this.OnDragging;
             this.CanvasObject.DragEnd -= this.OnDragEnd;

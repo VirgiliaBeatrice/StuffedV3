@@ -583,9 +583,15 @@ namespace Reparameterization {
             //);
         }
 
+        public Simplex(Pair[] pairs) {
+            this.AddRange(pairs);
+
+            this.Coordinate = new BarycentricCoordinate2D(this);
+        }
+
         public Simplex(StateVector[] states, ConfigurationVector[] configs) {
             if (states.Length != configs.Length) {
-                throw new Exception("The counts of each vector array should be mateched.");
+                throw new Exception("The counts of each vector array should be matched.");
             }
             else {
                 this.AddRange(states.Zip(configs, (s, c) => new Pair(s, c)));
@@ -709,6 +715,10 @@ namespace Reparameterization {
 
         public void Multiply(float c) {
             this.Vector = this.Vector.Multiply(c);
+        }
+
+        public static ConfigurationVector operator +(ConfigurationVector left, ConfigurationVector right) {
+            return new ConfigurationVector(left.Vector + right.Vector);
         }
     }
 

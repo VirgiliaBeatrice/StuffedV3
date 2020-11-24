@@ -20,55 +20,9 @@ namespace TuggingController {
 
         void Dispatch(Event @event);
         void Update(SKCanvas canvas);
-    }
 
-    public class ChartScene : IScene {
-        public ICanvasObject Root { get; set; }
-        // TODO: https://stackoverflow.com/questions/943171/expose-and-raise-event-of-a-child-control-in-a-usercontrol-in-c-sharp
-        public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
-        public event EventHandler<EventArgs> CanvasObjectChanged;
-
-        public EventDispatcher<ICanvasObject> Dispatcher { get; set; }
-
-        public WorldSpaceCoordinate WorldSpace { get; set; } = new WorldSpaceCoordinate();
-
-        public ChartScene() : base() {
-            this.Root = new RootObject_v1(this);
-            this.Dispatcher = new EventDispatcher<ICanvasObject>() {
-                Root = this.Root
-            };
-
-            this.Root.Dispatcher.CanvasTargetChanged += this.Dispatcher_CanvasTargetChanged;
-            this.Root.Dispatcher.CanvasObjectChanged += this.Dispatcher_CanvasObjectChanged;
-        }
-
-        private void Dispatcher_CanvasObjectChanged(object sender, EventArgs e) {
-            this.OnCanvasObjectChanged(e);
-        }
-
-        private void Dispatcher_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
-            this.OnCanvasTargetChanged(e);
-        }
-
-        public void OnCanvasTargetChanged(CanvasTargetChangedEventArgs e) {
-            this.CanvasTargetChanged?.Invoke(this, e);
-        }
-
-        public void OnCanvasObjectChanged(EventArgs e) {
-            this.CanvasObjectChanged?.Invoke(this, e);
-        }
-
-        public void Update(SKCanvas canvas) {
-            this.Root.Draw(canvas, this.WorldSpace);
-        }
-
-        public void Dispatch(Event @event) {
-            var e = @event as MouseEvent;
-            var sPointer = new SKPoint(e.X, e.Y);
-            e.Pointer = this.WorldSpace.TransformToWorld(sPointer);
-
-            this.Root.Dispatcher.DispatchMouseEvent(e);
-        }
+        ContextMenu GenerateClickContextMenu(IEnumerable<object> targets, Event @event);
+        ContextMenu GenerateDbClickContextMenu();
     }
 
     public class RootObject_v1 : CanvasObject_v1 {
@@ -82,6 +36,8 @@ namespace TuggingController {
         private float zoomFactor = 1.5f;
         private bool isZoom = false;
         private bool isPan = false;
+
+        public override bool Selectable { get; set; } = false;
 
         public RootObject_v1(IScene scene) {
             // TODO!
@@ -100,6 +56,10 @@ namespace TuggingController {
             this.MouseDown += this.RootObject_v1_MouseDown;
             this.MouseUp += this.RootObject_v1_MouseUp;
             this.MouseMove += this.RootObject_v1_MouseMove;
+        }
+
+        public void AddEntity(Entity_v1 entity) {
+            this.dataZone.Add(entity);
         }
 
         private void RootObject_v1_MouseMove(Event @event) {
@@ -203,6 +163,8 @@ namespace TuggingController {
         private List<Line_v1> verticalLines = new List<Line_v1>();
         private int gridScale = 50;
         private SKPaint boarderPaint = new SKPaint() { Color = SKColors.DarkKhaki, IsStroke = true, StrokeWidth = 6.0f };
+
+        public new bool Selectable { get; set; } = false;
 
         public Grid_v2() : base() { }
 

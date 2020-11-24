@@ -10,7 +10,7 @@ namespace TuggingController {
 
     public interface IComponent {
         bool Enabled { get; set; }
-        ICanvasObject CanvasObject { get; set; }
+        CanvasObject_v1 CanvasObject { get; set; }
         string Tag { get; }
 
         void DefaultBehavior(BehaviorArgs e);
@@ -19,7 +19,7 @@ namespace TuggingController {
     }
 
     public struct PaintComponent : IComponent {
-        public ICanvasObject CanvasObject { get; set; }
+        public CanvasObject_v1 CanvasObject { get; set; }
         public string Tag { get; set; }
         public SKPaint FillPaint { get; set; }
         public SKPaint StrokePaint { get; set; }
@@ -39,10 +39,10 @@ namespace TuggingController {
     }
 
     public class HoverComponent : ILog, IComponent {
-        private ICanvasObject _canvasObject;
+        private CanvasObject_v1 _canvasObject;
         private BehaviorHandler behaviors;
 
-        public ICanvasObject CanvasObject {
+        public CanvasObject_v1 CanvasObject {
             get => this._canvasObject;
             set {
                 this._canvasObject = value;
@@ -88,50 +88,6 @@ namespace TuggingController {
             }
         }
 
-        //private void CanvasObject_MouseMove(Event @event) {
-        //    var e = @event as MouseEvent;
-        //    var target = this.CanvasObject;
-        //    var currentState = this.CanvasObject.ContainsPoint(e.Pointer);
-
-        //    if (this.prevState != currentState) {
-        //        if (currentState) {
-        //            var enterEvent = e.Clone();
-        //            enterEvent.Type = "MouseEnter";
-
-        //            target.Dispatcher.DispatchEvent(enterEvent);
-        //        } else {
-        //            var leaveEvent = e.Clone();
-        //            leaveEvent.Type = "MouseLeave";
-
-        //            target.Dispatcher.DispatchEvent(leaveEvent);
-        //        }
-
-        //        this.prevState = currentState;
-        //    }
-        //}
-
-        //private void CanvasObject_MouseLeave(Event @event) {
-        //    var e = @event as MouseEvent;
-        //    var target = this.CanvasObject;
-
-        //    if (e.Target == target) {
-        //        var args = new HoverBehaviorArgs(false);
-
-        //        this.behaviors?.Invoke(args);
-        //    }
-        //}
-
-        //private void CanvasObject_MouseEnter(Event @event) {
-        //    var e = @event as MouseEvent;
-        //    var target = this.CanvasObject;
-
-        //    if (e.Target == target) {
-        //        var args = new HoverBehaviorArgs(true);
-
-        //        this.behaviors?.Invoke(args);
-        //    }
-        //}
-
         public void AddBehavior(BehaviorHandler behavior) {
             throw new NotImplementedException();
         }
@@ -145,10 +101,10 @@ namespace TuggingController {
     }
 
     public class SelectableComponent : ILog, IComponent {
-        private ICanvasObject _canvasObject;
+        private CanvasObject_v1 _canvasObject;
         private BehaviorHandler behaviors;
 
-        public ICanvasObject CanvasObject {
+        public CanvasObject_v1 CanvasObject {
             get => this._canvasObject;
             set {
                 this._canvasObject = value;
@@ -197,12 +153,12 @@ namespace TuggingController {
     }
 
     public class DragAndDropComponent : ILog, IComponent {
-        private ICanvasObject _canvasObject;
+        private CanvasObject_v1 _canvasObject;
         private BehaviorHandler _mouseMoveBehavior;
         private SKPoint _anchor;
         private SKPoint _origin;
 
-        public ICanvasObject CanvasObject {
+        public CanvasObject_v1 CanvasObject {
             get => this._canvasObject;
             set {
                 this._canvasObject = value;

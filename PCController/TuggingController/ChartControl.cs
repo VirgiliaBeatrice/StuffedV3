@@ -15,6 +15,11 @@ using System.Security.Cryptography;
 
 namespace TuggingController {
     public partial class ChartControl : UserControl {
+        private Timer mouseDownTimer = new Timer();
+        private int clicks = 0;
+        private bool isDragging = false;
+        private MouseEventArgs mouseDownEventArgs;
+
         protected SKControl skControl;
         protected Timer timer = new Timer();
         protected int timerCount = 0;
@@ -37,6 +42,9 @@ namespace TuggingController {
             this.timer.Interval = 10;
             this.timer.Tick += this.Timer_Tick;
 
+            this.mouseDownTimer.Interval = 400;
+            this.mouseDownTimer.Tick += this.mouseDownTimer_Tick;
+
             this.Controls.AddRange(new Control[] {
                 this.skControl,
             });
@@ -58,10 +66,8 @@ namespace TuggingController {
             this.ChartScene.CanvasObjectChanged += this.ChartScene_CanvasObjectChanged;
 
             this.skControl.PaintSurface += this.SKControl_PaintSurface;
-            this.skControl.MouseDown += this.SkControl_MouseDown;
             this.skControl.MouseUp += this.SkControl_MouseUp;
-            this.skControl.MouseClick += this.SkControl_MouseClick;
-            this.skControl.MouseDoubleClick += this.SkControl_MouseDoubleClick;
+            this.skControl.MouseDown += this.SkControl_MouseDown;
             this.skControl.MouseMove += this.SkControl_MouseMove;
             this.skControl.MouseWheel += this.SkControl_MouseWheel;
             this.skControl.KeyDown += this.SkControl_KeyDown;
@@ -100,7 +106,9 @@ namespace TuggingController {
                     Y = e.Y,
                     Button = e.Button,
                     Delta = e.Delta,
-                    ModifierKey = Keys.Control
+                    ModifierKey = Keys.Control,
+                    Sender = this,
+                    OriginalEventArgs = e,
                 };
 
                 this.ChartScene.Dispatch(mouseEvent);
@@ -109,71 +117,143 @@ namespace TuggingController {
             this.Invalidate(true);
         }
 
-        protected void SkControl_MouseClick(object sender, MouseEventArgs e) {
-            var mouseEvent = new MouseEvent("MouseClick") {
-                X = e.X,
-                Y = e.Y,
-                Button = e.Button,
-            };
-
-            this.ChartScene.Dispatch(mouseEvent);
-            this.Invalidate(true);
-
-        }
-
-        protected void SkControl_MouseUp(object sender, MouseEventArgs e) {
-            var mouseEvent = new MouseEvent("MouseUp") {
-                X = e.X,
-                Y = e.Y,
-                Button = e.Button,
-            };
-
-            this.ChartScene.Dispatch(mouseEvent);
-            this.Invalidate(true);
-        }
-
-        protected void SkControl_MouseMove(object sender, MouseEventArgs e) {
-            var mouseEvent = new MouseEvent("MouseMove") {
-                X = e.X,
-                Y = e.Y,
-                Button = e.Button,
-                Delta = e.Delta,
-            };
-
-            this.ChartScene.Dispatch(mouseEvent);
-            this.Invalidate(true);
-        }
-
         protected void SkControl_MouseDown(object sender, MouseEventArgs e) {
+            if (!this.mouseDownTimer.Enabled) {
+                this.mouseDownEventArgs = e;
+                this.mouseDownTimer.Start();
+            }
+
             var mouseEvent = new MouseEvent("MouseDown") {
                 X = e.X,
                 Y = e.Y,
                 Button = e.Button,
+                Sender = this,
+                OriginalEventArgs = e,
             };
 
             this.ChartScene.Dispatch(mouseEvent);
             this.Invalidate(true);
         }
 
-        protected void SkControl_MouseDoubleClick(object sender, MouseEventArgs e) {
-            var mouseEvent = new MouseEvent("MouseDoubleClick") {
+        protected void SkControl_MouseUp(object sender, MouseEventArgs e) {
+            this.clicks++;
+
+            if (this.isDragging) {
+                var dragEndEvent = new MouseEvent("DragEnd") {
+                    X = e.X,
+                    Y = e.Y,
+                    Button = e.Button,
+                    Sender = this,
+                    OriginalEventArgs = e,
+                };
+
+                this.ChartScene.Dispatch(dragEndEvent);
+                this.isDragging = false;
+                this.clicks = 0;
+            }
+            else {
+                var mouseClickEvent = new MouseEvent("MouseClick") {
+                    X = e.X,
+                    Y = e.Y,
+                    Button = e.Button,
+                    Sender = this,
+                    OriginalEventArgs = e,
+                };
+
+                this.ChartScene.Dispatch(mouseClickEvent);
+            }
+
+            var mouseUpEvent = new MouseEvent("MouseUp") {
                 X = e.X,
                 Y = e.Y,
                 Button = e.Button,
+                Sender = this,
+                OriginalEventArgs = e,
             };
 
-            this.ChartScene.Dispatch(mouseEvent);
+            this.ChartScene.Dispatch(mouseUpEvent);
+
+            this.Invalidate(true);
+        }
+
+        protected void SkControl_MouseMove(object sender, MouseEventArgs e) {
+            if (this.isDragging) {
+                var draggingEvent = new MouseEvent("Dragging") {
+                    X = e.X,
+                    Y = e.Y,
+                    Button = e.Button,
+                    Delta = e.Delta,
+                    Sender = this,
+                    OriginalEventArgs = e,
+                };
+
+                this.ChartScene.Dispatch(draggingEvent);
+            }
+            else {
+                var mouseEvent = new MouseEvent("MouseMove") {
+                    X = e.X,
+                    Y = e.Y,
+                    Button = e.Button,
+                    Delta = e.Delta,
+                    Sender = this,
+                    OriginalEventArgs = e,
+                };
+
+                this.ChartScene.Dispatch(mouseEvent);
+            }
+
+            //var objects = this.ChartScene.Root.
+
+
             this.Invalidate(true);
         }
 
         protected void SkControl_KeyDown(object sender, KeyEventArgs e) {
-            var keyEvent = new KeyEvent("KeyDown") {
-                KeyCode = e.KeyCode,
-            };
 
-            Console.WriteLine($"KeyCode: {keyEvent.KeyCode}");
 
-            this.ChartScene.Dispatch(keyEvent);
+            //var keyEvent = new KeyEvent("KeyDown") {
+            //    KeyCode = e.KeyCode,
+            //};
+
+            //Console.WriteLine($"KeyCode: {keyEvent.KeyCode}");
+
+            //this.ChartScene.Dispatch(keyEvent);
+            //this.Invalidate(true);
+        }
+
+        private void mouseDownTimer_Tick(object sender, EventArgs e) {
+            this.mouseDownTimer.Stop();
+
+            if (this.clicks == 0) {
+                var mouseEvent = new MouseEvent("DragStart") {
+                    X = this.mouseDownEventArgs.X,
+                    Y = this.mouseDownEventArgs.Y,
+                    Button = this.mouseDownEventArgs.Button,
+                    Sender = this,
+                    OriginalEventArgs = this.mouseDownEventArgs,
+                };
+                this.isDragging = true;
+
+                this.ChartScene.Dispatch(mouseEvent);
+            }
+            else if (this.clicks == 2) {
+                var mouseEvent = new MouseEvent("MouseDoubleClick") {
+                    X = this.mouseDownEventArgs.X,
+                    Y = this.mouseDownEventArgs.Y,
+                    Button = this.mouseDownEventArgs.Button,
+                    Sender = this,
+                    OriginalEventArgs = this.mouseDownEventArgs,
+                };
+
+                this.ChartScene.Dispatch(mouseEvent);
+                this.clicks = 0;
+                this.mouseDownEventArgs = null;
+            }
+            else {
+                this.clicks = 0;
+                this.mouseDownEventArgs = null;
+            }
+
             this.Invalidate(true);
         }
 

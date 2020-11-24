@@ -28,7 +28,7 @@ namespace TuggingController {
         public SKPoint Location => this._location;
         public SKPoint Origin { get; set; }
         public SKPoint Anchor { get; set; }
-        public SKMatrix InitialTranslation { get; set; }
+        public SKPoint Translation { get; set; }
 
         public DragAndDropBehaviorArgs(int x, int y) {
             this._location = new SKPoint() { X = x, Y = y };
@@ -40,11 +40,13 @@ namespace TuggingController {
     }
 
     public class SelectableBehaviorArgs : BehaviorArgs {
+        public bool IsInside { get; set; }
         public SKPoint Location { get; set; }
     }
 
     public class HoverBehaviorArgs : BehaviorArgs {
         public bool IsInside { get; set; }
+        public SKPoint Location { get; set; }
 
         public HoverBehaviorArgs(bool isInside) {
             this.IsInside = isInside;
@@ -76,7 +78,7 @@ namespace TuggingController {
         EventDispatcher<ICanvasObject> Dispatcher { get; }
         IScene Scene { get; set; }
         bool IsSelected { get; set; }
-
+        bool Selectable { get; set; }
         SKRect BoarderBox { get; }
         Transform Transform { get; set; }
         SKPoint Location { get; set; }
@@ -226,7 +228,8 @@ namespace TuggingController {
 
         protected PaintComponent PaintComponent { get; set; } = new PaintComponent();
         public bool IsSelected { get; set; } = false;
-        public bool IsNodeVisible { get; set; } = true;
+        public virtual bool Selectable { get; set; } = true;
+        public virtual bool IsNodeVisible { get; set; } = true;
 
         private IScene scene;
         public IScene Scene {
@@ -237,6 +240,9 @@ namespace TuggingController {
                 this.Children.ForEach(child => child.Scene = this.scene);
             }
         }
+
+        protected StateManager stateManager = new StateManager();
+
 
         /// <summary>
         /// Constructor
@@ -370,10 +376,15 @@ namespace TuggingController {
             }
             return childrenNodes.ToArray();
         }
+
+        public void ChangeState(string state) {
+            this.stateManager.ChangeState(state);
+        }
     }
 
     public abstract class ContainerCanvasObject_v1 : CanvasObject_v1 {
-        public new bool IsNodeVisible { get; set; } = false;
+        public override bool Selectable { get; set; } = false;
+        public override bool IsNodeVisible { get; set; } = false;
         //public override void Draw(SKCanvas canvas) {
         //    // Redraw
         //    // Invalidate() first, then DrawThis() and Draw() of all children.
@@ -389,13 +400,16 @@ namespace TuggingController {
     }
 
     public partial class Entity_v1 : CanvasObject_v1 {
-        private DragAndDropComponent dragAndDropComponent;
-        private SelectableComponent selectableComponent;
         private SKPoint _gLocation;
         private float _radius = 5.0f;
         private float _gRadius;
 
+        private HoverBehavior hover;
+        private SelectableBehavior selectable;
+        private DnDBehavior dnd;
         public int Index { get; set; }
+        public Pair Pair { get; set; }
+        public StateVector StateVector { get; set; }
 
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
@@ -412,24 +426,63 @@ namespace TuggingController {
         public SKPoint Point {
             get => SkiaExtension.SkiaHelper.ToSKPoint(this.PointVector);
             set {
-                this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
+                this.PointVector = SkiaHelper.ToVector(value);
             }
         }
         override public SKPoint Location {
             get => this.Point;
             set {
-                this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
+                this.PointVector = SkiaHelper.ToVector(value);
             }
         }
 
         public Entity_v1() : base() {
-            this.dragAndDropComponent = new DragAndDropComponent();
-            this.selectableComponent = new SelectableComponent();
+            this.hover = new HoverBehavior { CanvasObject = this };
+            this.selectable = new SelectableBehavior { CanvasObject = this };
+            this.dnd = new DnDBehavior { CanvasObject = this };
 
-            this.AddComponents(new IComponent[] {
-                this.dragAndDropComponent,
-                this.selectableComponent,
-            });
+            this.hover.RegisterBehavior(this.OnHovered);
+            this.dnd.RegisterBehavior(this.OnDnD);
+
+            this.stateManager.DefaultBehaviors.AddRange(
+                new BaseBehavior[] {
+                    this.hover,
+                    this.selectable,
+                    this.dnd,
+                }
+            );
+            this.stateManager.AddToBehaviors.AddRange(
+                new BaseBehavior[] {
+                    //this.addable,
+                }
+            );
+
+            this.stateManager.Initialize();
+
+            this.DragEnd += this.OnDragEndCustom;
+        }
+
+        public void InitStateVector() {
+            this.StateVector = new StateVector(this.PointVector);
+            this.Pair = new Pair(this.StateVector);
+        }
+
+        public void UpdateConfigVector(ConfigurationVector config) {
+            this.Pair.Config = config;
+        }
+
+        private void OnDragEndCustom(Event @event) {
+            (this.Transform.Parent.CanvasObject as DataZone_v1).UpdateData();
+        }
+
+        private void OnHovered(BehaviorArgs args) {
+            this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
+        }
+
+        private void OnDnD(BehaviorArgs args) {
+            var castArgs = args as DragAndDropBehaviorArgs;
+
+            this.Point = castArgs.Origin + castArgs.Translation;
         }
 
         public override string ToString() {
@@ -451,7 +504,12 @@ namespace TuggingController {
                 this._gRadius += 2.0f;
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
             } else {
-                this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
+                if (this.Pair.IsPaired) {
+                    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Red, 0.8f);
+                }
+                else {
+                    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
+                }
             }
         }
 
@@ -642,114 +700,6 @@ namespace TuggingController {
             return this.triangleEdges.Where(edge => edge.HasVertex(e0) && edge.HasVertex(e1)).FirstOrDefault();
         }
 
-        #region Unused
-        private void SetTriangleExtensionRay() {
-            this.outerTriangles.Clear();
-            //var outerTriangles = new HashSet<Triangle_v1>();
-
-            foreach (var extreme in this.newExtremes) {
-                this.Logger.Debug($"{extreme}");
-                var it = extreme.Value;
-                var prev = extreme.Prev.Value;
-                var next = extreme.Next.Value;
-                var targets = this.triangles.Select(
-                    tri => {
-                        var isPrev = tri.IsVertex(it) && tri.IsVertex(prev);
-                        var isNext = tri.IsVertex(it) && tri.IsVertex(next);
-
-                        if (isPrev & isNext) {
-                            return (tri, new Entity_v1[] {
-                                it, prev, next
-                            });
-                        }
-                        else if (isPrev & !isNext) {
-                            return (tri, new Entity_v1[] {
-                                it, prev
-                            });
-                        }
-                        else if (!isPrev & isNext) {
-                            return (tri, new Entity_v1[] {
-                                it, next
-                            });
-                        }
-                        else {
-                            return (null, null);
-                        }
-                    }
-                ).Where(item => item.Item1 != null);
-
-                foreach (var target in targets) {
-                    var targetTri = target.Item1;
-                    var targetVertices = target.Item2;
-
-                    if (targetVertices.Length == 3) {
-                        var notRedundant = this.outerTriangles.Add(targetTri);
-
-                        //if (notRedundant) {
-                        targetTri.Exterior = new ExteriorZone();
-                        //}
-
-                        // Situation 1 has the highest priority!
-                        //this.Logger.Debug($"[{targetTri}, {targetVertices[0]}, {targetVertices[1]}, {targetVertices[2]}]Triangle Extension Ray: Situation 1.");
-
-                        var ray0 = new Ray_v1();
-                        var ray1 = new Ray_v1();
-
-                        ray0.P0 = next.Point;
-                        ray0.P1 = next.Point + next.Point - prev.Point;
-                        ray0.Color = SKColors.DarkGoldenrod;
-                        ray0.RayWidth = 4.0f;
-                        ray1.P0 = prev.Point;
-                        ray1.P1 = prev.Point + prev.Point - next.Point;
-                        ray1.Color = SKColors.DarkGoldenrod;
-                        ray1.RayWidth = 4.0f;
-
-                        targetTri.Exterior.Rays.Add(ray0);
-                        targetTri.Exterior.Rays.Add(ray1);
-                        targetTri.Exterior.Extreme = it;
-                    }
-                    else {
-                        var targetVertexIt = targetVertices[0];
-                        var targetVertexNeighbor = targetVertices[1];
-                        var notRedundant = this.outerTriangles.Add(targetTri);
-
-                        if (notRedundant) {
-                            targetTri.Exterior = new ExteriorZone();
-                        }
-
-                        //if (notRedundant) {
-                        if (notRedundant) {
-                            //this.Logger.Debug($"[{targetTri}, {targetVertices[0]}, {targetVertices[1]}]Triangle Extension Ray: Situation 2.");
-
-                            var ray0 = new Ray_v1();
-                            var ray1 = new Ray_v1();
-                            var oppsiteVertex = targetTri.GetRestVertices(targetVertices).First();
-
-                            targetTri.Exterior.Edge = this.convexhullEdges.Where(e => e.HasVertex(targetVertexIt) & e.HasVertex(targetVertexNeighbor)).ElementAt(0);
-
-                            if (!this.convexhullEdges.Any(e => e.HasVertex(targetVertexIt) & e.HasVertex(oppsiteVertex))) {
-                                ray0.P0 = targetVertexIt.Point;
-                                ray0.P1 = targetVertexIt.Point + targetVertexIt.Point - oppsiteVertex.Point;
-                                ray0.Color = SKColors.DarkCyan;
-
-                                targetTri.Exterior.Rays.Add(ray0);
-                            }
-
-                            if (!this.convexhullEdges.Any(e => e.HasVertex(targetVertexNeighbor) & e.HasVertex(oppsiteVertex))) {
-                                ray1.P0 = targetVertexNeighbor.Point;
-                                ray1.P1 = targetVertexNeighbor.Point + targetVertexNeighbor.Point - oppsiteVertex.Point;
-                                ray1.Color = SKColors.DarkCyan;
-
-                                targetTri.Exterior.Rays.Add(ray1);
-                            }
-                        }
-                    }
-                }
-                //}
-            }
-        }
-        #endregion
-
         private void SetExteriorRays() {
             var exteriorRays = new List<ExteriorRay>();
             this.voronoiRegions.Clear();
@@ -829,7 +779,7 @@ namespace TuggingController {
 
                     if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == -1 & Math.Sign(angleOfEdgeExtensionAndNormalIN) == 1) {
                         exteriorRays.Add(new ExteriorRay() {
-                            Ray = rayOfEdgeExtension
+                            Ray = rayOfEdgeExtension,
                         });
                     }
                     else if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == Math.Sign(angleOfEdgeExtensionAndNormalIN)) {
@@ -904,7 +854,10 @@ namespace TuggingController {
         public void Add(Entity_v1 entity) {
             entity.SetParent(this);
             this._entities.Add(entity);
+            this.UpdateData();
+        }
 
+        public void UpdateData() {
             if (this._entities.Count == 3) {
                 var triangle = new Triangle_v1(this[0], this[1], this[2]);
 
@@ -943,7 +896,7 @@ namespace TuggingController {
                     pairSet.Add(new VertexIndexPair { i[2], i[0] });
                 }
 
-                foreach(var pair in pairSet) {
+                foreach (var pair in pairSet) {
                     this.triangleEdges.Add(new Edge_v1 {
                         E0 = this[pair.ElementAt(0)],
                         E1 = this[pair.ElementAt(1)]
@@ -951,7 +904,7 @@ namespace TuggingController {
                 }
 
                 // Create triangles.
-                foreach(var i in triangleIndicesCollection) {
+                foreach (var i in triangleIndicesCollection) {
                     var triangle = new Triangle_v1(
                         this[i[0]],
                         this[i[1]],
@@ -966,7 +919,7 @@ namespace TuggingController {
                 }
 
                 // Get all extremes.
-                foreach(var i in convexhullIndicesCollection) {
+                foreach (var i in convexhullIndicesCollection) {
                     this.extremes.Add(this[i]);
                     this.newExtremes.Add(this[i]);
                 }
@@ -978,7 +931,8 @@ namespace TuggingController {
 
                     if (it == convexhullIndicesCollection.Last) {
                         e1 = this[convexhullIndicesCollection.First.Value];
-                    } else {
+                    }
+                    else {
                         e1 = this[it.Next.Value];
                     }
 
@@ -1004,7 +958,11 @@ namespace TuggingController {
 
         public void Add(SKPoint point) {
             var index = this._entities.Count;
-            this.Add(new Entity_v1() { Location = point, Index = index });
+            var entity = new Entity_v1() { Location = point, Index = index };
+            
+            entity.InitStateVector();
+
+            this.Add(entity);
         }
 
         public void AddRange(IEnumerable<Entity_v1> entities) {
@@ -1052,7 +1010,9 @@ namespace TuggingController {
 
         static public SKPaint VertexPaint = new SKPaint();
 
-        public Line_v1() : base() { }
+        public Line_v1() : base() {
+            this._isDebug = false;
+        }
 
         protected override void DrawThis(SKCanvas canvas) {
             if (this._isDebug) {
@@ -1302,6 +1262,8 @@ namespace TuggingController {
     }
 
     public class VoronoiRegion_v1 : CanvasObject_v1 {
+        public override bool Selectable { get; set; } = false;
+
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
             Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DarkOliveGreen, 0.3f),
@@ -1316,6 +1278,7 @@ namespace TuggingController {
         private ExteriorRay exteriorRay1;
         private bool isHovered;
         private HoverComponent hoverComponent;
+        private HoverBehavior hover;
 
         public ExteriorRay ExteriorRay0 {
             get => this.exteriorRay0;
@@ -1345,10 +1308,74 @@ namespace TuggingController {
         public int Index { get; set; } = 0;
 
         public VoronoiRegion_v1() {
-            this.hoverComponent = new HoverComponent();
+            //this.hoverComponent = new HoverComponent();
 
-            this.hoverComponent.PreventDefault(this.VoronoiRegion_v1_HoverBehavior);
-            this.AddComponent(this.hoverComponent);
+            //this.hoverComponent.PreventDefault(this.VoronoiRegion_v1_HoverBehavior);
+            //this.AddComponent(this.hoverComponent);
+
+            this.hover = new HoverBehavior() { CanvasObject = this, };
+
+            this.hover.RegisterBehavior(this.OnHovered);
+
+            this.stateManager.DefaultBehaviors.AddRange(
+                new BaseBehavior[] {
+                    this.hover,
+                }
+            );
+            this.stateManager.AddToBehaviors.AddRange(
+                new BaseBehavior[] {
+                    //this.addable,
+                }
+            );
+
+            this.stateManager.Initialize();
+        }
+
+        private void OnHovered(BehaviorArgs args) {
+            this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
+            this.isHovered = (args as HoverBehaviorArgs).IsInside;
+
+            var result = this.GetInterpolationResult((args as HoverBehaviorArgs).Location);
+
+            this.Logger.Debug(result?.Vector);
+        }
+
+        public ConfigurationVector GetInterpolationResult(SKPoint point) {
+
+            var pointVec = SkiaHelper.ToVector(point);
+
+            if (this.ExcludedTri != null) {
+                var simplex = this.ExcludedTri.Simplex;
+
+                if (simplex.IsSet) {
+                    return simplex.GetInterpolatedConfigurationVector(pointVec);
+                }
+                else {
+                    return null;
+                }
+            }
+            else {
+                var ray0Govorner = this.ExteriorRay0.Govorner;
+                var ray1Govorner = this.ExteriorRay1.Govorner;
+                var simplex0 = ray0Govorner.Simplex;
+                var simplex1 = ray1Govorner.Simplex;
+                var angleOfEdge0 = (float)Math.Abs(SkiaHelper.GetIncludedAngle(point, edge0.P1, edge0.P0));
+                var angleOfEdge1 = (float)Math.Abs(SkiaHelper.GetIncludedAngle(point, edge1.P1, edge1.P0));
+                var includeAngle = angleOfEdge0 + angleOfEdge1;
+
+                if (simplex0.IsSet & simplex1.IsSet) {
+                    var result0 = simplex0.GetInterpolatedConfigurationVector(pointVec);
+                    var result1 = simplex1.GetInterpolatedConfigurationVector(pointVec);
+
+                    result0.Multiply(angleOfEdge0 / includeAngle);
+                    result1.Multiply(angleOfEdge1 / includeAngle);
+
+                    return result0 + result1;
+                }
+                else {
+                    return null;
+                }
+            }
         }
 
         public override string ToString() {
@@ -1633,18 +1660,21 @@ namespace TuggingController {
     }
 
     public partial class Triangle_v1 : CanvasObject_v1 {
+        public override bool Selectable { get; set; } = false;
+
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
             Color = SkiaHelper.ConvertColorWithAlpha(SKColors.DimGray, 0.3f),
             Style = SKPaintStyle.Fill
         };
         private bool isHovered = false;
-        private Simplex simplex;
+        public Simplex Simplex { get; set; }
 
         private SKPoint _gP0;
         private SKPoint _gP1;
         private SKPoint _gP2;
         private HoverComponent hoverComponent;
+        private HoverBehavior hover;
 
         private Edge_v1 _edge01;
         private Edge_v1 _edge12;
@@ -1672,18 +1702,44 @@ namespace TuggingController {
             this.P1 = p1;
             this.P2 = p2;
 
-            this.simplex = new Simplex(
-                new StateVector[] {
-                    new StateVector(this.P0.PointVector),
-                    new StateVector(this.P1.PointVector),
-                    new StateVector(this.P2.PointVector),
+            this.Simplex = new Simplex(new Pair[] {
+                this.P0.Pair,
+                this.P1.Pair,
+                this.P2.Pair,
+            });
+
+            this.hover = new HoverBehavior { CanvasObject = this };
+
+            this.hover.RegisterBehavior(this.OnHovered);
+
+            this.stateManager.DefaultBehaviors.AddRange(
+                new BaseBehavior[] {
+                    this.hover,
+                }
+            );
+            this.stateManager.AddToBehaviors.AddRange(
+                new BaseBehavior[] {
+                    //this.addable,
                 }
             );
 
-            this.hoverComponent = new HoverComponent();
+            this.stateManager.Initialize();
+        }
 
-            this.hoverComponent.PreventDefault(this.Triangle_v1_HoverBehavior);
-            this.AddComponent(this.hoverComponent);
+        private void OnHovered(BehaviorArgs args) {
+            this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
+            this.isHovered = (args as HoverBehaviorArgs).IsInside;
+        }
+
+        public ConfigurationVector GetInterpolationResult(SKPoint point) {
+            var state = new StateVector(SkiaHelper.ToVector(point));
+
+            if (this.Simplex.IsSet) {
+                return this.Simplex.GetInterpolatedConfigurationVector(state.Vector);
+            }
+            else {
+                return null;
+            }
         }
 
         public override string ToString() {
@@ -1727,9 +1783,9 @@ namespace TuggingController {
         }
 
         private void UpdateSimplex() {
-            this.simplex[0].State.Vector = this.V0;
-            this.simplex[1].State.Vector = this.V1;
-            this.simplex[2].State.Vector = this.V2;
+            this.Simplex[0].State.Vector = this.V0;
+            this.Simplex[1].State.Vector = this.V1;
+            this.Simplex[2].State.Vector = this.V2;
         }
 
         private void Triangle_v1_HoverBehavior(BehaviorArgs args) {
@@ -1785,7 +1841,7 @@ namespace TuggingController {
         }
 
         public override bool ContainsPoint(SKPoint point) {
-            this.isInsideInterior = this.simplex.IsInside(SkiaExtension.SkiaHelper.ToVector(point));
+            this.isInsideInterior = this.Simplex.IsInside(SkiaExtension.SkiaHelper.ToVector(point));
 
             if (this.Exterior.HasExterior) {
                 this.isInsideExterior = this.ContainsPointInExteriorZone(point);
@@ -1866,13 +1922,7 @@ namespace TuggingController {
         private SKPoint gPoint;
         private float gRadius;
 
-        public PointObject_v1() : base() {
-            var dragAndDropComponent = new DragAndDropComponent();
-            var selectableComponent = new SelectableComponent();
-
-            this.AddComponent(dragAndDropComponent);
-            this.AddComponent(selectableComponent);
-        }
+        public PointObject_v1() : base() { }
 
         public override bool ContainsPoint(SKPoint point) {
             return this.IsVisible? SKPoint.Distance(point, this.Point) <= this.radius : false;
@@ -1907,15 +1957,17 @@ namespace TuggingController {
             IsAntialias = true,
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2
+            StrokeWidth = 10,
         };
         private CircularList<SKPoint> extremes = new CircularList<SKPoint>();
         private CircularList<SKPoint> gExtremes = new CircularList<SKPoint>();
 
         private SKPoint gP0;
         private SKPoint gP1;
-        private List<Action<SKCanvas>> addToPhases;
-        private IEnumerator<Action<SKCanvas>> addToPhaseItor;
+
+        private SelectableBehavior selectable;
+        private AddableBehavior addable;
+        private DnDBehavior dnd;
 
         public LineSegmentObject_v1() : base() {
             this.P0 = new PointObject_v1() {
@@ -1930,52 +1982,59 @@ namespace TuggingController {
             this.Children.Add(this.P0);
             this.Children.Add(this.P1);
 
-            var selectableComponent = new SelectableComponent();
+            this.selectable = new SelectableBehavior { CanvasObject = this };
+            this.addable = new AddableBehavior { CanvasObject = this };
+            this.dnd = new DnDBehavior { CanvasObject = this };
 
-            this.AddComponent(selectableComponent);
+            //this.selectable.RegisterBehavior(this.OnSelect);
+            this.addable.RegisterBehavior(this.OnAddToCanvas);
+            this.dnd.RegisterBehavior(this.OnDnD);
+
+            this.addable.AddPhaseCallback(this.DrawAddToPhase0);
+            this.addable.AddPhaseCallback(this.DrawAddToPhase1);
+
+            this.stateManager.DefaultBehaviors.AddRange(
+                new BaseBehavior[] {
+                    this.selectable,
+                    this.dnd,
+                }
+            );
+            this.stateManager.AddToBehaviors.AddRange(
+                new BaseBehavior[] {
+                    this.addable,
+                }
+            );
+
+            this.stateManager.Initialize();
         }
 
+        private void OnAddToCanvas(BehaviorArgs args) {
+            var castArgs = args as AddableBehaviorArgs;
 
-        public void StartAddToBehavior() {
-            this.MouseClick += this.LineSegmentObject_v1_MouseClick;
-            this.MouseMove += this.LineSegmentObject_v1_MouseMove;
-
-            this.addToPhases = new List<Action<SKCanvas>>() {
-                this.DrawAddToPhase0,
-                this.DrawAddToPhase1,
-            };
-            this.addToPhaseItor = this.addToPhases.GetEnumerator();
-            this.Dispatcher.Lock(this);
-            this.addToPhaseItor.MoveNext();
-        }
-
-        public void StopAddToBehavior() {
-            this.MouseClick -= this.LineSegmentObject_v1_MouseClick;
-            this.MouseMove -= this.LineSegmentObject_v1_MouseMove;
-
-            this.Dispatcher.Unlock();
-        }
-
-        private void LineSegmentObject_v1_MouseClick(Event @event) {
-            var e = @event as MouseEvent;
-
-            this.addToPhaseItor.MoveNext();
-
-            if (this.addToPhaseItor.Current == null) {
-                this.StopAddToBehavior();
+            if (castArgs.PhaseName.Contains("Phase0")) {
+                this.P0.Point = castArgs.Point;
+                this.Location = this.P0.Point;
+            }
+            else if (castArgs.PhaseName.Contains("Phase1")) {
+                this.P1.Point = castArgs.Point;
             }
         }
 
-        private void LineSegmentObject_v1_MouseMove(Event @event) {
-            var e = @event as MouseEvent;
-            var action = this.addToPhaseItor.Current;
+        private void OnDnD(BehaviorArgs args) {
+            var castArgs = args as DragAndDropBehaviorArgs;
 
-            if (action.Method.Name.Contains("Phase0")) {
-                this.P0.Point = e.Pointer;
+            if (this.P0.ContainsPoint(castArgs.Location)) {
+                var oldLocation = this.Location;
 
+                this.Location = castArgs.Origin + castArgs.Translation;
+                this.P0.Point += this.Location - oldLocation;
             }
-            else if (action.Method.Name.Contains("Phase1")) {
-                this.P1.Point = e.Pointer;
+            else {
+                var oldLocation = this.Location;
+
+                this.Location = castArgs.Origin + castArgs.Translation;
+                this.P0.Point += this.Location - oldLocation;
+                this.P1.Point += this.Location - oldLocation;
             }
         }
 
@@ -2027,13 +2086,13 @@ namespace TuggingController {
             this.gP0 = worldCoordinate.TransformToDevice(this.P0.Point);
             this.gP1 = worldCoordinate.TransformToDevice(this.P1.Point);
 
-            if (this.extremes.Count() != 0) {
-                this.gExtremes.Clear();
+            //if (this.extremes.Count() != 0) {
+            //    this.gExtremes.Clear();
 
-                foreach (var node in this.extremes) {
-                    this.gExtremes.Add(worldCoordinate.TransformToDevice(node.Value));
-                }
-            }
+            //    foreach (var node in this.extremes) {
+            //        this.gExtremes.Add(worldCoordinate.TransformToDevice(node.Value));
+            //    }
+            //}
 
             if (this.IsSelected) {
                 this.P0.IsVisible = true;
@@ -2045,38 +2104,37 @@ namespace TuggingController {
         }
 
         protected override void DrawThis(SKCanvas canvas) {
-            if (this.addToPhaseItor.Current != null) {
-                this.addToPhaseItor.Current?.Invoke(canvas);
-            } else {
-                // Invalidate Method also needed to be subscribed
-                //this.P0.IsVisible = false;
-                //this.P1.IsVisible = false;
-
+            if (this.stateManager.CurrentState == "DefaultBehaviors") {
                 strokePaint.PathEffect = null;
 
                 canvas.DrawLine(this.gP0, this.gP1, strokePaint);
 
-                if (this.gExtremes.Count() != 0) {
-                    var path = new SKPath();
+                //if (this.gExtremes.Count() != 0) {
+                //    var path = new SKPath();
 
-                    path.MoveTo(this.gExtremes[0].Value);
-                    path.LineTo(this.gExtremes[1].Value);
-                    path.LineTo(this.gExtremes[2].Value);
-                    path.LineTo(this.gExtremes[3].Value);
+                //    path.MoveTo(this.gExtremes[0].Value);
+                //    path.LineTo(this.gExtremes[1].Value);
+                //    path.LineTo(this.gExtremes[2].Value);
+                //    path.LineTo(this.gExtremes[3].Value);
 
-                    path.Close();
+                //    path.Close();
 
-                    canvas.DrawPath(path, strokePaint);
-                }
+                //    canvas.DrawPath(path, strokePaint);
+                //}
+            }
+            else if (this.stateManager.CurrentState == "AddToBehaviors") {
+                this.addable.PhaseEnumerator.Current?.Invoke(canvas);
             }
         }
 
         private void DrawAddToPhase0(SKCanvas canvas) {
             // Invalidate Method also needed to be subscribed
+            this.P0.IsVisible = true;
             this.P1.IsVisible = false;
         }
         private void DrawAddToPhase1(SKCanvas canvas) {
             // Invalidate Method also needed to be subscribed
+            this.P0.IsVisible = true;
             this.P1.IsVisible = true;
 
             strokePaint.PathEffect = SKPathEffect.CreateDash(new float[] { 5.0f, 5.0f }, 0.0f);
@@ -2106,7 +2164,7 @@ namespace TuggingController {
             StrokeWidth = 2
         };
 
-        private StateManager stateManager = new StateManager();
+        //private StateManager stateManager = new StateManager();
 
         private SKPoint gCenter;
         private SKPoint gVirtualEnd;
@@ -2129,6 +2187,7 @@ namespace TuggingController {
 
             this.hover.RegisterBehavior(this.OnHovered);
             this.addable.RegisterBehavior(this.OnAddToCanvas);
+            this.dnd.RegisterBehavior(this.OnDnD);
 
             this.addable.AddPhaseCallback(this.DrawAddToPhase0);
             this.addable.AddPhaseCallback(this.DrawAddToPhase1);
@@ -2153,6 +2212,12 @@ namespace TuggingController {
             this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
         }
 
+        private void OnDnD(BehaviorArgs args) {
+            var castArgs = args as DragAndDropBehaviorArgs;
+
+            this.Center = castArgs.Origin + castArgs.Translation;
+        }
+
         private void OnAddToCanvas(BehaviorArgs args) {
             var castArgs = args as AddableBehaviorArgs;
 
@@ -2163,10 +2228,6 @@ namespace TuggingController {
                 this.VirtualEnd = castArgs.Point;
                 this.Radius = SKPoint.Distance(this.Center, castArgs.Point);
             }
-        }
-
-        public void ChangeState(string state) {
-            this.stateManager.ChangeState(state);
         }
 
         public override bool ContainsPoint(SKPoint point) {

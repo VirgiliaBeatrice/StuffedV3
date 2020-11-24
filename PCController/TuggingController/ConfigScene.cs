@@ -1,4 +1,5 @@
-﻿using SkiaSharp;
+﻿using Reparameterization;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace TuggingController {
     }
 
     public class ConfigScene : IScene {
+
         #region PropertiesNoDefaultInitialization
         public ICanvasObject Root { get; set; }
         public EventDispatcher<ICanvasObject> Dispatcher { get; set; }
@@ -29,10 +31,11 @@ namespace TuggingController {
             this.Root = new ConfigSceneRootObject(this);
             this.Dispatcher = new EventDispatcher<ICanvasObject>() {
                 Root = this.Root,
+                Scene = this,
             };
 
             // Register event handlers of dispatcher
-            this.Dispatcher.TargetUnlocked += this.Dispatcher_TargetUnlocked;
+            //this.Dispatcher.TargetUnlocked += this.Dispatcher_TargetUnlocked;
 
         }
 
@@ -47,7 +50,6 @@ namespace TuggingController {
         }
 
         public void Dispatch(Event @event) {
-
             if (@event as MouseEvent != null) {
                 var e = @event as MouseEvent;
                 var sPointer = new SKPoint(e.X, e.Y);
@@ -69,20 +71,43 @@ namespace TuggingController {
         public void DispatchSceneEvent(Event @event) {
             var e = @event as KeyEvent;
 
-            if (e.Type == "KeyDown") {
-                switch (e.KeyCode) {
-                    case Keys.L:
-                        this.Mode = DrawingMode.Line;
-                        break;
-                    case Keys.C:
-                        this.Mode = DrawingMode.Circle;
-                        this.AddCircleObject();
-                        break;
-                    case Keys.Escape:
-                        this.Mode = DrawingMode.None;
-                        break;
-                }
+            if (e.Type == "KeyDown") { }
+        }
+
+        public ContextMenu GenerateClickContextMenu(IEnumerable<object> targets, Event @event) {
+            var contextMenu = new ContextMenu();
+
+            foreach (var target in targets) {
+                var item = new MenuItem(target.ToString());
+
+                item.Click += (sender, e) => {
+                    this.Dispatcher.Capture(target as CanvasObject_v1);
+
+                    (target as CanvasObject_v1).OnMouseClick(@event);
+                };
+
+                contextMenu.MenuItems.Add(item);
             }
+
+            return contextMenu;
+        }
+
+        public ContextMenu GenerateDbClickContextMenu() {
+            var contextMenu = new ContextMenu();
+            var circle = new MenuItem("Circle");
+            var line = new MenuItem("Line");
+
+            circle.Click += (sender, e) => {
+                this.AddCircleObject();
+            };
+            line.Click += (sender, e) => {
+                this.AddLineSegmentObject();
+            };
+
+            contextMenu.MenuItems.Add(circle);
+            contextMenu.MenuItems.Add(line);
+
+            return contextMenu;
         }
 
         private void AddCircleObject() {
@@ -95,7 +120,70 @@ namespace TuggingController {
             this.Root.Children.Add(circle);
 
             circle.ChangeState("AddToBehaviors");
-            this.Dispatcher.Lock(circle);
+            this.Dispatcher.Capture(circle);
+        }
+
+        private void AddLineSegmentObject() {
+            var lineSeg = new LineSegmentObject_v1();
+
+            lineSeg.SetParent(this.Root as CanvasObject_v1);
+            lineSeg.Scene = this;
+            lineSeg.P0.Point = this.Dispatcher.Pointer;
+            this.Root.Children.Add(lineSeg);
+
+            lineSeg.ChangeState("AddToBehaviors");
+            this.Dispatcher.Capture(lineSeg);
+        }
+
+        public ConfigurationVector PackData() {
+            var children = this.Root.Children;
+            var dataArray = new List<float>();
+            
+            foreach (var child in children) {
+                if ((child as CircleObject_v1) != null) {
+                    dataArray.Add((child as CircleObject_v1).Center.X);
+                    dataArray.Add((child as CircleObject_v1).Center.Y);
+                }
+                if ((child as LineSegmentObject_v1) != null) {
+                    dataArray.Add((child as LineSegmentObject_v1).P0.Point.X);
+                    dataArray.Add((child as LineSegmentObject_v1).P0.Point.Y);
+                    dataArray.Add((child as LineSegmentObject_v1).P1.Point.X);
+                    dataArray.Add((child as LineSegmentObject_v1).P1.Point.Y);
+                }
+            }
+
+            return new ConfigurationVector(dataArray);
+        }
+
+        public void UnpackData(ConfigurationVector config) {
+            var children = this.Root.Children;
+            var idx = 0;
+
+            foreach(var child in children) {
+                if ((child as CircleObject_v1) != null) {
+                    (child as CircleObject_v1).Center = new SKPoint() {
+                        X = config.Vector[idx],
+                        Y = config.Vector[idx + 1],
+                    };
+
+                    idx += 2;
+                }
+                if ((child as LineSegmentObject_v1) != null) {
+                    (child as LineSegmentObject_v1).P0.Point = new SKPoint() {
+                        X = config.Vector[idx],
+                        Y = config.Vector[idx + 1],
+                    };
+
+                    idx += 2;
+
+                    (child as LineSegmentObject_v1).P1.Point = new SKPoint() {
+                        X = config.Vector[idx],
+                        Y = config.Vector[idx + 1],
+                    };
+
+                    idx += 2;
+                }
+            }
         }
     }
 
@@ -103,39 +191,5 @@ namespace TuggingController {
 
         public ConfigSceneRootObject(IScene scene) : base(scene) {
         }
-
-        //protected override void RootObject_v1_MouseDoubleClick(Event @event) {
-        //    var e = @event as MouseEvent;
-
-        //    switch (e.AddtionalParameters as DrawingMode?) {
-        //        case DrawingMode.Circle:
-        //            var circle = new CircleObject_v1() {
-        //                Center = e.Pointer,
-        //            };
-
-        //            circle.SetParent(this);
-        //            circle.Scene = this.Scene;
-        //            this.Children.Add(circle);
-
-        //            circle.ChangeState("AddToBehaviors");
-        //            this.Dispatcher.Lock(circle);
-        //            //circle.StartAddToBehavior();
-        //            break;
-        //        case DrawingMode.Line:
-        //            var lineSeg = new LineSegmentObject_v1();
-
-        //            lineSeg.SetParent(this);
-        //            lineSeg.Scene = this.Scene;
-        //            lineSeg.P0.Point = e.Pointer;
-        //            this.Children.Add(lineSeg);
-
-        //            lineSeg.StartAddToBehavior();
-        //            break;
-        //        case DrawingMode.None:
-        //            break;
-        //    }
-
-            //base.RootObject_v1_MouseDoubleClick(@event);
-        //}
     }
 }
