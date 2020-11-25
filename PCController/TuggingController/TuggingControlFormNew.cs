@@ -63,12 +63,20 @@ namespace TuggingController {
 
             this.chartControl.CanvasTargetChanged += this.ChartControl_CanvasTargetChanged;
             this.chartControl.CanvasObjectChanged += this.ChartControl_CanvasObjectChanged;
+            this.chartControl.DataValidated += this.ChartControl_DataValidated;
 
             this.propertyForm = new CanvasObjectPropertyForm() {
                 Parent = this,
             };
             this.KeyDown += this.TuggingControlForm_KeyDown;
 
+        }
+
+        private void ChartControl_DataValidated(object sender, DataValidatedEventArgs e) {
+            var result = e.Result;
+
+            (this.configControl.ChartScene as ConfigScene).UnpackData(result);
+            this.configControl.Invalidate(true);
         }
 
         private void TuggingControlForm_KeyDown(object sender, KeyEventArgs e) {
@@ -84,11 +92,11 @@ namespace TuggingController {
 
                 e.Handled = true;
             }
-            //else if (e.KeyCode == Keys.I) {
-            //    this.isInterMode = !this.isInterMode;
+            else if (e.KeyCode == Keys.I) {
+                (this.chartControl.ChartScene as ChartScene).IsForDataValidation = !(this.chartControl.ChartScene as ChartScene).IsForDataValidation;
 
-            //    e.Handled = true;
-            //}
+                e.Handled = true;
+            }
         }
 
         private void ChartControl_CanvasObjectChanged(object sender, EventArgs e) {
@@ -125,47 +133,5 @@ namespace TuggingController {
             this.treeView1.EndUpdate();
             this.treeView1.ExpandAll();
         }
-
-        //private bool CreatePair() {
-
-        //    Entry[] targets = this.Chart.Entries.Where(e => e.IsSelected).ToArray();
-
-        //    if (targets.Length != 0) {
-        //        var selectedEntry = targets[0];
-        //        var currentConfiguration = this.ConfigurationCanvas.ControlPoints;
-        //        //var currentConfigurationRobotVector = this.RobotConfiguration.ToArray();
-        //        var currentConfigurationVector = this.RobotConfigurationSpace.Last();
-
-        //        // Attention!: Array should be cloned in case of assigning a reference.
-        //        selectedEntry.PairedConfig = (SKPoint[])currentConfiguration.Clone();
-
-        //        // [New Feature]: Testing
-        //        //var currentConfigurationVector = ToConfigurationVector(currentConfiguration);
-        //        //var currentConfigurationVector = new ConfigurationVector(currentConfigurationRobot);
-        //        //selectedEntry.Pair = 
-        //        //this.Chart.Triangles
-        //        foreach (var tri in this.Chart.Triangles) {
-        //            var idx = tri.Vertices.GetEntryList().IndexOf(selectedEntry);
-
-        //            if (idx != -1) {
-        //                tri.Simplex_Re[idx].Config = currentConfigurationVector;
-        //                selectedEntry.Pair = tri.Simplex_Re[idx];
-        //            }
-        //        }
-
-        //        //this.Chart.Triangles.ForEach(tri => tri.UpdateSimplexState());
-
-        //        selectedEntry.IsPaired = true;
-        //        selectedEntry.IsSelected = false;
-
-        //        // Refresh canvas
-        //        TuggingController.Invalidate();
-
-        //        return true;
-        //    }
-        //    else {
-        //        return false;
-        //    }
-        //}
     }
 }

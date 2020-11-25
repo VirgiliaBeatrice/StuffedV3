@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Reparameterization;
 
 namespace TuggingController {
     public delegate void EventHandler_v1(Event @event);
@@ -37,6 +38,7 @@ namespace TuggingController {
         public float Delta { get; set; } = 0.0f;
         public Keys ModifierKey { get; set; } = Keys.None;
         public MouseButtons Button { get; set; } = MouseButtons.None;
+        public bool ForDataValidation { get; set; } = false;
         public MouseEvent(string type) : base(type) { }
 
         public new MouseEvent Clone() {
@@ -65,7 +67,13 @@ namespace TuggingController {
             this.Target = target;
         }
     }
+    public class DataValidatedEventArgs : EventArgs {
+        public ConfigurationVector Result { get; set; }
 
+        public DataValidatedEventArgs(ConfigurationVector result) {
+            this.Result = result;
+        }
+    }
     public class EventDispatcher<T> where T : ICanvasObject {
         private static EventDispatcher<T> instance = null;
         public static EventDispatcher<T> GetSingleton() {
@@ -89,7 +97,7 @@ namespace TuggingController {
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         public event EventHandler<EventArgs> CanvasObjectChanged;
         public event EventHandler<EventArgs> TargetUnlocked;
-
+        public event EventHandler<DataValidatedEventArgs> DataValidated;
 
         protected NLog.Logger Logger => NLog.LogManager.GetCurrentClassLogger();
 
@@ -128,6 +136,10 @@ namespace TuggingController {
         public virtual void OnTargetUnlocked(EventArgs e) {
             this.TargetUnlocked?.Invoke(this, e);
         }
+        
+        public virtual void OnDataValidated(DataValidatedEventArgs e) {
+            this.DataValidated?.Invoke(this, e);
+        }
 
         public void DispatchMouseClickEvent(Event @event) {
             var castEvent = @event as MouseEvent;
@@ -165,7 +177,16 @@ namespace TuggingController {
 
         public void DispatchMouseMoveEvent(Event @event) {
             var castEvent = @event as MouseEvent;
-            var targets = this.GetEventTargets(castEvent.Pointer, this.Root);
+
+            if (castEvent.ForDataValidation) {
+                var targets = this.GetEventTargetsByTag(castEvent.Pointer, this.Root, "GetInterpolationResult");
+
+                if (targets.Count != 0) {
+                    var target = targets.Last();
+
+                    (target as CanvasObject_v1).OnMouseMove(@event);
+                }
+            }
 
             this.Pointer = castEvent.Pointer;
 
@@ -213,73 +234,6 @@ namespace TuggingController {
             }
         }
 
-        //private void DispatchMouseMoveEvent_Old(Event @event) {
-        //    var castEvent = @event as MouseEvent;
-        //    var newAllTargets = castEvent.Path;
-
-        //    this.Pointer = castEvent.Pointer;
-
-        //    var intersection = newAllTargets.Intersect(this.targets);
-        //    var cNew = new HashSet<object>(newAllTargets);
-        //    var cOld = new HashSet<object>(this.targets);
-
-        //    cNew.ExceptWith(intersection);
-        //    cOld.ExceptWith(intersection);
-
-        //    //cNew.RemoveRange(0, intersection.Count());
-        //    //cOld.RemoveRange(0, intersection.Count());
-
-        //    foreach(var target in cOld) {
-        //        var mouseEvent = new MouseEvent("MouseLeave");
-        //        mouseEvent.CurrentTarget = target;
-        //        //mouseEvent.Target = newAllTargets.Last();
-        //        mouseEvent.Pointer = castEvent.Pointer;
-
-        //        //this.Logger.Debug($"{target.GetType()} MouseLeave");
-
-        //        (target as CanvasObject_v1).OnMouseLeave(mouseEvent);
-        //    }
-
-        //    foreach (var target in cNew) {
-        //        var mouseEvent = new MouseEvent("MouseEnter");
-        //        mouseEvent.CurrentTarget = target;
-        //        //mouseEvent.Target = newAllTargets.Last();
-        //        mouseEvent.Pointer = castEvent.Pointer;
-
-        //        //this.Logger.Debug($"{target.GetType()} MouseEnter");
-
-        //        (target as CanvasObject_v1).OnMouseEnter(mouseEvent);
-        //    }
-
-
-        //    if (cNew.Count() == 0 & cOld.Count() == 0) {
-        //        if (this.CapturedTarget != null) {
-        //            var mouseEvent = new MouseEvent("MouseMove");
-        //            mouseEvent.CurrentTarget = this.CapturedTarget;
-        //            mouseEvent.Target = this.CapturedTarget;
-        //            mouseEvent.Pointer = castEvent.Pointer;
-
-        //            this.CapturedTarget.OnMouseMove(mouseEvent);
-        //        }
-        //        else {
-        //            foreach (var target in newAllTargets) {
-        //                var mouseEvent = new MouseEvent("MouseMove");
-        //                mouseEvent.CurrentTarget = target;
-        //                //mouseEvent.Target = newAllTargets.Last();
-        //                mouseEvent.Pointer = castEvent.Pointer;
-
-        //                //this.Logger.Debug($"{target.GetType().ToString()} MouseMove");
-
-        //                (target as CanvasObject_v1).OnMouseMove(mouseEvent);
-        //            }
-        //        }
-        //    } else {
-        //        var target = newAllTargets.Last() as ICanvasObject;
-
-        //        this.OnCanvasTargetChanged(new CanvasTargetChangedEventArgs(target));
-        //    }
-        //}
-
         private void DispatchDefaultMouseEvent(Event @event) {
             var castEvent = @event as MouseEvent;
             var eventInfo = typeof(CanvasObject_v1).GetField(castEvent.Type, BindingFlags.Instance | BindingFlags.NonPublic);
@@ -294,41 +248,6 @@ namespace TuggingController {
                 }
             }
         }
-
-        //private void DispatchMouseButtonRelatedEvent(Event @event) {
-        //    var castEvent = @event as MouseEvent;
-        //    var eventInfo = typeof(CanvasObject_v1).GetField(castEvent.Type, BindingFlags.Instance | BindingFlags.NonPublic);
-
-        //    if (eventInfo != null) {
-        //        if (this.CapturedTarget != null) {
-        //            EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(this.CapturedTarget);
-
-        //            castEvent.CurrentTarget = this.CapturedTarget;
-        //            handler?.Invoke(castEvent);
-        //        }
-        //        else {
-        //            // Capture Phase
-        //            //foreach(var node in e.Path) {
-        //            //    EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(node);
-
-        //            //    e.CurrentTarget = node;
-        //            //    handler.Invoke(e);
-        //            //}
-
-        //            // Bubble Phase
-        //            foreach (var node in castEvent.Path.ToArray().Reverse()) {
-        //                if (!this._propagate) {
-        //                    break;
-        //                }
-
-        //                EventHandler_v1 handler = (EventHandler_v1)eventInfo.GetValue(node);
-
-        //                castEvent.CurrentTarget = node;
-        //                handler?.Invoke(castEvent);
-        //            }
-        //        }
-        //    }
-        //}
 
         public void DispatchMouseEvent(Event @event) {
             var castEvent = @event as MouseEvent;
@@ -356,7 +275,7 @@ namespace TuggingController {
 
         public void DispatchKeyEvent(Event @event) {
             var castEvent = @event as KeyEvent;
-            var path = this.GetEventTargets(this.Root);
+            //var path = this.GetEventTargets(this.Root);
             var eventInfo = typeof(CanvasObject_v1).GetField(castEvent.Type, BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (eventInfo != null) {
@@ -408,14 +327,39 @@ namespace TuggingController {
             return ret;
         }
 
-        protected List<object> GetEventTargets(ICanvasObject node) {
-            var ret = new List<object> {
-                node
-            };
+        protected List<object> GetEventTargetsByTag(SKPoint wPointerPos, ICanvasObject node, string tag) {
+            var ret = new List<object>();
+            var lPointerPos = node.Transform.TransformToLocalPoint(wPointerPos);
+
+            if (node.ContainsPoint(lPointerPos)) {
+                var methodInfo = node.GetType().GetMethod(tag, BindingFlags.Instance | BindingFlags.Public);
+
+                if (methodInfo != null) {
+                    ret.Add(node);
+                }
+
+                // Children Reversed Order - Top-most Object
+                foreach (var childNode in node.Children) {
+                    var childRet = this.GetEventTargetsByTag(lPointerPos, childNode, tag);
+
+                    ret.AddRange(childRet);
+                }
+            }
+
+            return ret;
+        }
+
+        protected List<object> GetEventTargetsByTag(ICanvasObject node, string tag) {
+            var ret = new List<object>();
+            var methodInfo = node.GetType().GetMethod(tag, BindingFlags.Instance | BindingFlags.Public);
+
+            if (methodInfo != null) {
+                ret.Add(node);
+            }
 
             // Children Reversed Order - Top-most Object
             foreach (var childNode in node.Children) {
-                var childRet = this.GetEventTargets(childNode);
+                var childRet = this.GetEventTargetsByTag(childNode, tag);
 
                 ret.AddRange(childRet);
             }

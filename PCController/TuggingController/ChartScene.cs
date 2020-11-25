@@ -6,9 +6,18 @@ using System.Windows.Forms;
 namespace TuggingController {
     public class ChartScene : IScene {
         public ICanvasObject Root { get; set; }
+        public bool IsForDataValidation { get; set; } = false;
         // TODO: https://stackoverflow.com/questions/943171/expose-and-raise-event-of-a-child-control-in-a-usercontrol-in-c-sharp
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         public event EventHandler<EventArgs> CanvasObjectChanged;
+        public event EventHandler<DataValidatedEventArgs> DataValidated {
+            add {
+                this.Dispatcher.DataValidated += value;
+            }
+            remove {
+                this.Dispatcher.DataValidated -= value;
+            }
+        }
 
         public EventDispatcher<ICanvasObject> Dispatcher { get; set; }
 
@@ -46,11 +55,14 @@ namespace TuggingController {
         }
 
         public void Dispatch(Event @event) {
-            var e = @event as MouseEvent;
-            var sPointer = new SKPoint(e.X, e.Y);
-            e.Pointer = this.WorldSpace.TransformToWorld(sPointer);
+            if (@event as MouseEvent != null) {
+                var e = @event as MouseEvent;
+                var sPointer = new SKPoint(e.X, e.Y);
+                e.Pointer = this.WorldSpace.TransformToWorld(sPointer);
+                e.ForDataValidation = this.IsForDataValidation;
 
-            this.Root.Dispatcher.DispatchMouseEvent(e);
+                this.Dispatcher.DispatchMouseEvent(e);
+            }
         }
 
         public ContextMenu GenerateClickContextMenu(IEnumerable<object> targets, Event @event) {

@@ -17,6 +17,7 @@ namespace TuggingController {
         EventDispatcher<ICanvasObject> Dispatcher { get; set; }
         event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         event EventHandler<EventArgs> CanvasObjectChanged;
+        event EventHandler<DataValidatedEventArgs> DataValidated;
 
         void Dispatch(Event @event);
         void Update(SKCanvas canvas);

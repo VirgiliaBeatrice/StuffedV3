@@ -22,6 +22,7 @@ namespace TuggingController {
         public EventDispatcher<ICanvasObject> Dispatcher { get; set; }
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         public event EventHandler<EventArgs> CanvasObjectChanged;
+        public event EventHandler<DataValidatedEventArgs> DataValidated;
         #endregion
 
         public WorldSpaceCoordinate WorldSpace { get; set; } = new WorldSpaceCoordinate();

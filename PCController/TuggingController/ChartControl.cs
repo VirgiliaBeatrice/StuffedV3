@@ -28,8 +28,15 @@ namespace TuggingController {
 
         public event EventHandler<CanvasTargetChangedEventArgs> CanvasTargetChanged;
         public event EventHandler<EventArgs> CanvasObjectChanged;
+        public event EventHandler<DataValidatedEventArgs> DataValidated {
+            add {
+                this.ChartScene.DataValidated += value;
+            }
+            remove {
+                this.ChartScene.DataValidated -= value;
+            }
+        }
 
-        //public Chart_v1 Chart { get; set; }
         public IScene ChartScene { get; set; }
 
         public ChartControl() {

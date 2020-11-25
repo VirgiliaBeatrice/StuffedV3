@@ -1329,15 +1329,27 @@ namespace TuggingController {
             );
 
             this.stateManager.Initialize();
+
+            this.MouseMove += this.OnMouseMoveForValidating;
         }
 
         private void OnHovered(BehaviorArgs args) {
             this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
             this.isHovered = (args as HoverBehaviorArgs).IsInside;
 
-            var result = this.GetInterpolationResult((args as HoverBehaviorArgs).Location);
+            //var result = this.GetInterpolationResult((args as HoverBehaviorArgs).Location);
 
-            this.Logger.Debug(result?.Vector);
+            //this.Logger.Debug(result?.Vector);
+        }
+
+        private void OnMouseMoveForValidating(Event @event) {
+            var castEvent = @event as MouseEvent;
+
+            if (castEvent.ForDataValidation) {
+                var result = this.GetInterpolationResult(castEvent.Pointer);
+
+                this.Dispatcher.OnDataValidated(new DataValidatedEventArgs(result));
+            }
         }
 
         public ConfigurationVector GetInterpolationResult(SKPoint point) {
@@ -1724,11 +1736,23 @@ namespace TuggingController {
             );
 
             this.stateManager.Initialize();
+
+            this.MouseMove += this.OnMouseMoveForValidating;
         }
 
         private void OnHovered(BehaviorArgs args) {
             this.IsMouseOver = (args as HoverBehaviorArgs).IsInside;
             this.isHovered = (args as HoverBehaviorArgs).IsInside;
+        }
+
+        private void OnMouseMoveForValidating(Event @event) {
+            var castEvent = @event as MouseEvent;
+
+            if (castEvent.ForDataValidation) {
+                var result = this.GetInterpolationResult(castEvent.Pointer);
+
+                this.Dispatcher.OnDataValidated(new DataValidatedEventArgs(result));
+            }
         }
 
         public ConfigurationVector GetInterpolationResult(SKPoint point) {
