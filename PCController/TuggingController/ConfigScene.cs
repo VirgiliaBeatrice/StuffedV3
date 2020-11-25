@@ -157,6 +157,10 @@ namespace TuggingController {
         }
 
         public void UnpackData(ConfigurationVector config) {
+            if (config == null) {
+                return;
+            }
+
             var children = this.Root.Children;
             var idx = 0;
 

@@ -823,11 +823,13 @@ namespace TuggingController {
             // Generate voronoi regions
             for (var idx = 0; idx < exteriorRays.Count; idx ++) {
                 Triangle_v1 excludedTri = null;
+                Triangle_v1 governor = null;
                 var idx0 = idx;
                 var idx1 = idx + 1 < exteriorRays.Count ? idx + 1 : 0;
 
                 var exRay0 = exteriorRays[idx0];
                 var exRay1 = exteriorRays[idx1];
+                // TODO: Ugly
 
                 if (exRay0.ExcludedTri == null) {
                     if (exRay1.ExcludedTri != null) {
@@ -838,13 +840,20 @@ namespace TuggingController {
 
                         idx++;
                     }
+                    else {
+                        if (exRay0.Govorner == null & exRay1.Govorner == null) {
+                            governor = this.triangles.Find(tri => tri.IsVertex(exRay0.Ray.E0) & tri.IsVertex(exRay1.Ray.E0));
+                        }
+                    }
+
 
                     this.voronoiRegions.Add(
                         new VoronoiRegion_v1() {
                             Index = this.voronoiRegions.Count,
                             ExteriorRay0 = exRay0,
                             ExteriorRay1 = exRay1,
-                            ExcludedTri = excludedTri 
+                            ExcludedTri = excludedTri,
+                            Governor = governor,
                         }
                     );
                 }
@@ -853,6 +862,7 @@ namespace TuggingController {
 
         public void Add(Entity_v1 entity) {
             entity.SetParent(this);
+            entity.Index = this._entities.Count;
             this._entities.Add(entity);
             this.UpdateData();
         }
@@ -1286,7 +1296,7 @@ namespace TuggingController {
                 this.exteriorRay0 = value;
                 this.edge0 = this.exteriorRay0.Ray;
 
-                this.Children.Clear();
+                //this.Children.Clear();
                 this.edge0.SetParent(this);
                 this.Children.Add(this.edge0);
             }
@@ -1297,12 +1307,12 @@ namespace TuggingController {
                 this.exteriorRay1 = value;
                 this.edge1 = this.exteriorRay1.Ray;
 
-                this.Children.Clear();
+                //this.Children.Clear();
                 this.edge1.SetParent(this);
                 this.Children.Add(this.edge1);
             }
         }
-
+        public Triangle_v1 Governor { get; set; }
         public Triangle_v1 ExcludedTri { get; set; }
 
         public int Index { get; set; } = 0;
@@ -1353,20 +1363,10 @@ namespace TuggingController {
         }
 
         public ConfigurationVector GetInterpolationResult(SKPoint point) {
-
             var pointVec = SkiaHelper.ToVector(point);
 
-            if (this.ExcludedTri != null) {
-                var simplex = this.ExcludedTri.Simplex;
-
-                if (simplex.IsSet) {
-                    return simplex.GetInterpolatedConfigurationVector(pointVec);
-                }
-                else {
-                    return null;
-                }
-            }
-            else {
+            // TODO: Ugly
+            if (this.edge0.E0 == this.edge1.E0) {
                 var ray0Govorner = this.ExteriorRay0.Govorner;
                 var ray1Govorner = this.ExteriorRay1.Govorner;
                 var simplex0 = ray0Govorner.Simplex;
@@ -1379,14 +1379,39 @@ namespace TuggingController {
                     var result0 = simplex0.GetInterpolatedConfigurationVector(pointVec);
                     var result1 = simplex1.GetInterpolatedConfigurationVector(pointVec);
 
-                    result0.Multiply(angleOfEdge0 / includeAngle);
-                    result1.Multiply(angleOfEdge1 / includeAngle);
+                    result0.Multiply(angleOfEdge1 / includeAngle);
+                    result1.Multiply(angleOfEdge0 / includeAngle);
 
                     return result0 + result1;
                 }
                 else {
                     return null;
                 }
+            }
+            else {
+                if (this.ExcludedTri != null) {
+                    var simplex = this.ExcludedTri.Simplex;
+
+                    if (simplex.IsSet) {
+                        return simplex.GetInterpolatedConfigurationVector(pointVec);
+                    }
+                    else {
+                        return null;
+                    }
+                }
+
+                if (this.Governor != null) {
+                    var simplex = this.Governor.Simplex;
+
+                    if (simplex.IsSet) {
+                        return simplex.GetInterpolatedConfigurationVector(pointVec);
+                    }
+                    else {
+                        return null;
+                    }
+                }
+
+                return null;
             }
         }
 
