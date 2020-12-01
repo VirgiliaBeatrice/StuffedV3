@@ -1357,7 +1357,7 @@ namespace TuggingController {
 
             if (castEvent.ForDataValidation) {
                 var result = this.GetInterpolationResult(castEvent.Pointer);
-
+                //PerfUltility.Act("OnMouseMoveForValidating");
                 this.Dispatcher.OnDataValidated(new DataValidatedEventArgs(result));
             }
         }

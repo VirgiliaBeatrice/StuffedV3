@@ -8,10 +8,25 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TuggingController {
+    public class PerfUltility {
+        static public Stopwatch Sw = new Stopwatch();
+
+        static public void Act(string name) {
+            if (Sw.IsRunning) {
+                Sw.Stop();
+
+                Console.WriteLine($"Elapsed time since last call[{name}]: {Sw.Elapsed}");
+            }
+
+            Sw = Stopwatch.StartNew();
+        }
+    }
+
     public partial class TuggingControlForm : Form {
         private ChartControl chartControl;
         private ToolStripStatusLabel statusLabel;
@@ -74,9 +89,11 @@ namespace TuggingController {
 
         private void ChartControl_DataValidated(object sender, DataValidatedEventArgs e) {
             var result = e.Result;
-
             (this.configControl.ChartScene as ConfigScene).UnpackData(result);
-            this.configControl.Invalidate(true);
+
+            // https://dobon.net/vb/dotnet/control/refreshupdateinvalidate.html
+            this.configControl.Refresh();
+            //PerfUltility.Act("A");
         }
 
         private void TuggingControlForm_KeyDown(object sender, KeyEventArgs e) {
