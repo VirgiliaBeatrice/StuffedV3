@@ -41,6 +41,13 @@ namespace TuggingController {
         private void Dispatcher_CanvasTargetChanged(object sender, CanvasTargetChangedEventArgs e) {
             this.OnCanvasTargetChanged(e);
         }
+        
+        public void Invoke(string eventName, EventArgs args) {
+            var eventRaiseMethod = typeof(EventDispatcher<ICanvasObject>).GetEvent(eventName)?.GetRaiseMethod();
+
+            eventRaiseMethod?.Invoke(this.Dispatcher, new object[] { args });
+        }
+
 
         public void OnCanvasTargetChanged(CanvasTargetChangedEventArgs e) {
             this.CanvasTargetChanged?.Invoke(this, e);

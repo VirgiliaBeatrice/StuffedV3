@@ -130,7 +130,18 @@ namespace TuggingController {
                 this.mouseDownTimer.Start();
             }
 
-            var mouseEvent = new MouseEvent("MouseDown") {
+            var dragStartEvent = new MouseEvent("DragStart") {
+                X = this.mouseDownEventArgs.X,
+                Y = this.mouseDownEventArgs.Y,
+                Button = this.mouseDownEventArgs.Button,
+                Sender = this,
+                OriginalEventArgs = this.mouseDownEventArgs,
+            };
+            this.isDragging = true;
+
+            this.ChartScene.Dispatch(dragStartEvent);
+
+            var mouseDownEvent = new MouseEvent("MouseDown") {
                 X = e.X,
                 Y = e.Y,
                 Button = e.Button,
@@ -138,37 +149,37 @@ namespace TuggingController {
                 OriginalEventArgs = e,
             };
 
-            this.ChartScene.Dispatch(mouseEvent);
+            this.ChartScene.Dispatch(mouseDownEvent);
             this.Invalidate(true);
         }
 
         protected void SkControl_MouseUp(object sender, MouseEventArgs e) {
             this.clicks++;
 
-            if (this.isDragging) {
-                var dragEndEvent = new MouseEvent("DragEnd") {
-                    X = e.X,
-                    Y = e.Y,
-                    Button = e.Button,
-                    Sender = this,
-                    OriginalEventArgs = e,
-                };
+            //if (this.isDragging) {
+            var dragEndEvent = new MouseEvent("DragEnd") {
+                X = e.X,
+                Y = e.Y,
+                Button = e.Button,
+                Sender = this,
+                OriginalEventArgs = e,
+            };
 
-                this.ChartScene.Dispatch(dragEndEvent);
-                this.isDragging = false;
-                this.clicks = 0;
-            }
-            else {
-                var mouseClickEvent = new MouseEvent("MouseClick") {
-                    X = e.X,
-                    Y = e.Y,
-                    Button = e.Button,
-                    Sender = this,
-                    OriginalEventArgs = e,
-                };
+            this.ChartScene.Dispatch(dragEndEvent);
+            this.isDragging = false;
+            //this.clicks = 0;
+        //}
+            //else {
+            var mouseClickEvent = new MouseEvent("MouseClick") {
+                X = e.X,
+                Y = e.Y,
+                Button = e.Button,
+                Sender = this,
+                OriginalEventArgs = e,
+            };
 
-                this.ChartScene.Dispatch(mouseClickEvent);
-            }
+            this.ChartScene.Dispatch(mouseClickEvent);
+            //}
 
             var mouseUpEvent = new MouseEvent("MouseUp") {
                 X = e.X,
@@ -231,19 +242,19 @@ namespace TuggingController {
         private void mouseDownTimer_Tick(object sender, EventArgs e) {
             this.mouseDownTimer.Stop();
 
-            if (this.clicks == 0) {
-                var mouseEvent = new MouseEvent("DragStart") {
-                    X = this.mouseDownEventArgs.X,
-                    Y = this.mouseDownEventArgs.Y,
-                    Button = this.mouseDownEventArgs.Button,
-                    Sender = this,
-                    OriginalEventArgs = this.mouseDownEventArgs,
-                };
-                this.isDragging = true;
+            //if (this.clicks == 0) {
+            //    var mouseEvent = new MouseEvent("DragStart") {
+            //        X = this.mouseDownEventArgs.X,
+            //        Y = this.mouseDownEventArgs.Y,
+            //        Button = this.mouseDownEventArgs.Button,
+            //        Sender = this,
+            //        OriginalEventArgs = this.mouseDownEventArgs,
+            //    };
+            //    this.isDragging = true;
 
-                this.ChartScene.Dispatch(mouseEvent);
-            }
-            else if (this.clicks == 2) {
+            //    this.ChartScene.Dispatch(mouseEvent);
+            //}
+            if (this.clicks == 2) {
                 var mouseEvent = new MouseEvent("MouseDoubleClick") {
                     X = this.mouseDownEventArgs.X,
                     Y = this.mouseDownEventArgs.Y,

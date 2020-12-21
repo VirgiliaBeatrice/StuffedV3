@@ -145,10 +145,26 @@ namespace TuggingController {
             var castEvent = @event as MouseEvent;
             var targets = this.GetSelectableEventTargets(castEvent.Pointer, this.Root);
 
+            switch (castEvent.Button) {
+                case MouseButtons.Left:
+                    // Left button handler
+                    this.OnMouseLeftButtonClicked(@event, targets);
+                    break;
+                case MouseButtons.Right:
+                    // Right button handler
+                    this.OnMouseRightButtonClicked(@event, targets);
+                    break;
+            }
+        }
+
+        private void OnMouseLeftButtonClicked(Event @event, List<object> targets) {
+            var castEvent = @event as MouseEvent;
+
             if (this.CapturedTarget != null) {
                 this.CapturedTarget.OnMouseClick(castEvent);
             }
             else {
+                // Find all targets over the pointer.
                 if (targets.Count == 1) {
                     this.CapturedTarget = targets[0] as CanvasObject_v1;
 
@@ -160,6 +176,18 @@ namespace TuggingController {
 
                     menu.Show(castEvent.Sender as Control, (castEvent.OriginalEventArgs as MouseEventArgs).Location);
                 }
+            }
+        }
+
+        private void OnMouseRightButtonClicked(Event @event, List<object> targets) {
+            var castEvent = @event as MouseEvent;
+
+            // Popup context menu
+            if (targets.Count == 0) {
+                // Popup context menu
+                var menu = this.Scene.GenerateDbClickContextMenu();
+
+                menu.Show(castEvent.Sender as Control, (castEvent.OriginalEventArgs as MouseEventArgs).Location);
             }
         }
 
@@ -263,7 +291,7 @@ namespace TuggingController {
                     this.DispatchMouseClickEvent(castEvent);
                     break;
                 case "MouseDoubleClick":
-                    this.DispatchMouseDoubleClickEvent(castEvent);
+                    //this.DispatchMouseDoubleClickEvent(castEvent);
                     break;
                 default:
                     this.DispatchDefaultMouseEvent(castEvent);
