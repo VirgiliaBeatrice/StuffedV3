@@ -76,7 +76,8 @@ namespace TuggingController {
             this.skControl.MouseUp += this.SkControl_MouseUp;
             this.skControl.MouseDown += this.SkControl_MouseDown;
             this.skControl.MouseMove += this.SkControl_MouseMove;
-            this.skControl.MouseWheel += this.SkControl_MouseWheel;
+            //this.skControl.MouseWheel += this.SkControl_MouseWheel;
+            this.skControl.MouseWheel += this.skControl_MouseWheelNew;
             this.skControl.KeyDown += this.SkControl_KeyDown;
 
             this.skControl.MouseEnter += this.SkControl_MouseEnter;
@@ -119,6 +120,19 @@ namespace TuggingController {
                 };
 
                 this.ChartScene.Dispatch(mouseEvent);
+            }
+
+            this.Invalidate(true);
+        }
+        
+        protected void skControl_MouseWheelNew(object sender, MouseEventArgs e) {
+            if (ModifierKeys == Keys.Control) {
+                var zoomEvent = new ZoomEvent("Zoom") {
+                    Delta = e.Delta,
+                    Sender = this,
+                };
+
+                this.ChartScene.Dispatch(zoomEvent);
             }
 
             this.Invalidate(true);

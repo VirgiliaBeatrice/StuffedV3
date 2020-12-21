@@ -46,6 +46,12 @@ namespace TuggingController {
         }
     }
 
+    public class ZoomEvent : Event {
+        public float Delta { get; set; } = 0.0f;
+
+        public ZoomEvent(string type) : base(type) { }
+    }
+
     public class KeyEvent : Event {
         public Keys KeyCode { get; set; } = Keys.None;
         public KeyEvent(string type) : base(type) { }
@@ -315,6 +321,12 @@ namespace TuggingController {
                     handler?.Invoke(castEvent);
                 }
             }
+        }
+
+        public void DispatchSceneEvent(Event @event) {
+            var castEvent = @event as ZoomEvent;
+
+
         }
 
         protected List<object> GetSelectableEventTargets(SKPoint wPointerPos, ICanvasObject node) {

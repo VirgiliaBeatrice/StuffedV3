@@ -23,6 +23,10 @@ namespace TuggingController {
 
         public WorldSpaceCoordinate WorldSpace { get; set; } = new WorldSpaceCoordinate();
 
+        private float scale = 1.0f;
+        private float zoomFactor = 1.5f;
+        private bool isZooming = false;
+
         public ChartScene() : base() {
             this.Root = new RootObject_v1(this);
             this.Dispatcher = new EventDispatcher<ICanvasObject>() {
@@ -60,6 +64,22 @@ namespace TuggingController {
         public void Update(SKCanvas canvas) {
             this.Root.Draw(canvas, this.WorldSpace);
         }
+        
+        protected void UpdateSceneScale() {
+            SKMatrix scale2 = SKMatrix.MakeScale(this.scale, this.scale);
+
+            var oldWindow = this.WorldSpace.Window;
+            var translation1 = SKMatrix.MakeTranslation(-oldWindow.MidX, -oldWindow.MidY);
+            var translation2 = SKMatrix.MakeTranslation(oldWindow.MidX, oldWindow.MidY);
+            var transform = SKMatrix.MakeIdentity();
+
+            SKMatrix.PostConcat(ref transform, translation1);
+            SKMatrix.PostConcat(ref transform, scale2);
+            SKMatrix.PostConcat(ref transform, translation2);
+
+            var nWindow = transform.MapRect(oldWindow);
+            this.WorldSpace.Window = new SKRect { Bottom = nWindow.Top, Top = nWindow.Bottom, Left = nWindow.Left, Right = nWindow.Right };
+        }
 
         public void Dispatch(Event @event) {
             if (@event as MouseEvent != null) {
@@ -69,6 +89,19 @@ namespace TuggingController {
                 e.ForDataValidation = this.IsForDataValidation;
 
                 this.Dispatcher.DispatchMouseEvent(e);
+            }
+            else if (@event as ZoomEvent != null) {
+                var e = @event as ZoomEvent;
+                var delta = e.Delta;
+
+                if (delta < 0) {
+                    this.scale = zoomFactor;
+                }
+                else {
+                    this.scale = 1.0f / zoomFactor;
+                }
+
+                this.UpdateSceneScale();
             }
         }
 
