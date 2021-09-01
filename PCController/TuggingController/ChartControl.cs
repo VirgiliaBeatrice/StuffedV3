@@ -20,6 +20,7 @@ namespace TuggingController {
         private bool isDragging = false;
         private MouseEventArgs mouseDownEventArgs;
 
+        //protected SKGLControl skControl;
         protected SKControl skControl;
         protected Timer timer = new Timer();
         protected int timerCount = 0;

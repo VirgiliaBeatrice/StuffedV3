@@ -126,7 +126,8 @@ namespace TuggingController {
 
         protected override void Invalidate(WorldSpaceCoordinate worldCoordinate) {
             if (this.isZoom) {
-                SKMatrix scale2 = SKMatrix.MakeScale(this.scale, this.scale);
+                //SKMatrix scale2 = SKMatrix.MakeScale(this.scale, this.scale);
+                SKMatrix scale2 = SKMatrix.CreateScale(this.scale, this.scale);
 
                 var oldWindow = worldCoordinate.Window;
                 var translation1 = SKMatrix.MakeTranslation(-oldWindow.MidX, -oldWindow.MidY);

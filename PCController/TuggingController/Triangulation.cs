@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
+//using System.Numerics;
 using System.Text;
 
 namespace TuggingController {
@@ -35,17 +35,17 @@ namespace TuggingController {
         //}
 
         public class ConfigurationObject {
-            public Vector2 C1 { get; set; }
-            public Vector2 C2 { get; set; }
-            public Vector2 C3 { get; set; }
-            public Vector2 C4 { get; set; }
+            public System.Numerics.Vector2 C1 { get; set; }
+            public System.Numerics.Vector2 C2 { get; set; }
+            public System.Numerics.Vector2 C3 { get; set; }
+            public System.Numerics.Vector2 C4 { get; set; }
 
             public ConfigurationObject() { }
             public ConfigurationObject(SKPoint[] points) {
-                this.C1 = new Vector2 { X = points[0].X, Y = points[0].Y };
-                this.C2 = new Vector2 { X = points[1].X, Y = points[1].Y };
-                this.C3 = new Vector2 { X = points[2].X, Y = points[2].Y };
-                this.C4 = new Vector2 { X = points[3].X, Y = points[3].Y };
+                this.C1 = new System.Numerics.Vector2 { X = points[0].X, Y = points[0].Y };
+                this.C2 = new System.Numerics.Vector2 { X = points[1].X, Y = points[1].Y };
+                this.C3 = new System.Numerics.Vector2 { X = points[2].X, Y = points[2].Y };
+                this.C4 = new System.Numerics.Vector2 { X = points[3].X, Y = points[3].Y };
             }
             public void Multiply(float c) {
                 this.C1 *= c;
@@ -344,13 +344,13 @@ namespace TuggingController {
         }
 
         private static float GetNormalOfTriangle(SKPoint[] vertices) {
-            Vector3 v0, v1, v2;
+            System.Numerics.Vector3 v0, v1, v2;
 
-            v0 = new Vector3(vertices[0].X, vertices[0].Y, 0);
-            v1 = new Vector3(vertices[1].X, vertices[1].Y, 0);
-            v2 = new Vector3(vertices[2].X, vertices[2].Y, 0);
+            v0 = new System.Numerics.Vector3(vertices[0].X, vertices[0].Y, 0);
+            v1 = new System.Numerics.Vector3(vertices[1].X, vertices[1].Y, 0);
+            v2 = new System.Numerics.Vector3(vertices[2].X, vertices[2].Y, 0);
 
-            Vector3 normal = Vector3.Normalize(Vector3.Cross(v1 - v0, v2 - v0));
+            System.Numerics.Vector3 normal = System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Cross(v1 - v0, v2 - v0));
 
             return normal.Z;
         }
@@ -364,9 +364,9 @@ namespace TuggingController {
     //}
 
     public struct Triangle2I {
-        public Vector2 A;
-        public Vector2 B;
-        public Vector2 C;
+        public System.Numerics.Vector2 A;
+        public System.Numerics.Vector2 B;
+        public System.Numerics.Vector2 C;
     }
     public class TriangleMath {
         public SKPoint A { get; set; }
