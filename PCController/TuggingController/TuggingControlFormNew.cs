@@ -13,20 +13,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TuggingController {
-    public class PerfUltility {
-        static public Stopwatch Sw = new Stopwatch();
-
-        static public void Act(string name) {
-            if (Sw.IsRunning) {
-                Sw.Stop();
-
-                Console.WriteLine($"Elapsed time since last call[{name}]: {Sw.Elapsed}");
-            }
-
-            Sw = Stopwatch.StartNew();
-        }
-    }
-
     public partial class TuggingControlForm : Form {
         private ChartControl chartControl;
         private ToolStripStatusLabel statusLabel;
@@ -149,6 +135,23 @@ namespace TuggingController {
 
             this.treeView1.EndUpdate();
             this.treeView1.ExpandAll();
+        }
+
+        public class PerfUltility
+        {
+            static public Stopwatch Sw = new Stopwatch();
+
+            static public void Act(string name)
+            {
+                if (Sw.IsRunning)
+                {
+                    Sw.Stop();
+
+                    Console.WriteLine($"Elapsed time since last call[{name}]: {Sw.Elapsed}");
+                }
+
+                Sw = Stopwatch.StartNew();
+            }
         }
     }
 }
