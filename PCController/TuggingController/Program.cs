@@ -17,8 +17,8 @@ namespace TuggingController
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Form1());
-            Application.Run(new TuggingControlForm());
-            //Application.Run(new TaskMaker());
+            //Application.Run(new TuggingControlForm());
+            Application.Run(new TaskMaker());
         }
     }
 }

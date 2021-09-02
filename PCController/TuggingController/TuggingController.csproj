@@ -143,6 +143,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Behavior.cs" />
+    <Compile Include="CanvasControl.cs" />
+    <Compile Include="CanvasControl.Designer.cs">
+      <DependentUpon>CanvasControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="CanvasObjectPropertyForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -150,6 +154,7 @@
       <DependentUpon>CanvasObjectPropertyForm.cs</DependentUpon>
     </Compile>
     <Compile Include="CanvasObjects.cs" />
+    <Compile Include="CanvasObjects_v2.cs" />
     <Compile Include="ChartControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -167,6 +172,12 @@
     <Compile Include="SkiaHelper.cs" />
     <Compile Include="ConfigControl.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TargetSelection.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TargetSelection.Designer.cs">
+      <DependentUpon>TargetSelection.cs</DependentUpon>
     </Compile>
     <Compile Include="TaskMaker.cs">
       <SubType>Form</SubType>
@@ -208,6 +219,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="TargetSelection.resx">
+      <DependentUpon>TargetSelection.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="TaskMaker.resx">
       <DependentUpon>TaskMaker.cs</DependentUpon>
     </EmbeddedResource>

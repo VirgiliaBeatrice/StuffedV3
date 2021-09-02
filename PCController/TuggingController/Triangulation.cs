@@ -376,7 +376,7 @@ namespace TuggingController {
         public TriangleMath() { }
     }
 
-    class Triangulation {
+    public class Triangulation {
         public QhullCSharp Qhull = new QhullCSharp();
         public Process Task;
         public delegate void DataReceivedHandler(string name, string data);

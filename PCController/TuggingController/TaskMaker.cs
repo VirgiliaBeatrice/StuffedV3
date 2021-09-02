@@ -1,66 +1,69 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TuggingController
-{
-    public partial class TaskMaker : Form
-    {
-        public Layer RootLayer { get; set; } = new Layer("RootLayer");
-        public Layer SelectedLayer { get; set; }
+namespace TuggingController {
+    public partial class TaskMaker : Form {
+        //public Layer RootLayer { get; set; } = new Layer("RootLayer");
+        //public Layer SelectedLayer { get; set; }
+        //public Modes SelectedMode { get; set; } = Modes.None;
 
-        public TaskMaker()
-        {
+        public TaskMaker() {
             InitializeComponent();
 
-            this.SelectedLayer = this.RootLayer;
-            this.treeView1.Nodes.Add(this.RootLayer);
+            //this.SelectedLayer = this.RootLayer;
+            //this.treeView1.Nodes.Add(this.RootLayer);
+
+            this.KeyDown += TaskMaker_KeyDown;
+        }
+
+        private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
+            if (e.KeyCode == Keys.A) {
+                this.canvasControl1.SelectedMode = Modes.AddNode;
+                //this.SelectedMode = Modes.AddNode;
+                e.Handled = true;
+            }
         }
 
         //Add node
-        private void button1_Click(object sender, EventArgs e)
-        {
-
+        private void button1_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedMode = Modes.AddNode;
         }
 
         // Edit node
-        private void button2_Click(object sender, EventArgs e)
-        {
-
+        private void button2_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedMode = Modes.EditNode;
         }
 
         // Manipulate
-        private void button3_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        // Delete node
-        private void button4_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        // Add layer
-        private void button5_Click(object sender, EventArgs e)
-        {
-            this.SelectedLayer.Nodes.Add(new Layer());
+        private void button3_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedMode = Modes.Manipulate;
         }
 
         /// <summary>
-        /// Add layer.
+        /// Delete node
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void button6_Click(object sender, EventArgs e)
-        {
-            this.SelectedLayer.Remove();
+        private void button4_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedMode = Modes.DeleteNode;
+        }
+
+        /// <summary>
+        /// Add layer
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button5_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedLayer.Nodes.Add(new Layer());
+        }
+
+        /// <summary>
+        /// Delete layer.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button6_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedLayer.Remove();
         }
 
         /// <summary>
@@ -68,24 +71,17 @@ namespace TuggingController
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
-        {
-            this.SelectedLayer = (Layer)e.Node;
-        }
-    }
-
-    public class Layer : TreeNode
-    {
-        public Layer NextLayer => (Layer)this.NextNode;
-        
-        public Layer()
-        {
-            this.Text = "NewLayer";
+        private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
+            this.canvasControl1.SelectedLayer = (Layer)e.Node;
         }
 
-        public Layer(string name)
-        {
-            this.Text = name;
+        /// <summary>
+        /// Selection
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button7_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedMode = Modes.Selection;
         }
     }
 }
