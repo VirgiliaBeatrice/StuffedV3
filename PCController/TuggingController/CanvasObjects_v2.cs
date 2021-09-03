@@ -16,11 +16,14 @@ namespace TuggingController {
         public List<Layer> Layers { get; set; } = new List<Layer>();
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public List<Simplex_v2> Simplices { get; set; } = new List<Simplex_v2>();
+        public LinearSlider testSlider { get; set; }
 
         private Triangulation _triangulation;
 
         public Canvas() {
             this._triangulation = new Triangulation();
+
+            this.testSlider = new LinearSlider(new SKPoint(100, 100));
         }
 
         public void SelectLayer(int index) {
@@ -47,6 +50,9 @@ namespace TuggingController {
             if (this.SelectionTool != null) {
                 this.SelectionTool.DrawThis(sKCanvas);
             }
+
+            this.testSlider.Percentage = (new Random()).Next(0, 100);
+            this.testSlider.Draw(sKCanvas);
         }
 
         public bool Triangulate() {
@@ -112,6 +118,60 @@ namespace TuggingController {
         Selection,
     }
 
+
+    public class LinearSlider {
+        public SKPoint Location { get; set; }
+        public int Length { get; set; } = 100;
+        public int Percentage { get; set; }
+        public bool IsSelected { get; set; } = false;
+
+        private SKRect _bound;
+
+        private SKPaint sliderStrokePaint = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+        private SKPaint barStrokePaint = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.Blue,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = 4
+        };
+
+        public LinearSlider(SKPoint location) {
+            this._bound = new SKRect() {
+                Location = location,
+                Size = new SKSize(this.Length, 20),
+            };
+
+            this.Location = location;
+        }
+
+        public bool Contains(SKPoint point) {
+            return this._bound.Contains(point);
+        }
+
+        public void Invalidate() {
+            if (this.IsSelected) {
+                barStrokePaint.Color = SKColors.Bisque;
+            } else {
+                barStrokePaint.Color = SKColors.Blue;
+            }
+        }
+
+        public void Draw(SKCanvas sKCanvas) {
+            // Draw baseline
+            var baselinePostion = this.Location + new SKSize(0, 10);
+            sKCanvas.DrawLine(baselinePostion, baselinePostion + new SKSize(this.Length, 0), this.sliderStrokePaint);
+
+            // Draw bar
+            var barPosition = this.Location + new SKSize(this.Length * this.Percentage / 100, 0);
+            sKCanvas.DrawLine(barPosition, barPosition + new SKSize(0, 20), this.barStrokePaint);
+        }
+    }
 
 
     public abstract class CanvasObject_v2 {
