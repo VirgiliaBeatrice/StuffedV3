@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace PCController
 {
-    class Boards : List<Board>
+    public class Boards : List<Board>
     {
         System.IO.Ports.SerialPort serial = null;
         public System.IO.Ports.SerialPort Serial

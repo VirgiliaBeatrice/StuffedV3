@@ -1,5 +1,5 @@
 
-enum CommandId {
+public enum CommandId {
 	CI_NONE,				//0	As reset makes 0 and 0xFF, must avoid use of them in header. 
 	CI_BOARD_INFO,          //1 Board information.
 	CI_SET_CMDLEN,			//2	Set command length for each board id.

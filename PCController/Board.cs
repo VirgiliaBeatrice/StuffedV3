@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace PCController
 {
-    class Board
+    public class Board
     {
         public int boardId;
         public int modelNumber;

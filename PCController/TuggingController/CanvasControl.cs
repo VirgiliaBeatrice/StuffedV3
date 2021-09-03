@@ -94,6 +94,15 @@ namespace TuggingController {
                 case Keys.S:
                     this.SelectedMode = Modes.Selection;
                     break;
+                case Keys.P:
+                    Form form = new Form();
+                    TargetSelection control = new TargetSelection();
+                    control.Dock = DockStyle.Fill;
+                    form.Size = new Size(600, 600);
+
+                    form.Controls.Add(control);
+                    form.Show();
+                    break;
             }
 
             this.Invalidate(true);
