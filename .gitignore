@@ -17,3 +17,7 @@ OTA/.vscode
 OTA/build
 OTA/sdkconfig
 OTA/sdkconfig.old
+/PCController/.vs_old/PCController/v16/Server/sqlite3
+/PCController/.vs_old/VSWorkspaceState.json
+/PCController/.vs_old/slnx.sqlite
+/PCController/.vs_old/ProjectSettings.json
