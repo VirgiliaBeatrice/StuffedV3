@@ -12,6 +12,10 @@ namespace TuggingController {
 
             //this.SelectedLayer = this.RootLayer;
             //this.treeView1.Nodes.Add(this.RootLayer);
+            if (Environment.Is64BitProcess)
+                Console.WriteLine("64-bit process");
+            else
+                Console.WriteLine("32-bit process");
 
             this.KeyDown += TaskMaker_KeyDown;
         }

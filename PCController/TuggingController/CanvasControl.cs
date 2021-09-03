@@ -18,8 +18,6 @@ namespace TuggingController {
 
         protected SKControl skControl;
         private Canvas _canvas;
-        private SelectionTool _selectionTool;
-        private Triangulation _triangulation;
         
 
         public CanvasControl() {
@@ -45,8 +43,6 @@ namespace TuggingController {
             this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
             this._canvas = new Canvas();
-            this._triangulation = new Triangulation();
-
         }
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {
@@ -91,24 +87,12 @@ namespace TuggingController {
                     }
                     break;
                 case Keys.T:
-                    var entities = this._canvas.Entities.Where(e => e.IsSelected).Select(e => new double[] { e.Location.X, e.Location.Y });
-                    var flattern = new List<double>();
-
-                    foreach(var e in entities) {
-                        flattern.AddRange(e);
+                    if (!this._canvas.Triangulate()) {
+                        MessageBox.Show("Amount of nodes is less than 3. Abort.");
                     }
-
-                    var input = flattern.ToArray();
-                    var output = this._triangulation.RunDelaunay_v1(2, input.Length / 2, ref input);
-
-                    foreach(var triIndices in output) {
-                        var tri = new Entity_v2[] {
-                            this._canvas.Entities[triIndices[0]],
-                            this._canvas.Entities[triIndices[1]],
-                            this._canvas.Entities[triIndices[2]]
-                        };
-                        this._canvas.Simplices.Add(new Simplex_v2(tri));
-                    }
+                    break;
+                case Keys.S:
+                    this.SelectedMode = Modes.Selection;
                     break;
             }
 
@@ -144,37 +128,52 @@ namespace TuggingController {
 
         protected virtual void Draw(SKCanvas sKCanvas) {
             sKCanvas.Clear();
-            this._selectionTool?.DrawThis(sKCanvas);
+
             this._canvas.Draw(sKCanvas);
         }
 
         private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 var newLocation = ev.Location.ToSKPoint();
-                this._selectionTool.AddNode(newLocation);
-                //this._selectionTool.Size = new SKSize(newLocation - this._selectionTool.Location);
+                this._canvas.SelectionTool.Trace(newLocation);
             }
             else if (ev.Button == MouseButtons.Right) {
-                //var 
+                var newLocation = ev.Location.ToSKPoint();
+                this._canvas.SelectionTool.Trace(newLocation);
             }
-           
         }
 
         private void ProcessSelectionMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                this._selectionTool = new SelectionTool(ev.Location.ToSKPoint());
+                this._canvas.Reset();
+                
+                this._canvas.SelectionTool = new LassoSelectionTool(ev.Location.ToSKPoint());
+            }
+            else if (ev.Button == MouseButtons.Right) {
+                this._canvas.Reset();
+
+                this._canvas.SelectionTool = new RectSelectionTool(ev.Location.ToSKPoint());
             }
         }
 
         private void ProcessSelectionMouseUpEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 foreach(var e in this._canvas.Entities) {
-                    if (this._selectionTool.Contains(e.Location)) {
+                    if (this._canvas.SelectionTool.Contains(e.Location)) {
                         e.IsSelected = true;
                     }
                 }
 
-                this._selectionTool = null;
+                this._canvas.SelectionTool.End();
+            }
+            else if (ev.Button == MouseButtons.Right) {
+                foreach (var e in this._canvas.Entities) {
+                    if (this._canvas.SelectionTool.Contains(e.Location)) {
+                        e.IsSelected = true;
+                    }
+                }
+
+                this._canvas.SelectionTool.End();
             }
         }
 

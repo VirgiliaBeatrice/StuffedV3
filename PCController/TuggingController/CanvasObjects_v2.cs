@@ -5,28 +5,84 @@ using Reparameterization;
 using MathNet.Numerics.LinearAlgebra;
 using System.Text;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace TuggingController {
     public class Canvas {
         //public WorldSpaceCoordinate World { get; set; }
+        public Layer SelectedLayer { get; set; }
+        public ISelectionTool SelectionTool { get; set; }
+
         public List<Layer> Layers { get; set; } = new List<Layer>();
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public List<Simplex_v2> Simplices { get; set; } = new List<Simplex_v2>();
 
-        public Canvas() { }
+        private Triangulation _triangulation;
 
-        //public void AddEntity(Entity_v2 entity) {
-        //    this.Entities.Add()
-        //}
+        public Canvas() {
+            this._triangulation = new Triangulation();
+        }
+
+        public void SelectLayer(int index) {
+            this.SelectedLayer = this.Layers[index];
+        }
+
+        public void Reset() {
+            this.Entities.ForEach(e => e.IsSelected = false);
+        }
+
         public void Draw(SKCanvas sKCanvas) {
             foreach(var s in this.Simplices) {
-                s.DrawThis(sKCanvas);
+                if (s.Layer == this.SelectedLayer) {
+                    s.DrawThis(sKCanvas);
+                }
             }
 
             foreach(var e in this.Entities) {
-                e.Draw(sKCanvas);
+                if (e.Layer == this.SelectedLayer) {
+                    e.Draw(sKCanvas);
+                }
             }
 
+            if (this.SelectionTool != null) {
+                this.SelectionTool.DrawThis(sKCanvas);
+            }
+        }
+
+        public bool Triangulate() {
+            var selectedEntities = this.Entities.Where(e => e.IsSelected);
+
+            // Case: amount less than 3
+            if (selectedEntities.Count() <= 3) {
+                return false;
+            }
+
+            // Case: amount larger than 3
+            var vectors = selectedEntities.Select(e => new double[] { e.Location.X, e.Location.Y });
+            var flattern = new List<double>();
+
+            foreach (var e in vectors) {
+                flattern.AddRange(e);
+            }
+
+            var input = flattern.ToArray();
+            var output = this._triangulation.RunDelaunay_v1(2, input.Length / 2, ref input);
+
+            foreach (var triIndices in output) {
+                var arrSelectedEntities = selectedEntities.ToArray();
+                var tri = new Entity_v2[] {
+                        arrSelectedEntities[triIndices[0]],
+                        arrSelectedEntities[triIndices[1]],
+                        arrSelectedEntities[triIndices[2]]
+                    };
+                this.Simplices.Add(new Simplex_v2(this.SelectedLayer, tri));
+            }
+
+            // Reset entities' states
+            this.Reset();
+            //this.Entities.ForEach(e => e.IsSelected = false);
+
+            return true;
         }
     }
 
@@ -56,56 +112,7 @@ namespace TuggingController {
         Selection,
     }
 
-    public class SelectionTool {
-        public SKPoint Location { get; set; }
-        //public SKSize Size { get; set; }
-        //public SKRect Rect => new SKRect() {
-        //    Location = this.Location,
-        //    Size = this.Size,
-        //};
-        public SKPath Path { get; set; }
-        
-        private SKPaint fillPaint = new SKPaint {
-            IsAntialias = true,
-            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
-            Style = SKPaintStyle.Fill
-        };
-        private SKPaint strokePaint = new SKPaint {
-            IsAntialias = true,
-            Color = SKColors.Black,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2
-        };
 
-        public SelectionTool(SKPoint start) {
-            this.Path = new SKPath();
-            this.Location = start;
-
-            this.Path.MoveTo(start);
-        }
-
-        public bool Contains(SKPoint point) {
-            return this.Path.Contains(point.X, point.Y);
-        }
-
-        public void AddNode(SKPoint node) {
-            this.Path.LineTo(node);
-        }
-
-        public void ClosePath() {
-            this.Path.Close();
-        }
-
-        public void Invalidate() {
-
-        }
-
-        public void DrawThis(SKCanvas skCanvas) {
-            skCanvas.DrawPath(this.Path.Simplify(), this.strokePaint);
-            //skCanvas.DrawRect(this.Path.GetRect(), this.strokePaint);
-        }
-
-    }
 
     public abstract class CanvasObject_v2 {
         public Canvas Canvas { get; set; }
@@ -233,6 +240,7 @@ namespace TuggingController {
     }
 
     public class Simplex_v2 {
+        public Layer Layer;
         public SKPoint Location { get; set; }
         public List<Entity_v2> Vertices { get; set; } = new List<Entity_v2>();
 
@@ -248,9 +256,11 @@ namespace TuggingController {
             StrokeWidth = 2
         };
 
-        public Simplex_v2() { }
+        public Simplex_v2(Layer layer) {
+            this.Layer = layer;
+        }
 
-        public Simplex_v2(ICollection<Entity_v2> entities) : base() {
+        public Simplex_v2(Layer layer, ICollection<Entity_v2> entities) : this(layer) {
             this.Vertices.AddRange(entities);
         }
 
