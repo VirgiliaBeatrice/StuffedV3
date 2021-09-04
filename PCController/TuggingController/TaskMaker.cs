@@ -87,5 +87,19 @@ namespace TuggingController {
         private void button7_Click(object sender, EventArgs e) {
             this.canvasControl1.SelectedMode = Modes.Selection;
         }
+
+        private void button8_Click(object sender, EventArgs e) {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+
+            fileDialog.FileName = "*.png";
+            fileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            fileDialog.RestoreDirectory = true;
+            fileDialog.CheckFileExists = true;
+            fileDialog.CheckPathExists = true;
+
+            if (fileDialog.ShowDialog() == DialogResult.OK) {
+                this.canvasControl1.SaveAsImage(fileDialog.FileName);
+            }
+        }
     }
 }

@@ -462,15 +462,25 @@ namespace PCController
             Flag = false;
         }
     }
-    public class Motors: List<Motor>
-    {
-        public PoseData Offset()
-        {
+    public partial class Motors : List<Motor> {
+        public PoseData Offset() {
             PoseData rv = new PoseData(Count);
             for (int i = 0; i < rv.nMotor; ++i) {
                 rv.values[i] = this.ElementAt(i).Offset;
             }
             return rv;
         }
+
+        public TreeNode[] GetSelectableProperties() {
+            var nodes = new List<TreeNode>();
+
+            foreach (var motor in this) {
+                var node = new TreeNode($"Motor{this.IndexOf(motor)}");
+                nodes.Add(node);
+            }
+
+            return nodes.ToArray();
+        }
+
     }
 }

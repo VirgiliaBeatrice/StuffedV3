@@ -9,21 +9,23 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
+using System.IO;
 
 namespace TuggingController {
     public partial class CanvasControl : UserControl {
-        public Layer RootLayer { get; set; } = new Layer("RootLayer");
+        //public Layer RootLayer { get; set; } = new Layer("RootLayer");
         public Layer SelectedLayer { get; set; }
         public Modes SelectedMode { get; set; } = Modes.None;
 
         protected SKControl skControl;
+        private SKImageInfo imageInfo;
         private Canvas _canvas;
         
 
         public CanvasControl() {
             InitializeComponent();
 
-            this.SelectedLayer = this.RootLayer;
+            //this.SelectedLayer = this.RootLayer;
 
             this.skControl = new SKControl();
             this.skControl.Location = new Point(0, 0);
@@ -78,6 +80,7 @@ namespace TuggingController {
             switch(ev.KeyCode) {
                 case Keys.A:
                     this.SelectedMode = Modes.AddNode;
+                    this._canvas.IsShownPointer = true;
                     break;
                 case Keys.Escape:
                     this.SelectedMode = Modes.None;
@@ -85,6 +88,7 @@ namespace TuggingController {
                     foreach(var e in this._canvas.Entities) {
                         e.IsSelected = false;
                     }
+                    this._canvas.IsShownPointer = false;
                     break;
                 case Keys.T:
                     if (!this._canvas.Triangulate()) {
@@ -115,6 +119,8 @@ namespace TuggingController {
                     break;
             }
 
+            this._canvas.PointerPosition = e.Location.ToSKPoint();
+
             this.Invalidate(true);
         }
 
@@ -132,7 +138,26 @@ namespace TuggingController {
         }
 
         private void SkControl_PaintSurface(object sender, SKPaintSurfaceEventArgs e) {
+            this.imageInfo = e.Info;
             this.Draw(e.Surface.Canvas);
+        }
+
+        public void SaveAsImage(string path) {
+            using(var bitmap = new SKBitmap(imageInfo.Width, imageInfo.Height)) {
+                var canvas = new SKCanvas(bitmap);
+
+                canvas.Clear();
+
+                this.Draw(canvas);
+
+                var image = SKImage.FromBitmap(bitmap);
+
+                using (var stream = File.Create(path)) {
+                    var data = image.Encode(SKEncodedImageFormat.Png, 100);
+
+                    data.SaveTo(stream);
+                }
+            }
         }
 
         protected virtual void Draw(SKCanvas sKCanvas) {
@@ -206,6 +231,7 @@ namespace TuggingController {
 
             // Quit from current mode after adding one entity
             this.SelectedMode = Modes.None;
+            this._canvas.IsShownPointer = false;
         }
     }
 }

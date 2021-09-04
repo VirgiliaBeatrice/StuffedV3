@@ -12,18 +12,26 @@ namespace TuggingController {
         //public WorldSpaceCoordinate World { get; set; }
         public Layer SelectedLayer { get; set; }
         public ISelectionTool SelectionTool { get; set; }
+        public bool IsShownPointer { get; set; } = false;
+        public SKPoint PointerPosition {
+            get => this.pointer.Location;
+            set {
+                this.pointer.Location = value;
+            }
+        }
 
         public List<Layer> Layers { get; set; } = new List<Layer>();
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public List<Simplex_v2> Simplices { get; set; } = new List<Simplex_v2>();
-        public LinearSlider testSlider { get; set; }
+        //public LinearSlider testSlider { get; set; }
 
         private Triangulation _triangulation;
+        private CrossPointer pointer = new CrossPointer();
 
         public Canvas() {
             this._triangulation = new Triangulation();
 
-            this.testSlider = new LinearSlider(new SKPoint(100, 100));
+            //this.testSlider = new LinearSlider(new SKPoint(100, 100));
         }
 
         public void SelectLayer(int index) {
@@ -51,8 +59,12 @@ namespace TuggingController {
                 this.SelectionTool.DrawThis(sKCanvas);
             }
 
-            this.testSlider.Percentage = (new Random()).Next(0, 100);
-            this.testSlider.Draw(sKCanvas);
+            if (this.IsShownPointer) {
+                this.pointer.Draw(sKCanvas);
+            }
+
+            //this.testSlider.Percentage = (new Random()).Next(0, 100);
+            //this.testSlider.Draw(sKCanvas);
         }
 
         public bool Triangulate() {
@@ -90,6 +102,10 @@ namespace TuggingController {
 
             return true;
         }
+
+        //public async void SaveAsBitmap(SKCanvas sKCanvas) {
+        //    sKCanvas.
+        //}
     }
 
     [Serializable]
@@ -116,6 +132,31 @@ namespace TuggingController {
         EditNode,
         Manipulate,
         Selection,
+    }
+
+    public class CrossPointer {
+        public SKPoint Location { get; set; }
+        
+        private SKPaint strokePaint = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.DarkMagenta,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = 2
+        };
+        private int length = 20;
+
+        public void Draw(SKCanvas sKCanvas) {
+            var hStart = this.Location + new SKSize(-this.length / 2, 0);
+            var hEnd = hStart + new SKSize(this.length, 0);
+            
+            sKCanvas.DrawLine(hStart, hEnd, this.strokePaint);
+
+            var vStart = this.Location + new SKSize(0, -this.length / 2);
+            var vEnd = vStart + new SKSize(0, this.length);
+            
+            sKCanvas.DrawLine(vStart, vEnd, this.strokePaint);
+        }
     }
 
 

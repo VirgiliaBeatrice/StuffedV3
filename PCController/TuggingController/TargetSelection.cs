@@ -18,7 +18,19 @@ namespace TuggingController {
 
         public TargetSelection() {
             InitializeComponent();
+            this.AddTestData();
+
             InitializeMotors();
+
+            this.treeView1.AfterCheck += this.TreeView1_AfterCheck;
+        }
+
+        private void TreeView1_AfterCheck(object sender, TreeViewEventArgs e) {
+            if (e.Action != TreeViewAction.Unknown) {
+                foreach(var n in e.Node.Nodes) {
+                    (n as TreeNode).Checked = e.Node.Checked;
+                }
+            }
         }
 
         private void InitializeMotors() {
@@ -35,7 +47,17 @@ namespace TuggingController {
         }
 
         private void AddTestData() {
-            //var node1 = 
+            var root = new TreeNode("Root");
+            var n1 = new TreeNode("n1");
+            var n2 = new TreeNode("n2");
+            var n3 = new TreeNode("n3");
+            var n4 = new TreeNode("n4");
+
+            root.Nodes.AddRange(new TreeNode[] {
+                n1, n2, n3, n4
+            });
+
+            this.treeView1.Nodes.Add(root);
         }
 
         private void radioButton1_CheckedChanged(object sender, EventArgs e) {
