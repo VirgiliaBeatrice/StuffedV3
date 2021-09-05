@@ -22,6 +22,13 @@ namespace TaskMaker {
                 Console.WriteLine("32-bit process");
 
             this.KeyDown += TaskMaker_KeyDown;
+            this.canvasControl1.LayerUpdated += this.CanvasControl1_LayerUpdated;
+
+            this.UpdateTreeview();
+        }
+
+        private void CanvasControl1_LayerUpdated(object sender, EventArgs e) {
+            this.UpdateTreeview();
         }
 
         private void InitializeSkControl() {
@@ -36,6 +43,17 @@ namespace TaskMaker {
             this.canvasControl1.TabIndex = 0;
 
             this.groupBox2.Controls.Add(this.canvasControl1);
+        }
+
+        private void UpdateTreeview() {
+            this.treeView1.BeginUpdate();
+            this.treeView1.Nodes.Clear();
+
+            var root = this.canvasControl1.GetRootLayer();
+            this.treeView1.Nodes.Add(root);
+            this.treeView1.SelectedNode = this.canvasControl1.GetCurrentSelectedLayer();
+
+            this.treeView1.EndUpdate();
         }
 
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
@@ -76,7 +94,8 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button5_Click(object sender, EventArgs e) {
-            //this.canvasControl1.SelectedLayer.Nodes.Add(new Layer());
+            this.canvasControl1.AddLayer();
+            //this.UpdateTreeview();
         }
 
         /// <summary>
@@ -85,7 +104,8 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button6_Click(object sender, EventArgs e) {
-            //this.canvasControl1.SelectedLayer.Remove();
+            this.canvasControl1.RemoveLayer();
+            //this.UpdateTreeview();
         }
 
         /// <summary>
@@ -94,7 +114,7 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
-            //this.canvasControl1.SelectedLayer = (Layer)e.Nodeab
+            this.canvasControl1.ChangeLayer(e.Node);
         }
 
         /// <summary>

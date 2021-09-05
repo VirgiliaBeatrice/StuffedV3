@@ -11,13 +11,14 @@ namespace TaskMaker {
     public class Canvas {
         public bool IsShownPointer { get; set; } = false;
         public bool IsShownPointerTrace { get; set; } = false;
+        public Layer RootLayer { get; set; } = new Layer("Root");
         public Layer SelectedLayer { get; set; }
         public ISelectionTool SelectionTool { get; set; }
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
 
 
-        public List<Layer> Layers { get; set; } = new List<Layer>();
+        //public List<Layer> Layers { get; set; } = new List<Layer>();
         //public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         //public List<Simplex_v2> Simplices { get; set; } = new List<Simplex_v2>();
         //public LinearSlider testSlider { get; set; }
@@ -27,16 +28,16 @@ namespace TaskMaker {
         public Canvas() {
             this._triangulation = new Mapping.Triangulation();
 
-            this.Layers.Add(new Layer());
-            this.SelectedLayer = this.Layers[0];
+            this.RootLayer.Nodes.Add(new Layer());
+            this.SelectedLayer = this.RootLayer;
 
             this.Pointer = new CrossPointer();
 
             //this.testSlider = new LinearSlider(new SKPoint(100, 100));
         }
 
-        public void SelectLayer(int index) {
-            this.SelectedLayer = this.Layers[index];
+        public void SelectLayer(Layer layer) {
+            this.SelectedLayer = layer;
         }
 
         public void Reset() {

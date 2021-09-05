@@ -19,12 +19,10 @@ namespace TaskMaker {
         private SKImageInfo imageInfo;
         private Canvas _canvas;
 
+        public event EventHandler LayerUpdated;
 
         public CanvasControl() {
             InitializeComponent();
-
-            if (this.DesignMode)
-                return;
 
             this.skControl = new SKControl();
             this.skControl.Location = new Point(0, 0);
@@ -44,6 +42,27 @@ namespace TaskMaker {
             this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
             this._canvas = new Canvas();
+            //this.LayerUpdated?.Invoke(this, null);
+        }
+
+        public Layer GetCurrentSelectedLayer() {
+            return this._canvas.SelectedLayer;
+        }
+        public void AddLayer() {
+            this._canvas.SelectedLayer.Nodes.Add(new Layer());
+            this.LayerUpdated?.Invoke(this, null);
+        }
+
+        public void RemoveLayer() {
+            this._canvas.RootLayer.Nodes.Remove(this._canvas.SelectedLayer);
+            this.LayerUpdated?.Invoke(this, null);
+        }
+
+        public TreeNode GetRootLayer() {
+            return this._canvas.RootLayer;
+        }
+        public void ChangeLayer(TreeNode node) {
+            this._canvas.SelectedLayer = (Layer)node;
         }
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {
@@ -60,9 +79,6 @@ namespace TaskMaker {
             this.skControl.Focus();
         }
 
-        //private void SkControl_KeyPress(object sender, KeyPressEventArgs e) {
-        //    throw new NotImplementedException();
-        //}
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
             switch (this.SelectedMode) {

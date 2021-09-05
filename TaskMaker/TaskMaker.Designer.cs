@@ -26,6 +26,7 @@ namespace TaskMaker {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.toolbox = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.button8 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
@@ -39,7 +40,6 @@ namespace TaskMaker {
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
-            this.button8 = new System.Windows.Forms.Button();
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -105,6 +105,16 @@ namespace TaskMaker {
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.Size = new System.Drawing.Size(104, 609);
             this.tableLayoutPanel2.TabIndex = 0;
+            // 
+            // button8
+            // 
+            this.button8.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button8.Location = new System.Drawing.Point(3, 206);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(98, 23);
+            this.button8.TabIndex = 7;
+            this.button8.Text = "Save Canvas";
+            this.button8.UseVisualStyleBackColor = true;
             // 
             // button7
             // 
@@ -199,6 +209,7 @@ namespace TaskMaker {
             // treeView1
             // 
             this.treeView1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeView1.HideSelection = false;
             this.treeView1.Location = new System.Drawing.Point(4, 17);
             this.treeView1.Name = "treeView1";
             this.treeView1.Size = new System.Drawing.Size(234, 609);
@@ -239,16 +250,6 @@ namespace TaskMaker {
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
             this.toolStripStatusLabel2.Size = new System.Drawing.Size(36, 17);
             this.toolStripStatusLabel2.Text = "None";
-            // 
-            // button8
-            // 
-            this.button8.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button8.Location = new System.Drawing.Point(3, 206);
-            this.button8.Name = "button8";
-            this.button8.Size = new System.Drawing.Size(98, 23);
-            this.button8.TabIndex = 7;
-            this.button8.Text = "Save Canvas";
-            this.button8.UseVisualStyleBackColor = true;
             // 
             // TaskMaker
             // 
