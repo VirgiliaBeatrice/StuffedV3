@@ -16,11 +16,6 @@ namespace TaskMaker {
         public ISelectionTool SelectionTool { get; set; }
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
-
-
-        //public List<Layer> Layers { get; set; } = new List<Layer>();
-        //public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
-        //public List<Simplex_v2> Simplices { get; set; } = new List<Simplex_v2>();
         //public LinearSlider testSlider { get; set; }
 
         private Mapping.Triangulation _triangulation;
@@ -42,6 +37,8 @@ namespace TaskMaker {
 
         public void Reset() {
             this.SelectedLayer.Entities.ForEach(e => e.IsSelected = false);
+            this.IsShownPointer = false;
+            this.IsShownPointerTrace = false;
         }
 
         public void Draw(SKCanvas sKCanvas) {
@@ -258,20 +255,26 @@ namespace TaskMaker {
 
 
     public class Entity_v2 : CanvasObject_v2 {
-        public bool IsSelected { get; set; } = false;
-        public int Index { get; set; }
-        //public Pair Pair { get; set; } = new Pair();
-        public Vector<float> PointVector { get; set; }
-        public SKPoint Point {
-            get => SkiaExtension.SkiaHelper.ToSKPoint(this.PointVector);
+        public bool IsSelected {
+            get => this.isSelected;
             set {
-                this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
+                this.isSelected = value;
+                
+                if (this.isSelected) {
+                    this._radius = 7.0f;
+                } else {
+                    this._radius = 5.0f;
+                }
             }
         }
+        public int Index { get; set; }
+        public Pair Pair { get; set; } = new Pair();
+        public Vector<float> Vector => SkiaExtension.SkiaHelper.ToVector(this.location);
+
         override public SKPoint Location {
-            get => this.Point;
+            get => this.location;
             set {
-                this.PointVector = SkiaExtension.SkiaHelper.ToVector(value);
+                this.location = value;
             }
         }
 
@@ -286,16 +289,20 @@ namespace TaskMaker {
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 2
         };
-        private SKPoint _gLocation;
+        private SKPoint location;
         private float _radius = 5.0f;
         private float _gRadius;
+        private bool isSelected = false;
 
         public Entity_v2() : base() { }
+        public Entity_v2(SKPoint point) {
+            this.Location = point;
+        }
 
         public override string ToString() {
             StringBuilder str = new StringBuilder();
 
-            str.Append($"[Entity {this.Index}] - {this.Point}");
+            str.Append($"[Entity {this.Index}] - {this.Location}");
             return str.ToString();
         }
 
@@ -304,24 +311,30 @@ namespace TaskMaker {
         }
 
         public override void Invalidate() {
-            this._gLocation = this.Location;
-            this._gRadius = this._radius;
+            //this._gLocation = this.Location;
+            //this._gRadius = this._radius;
 
             if (this.IsSelected) {
-                this._gRadius += 2.0f;
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
             } else {
                 //if (this.Pair.IsPaired) {
                 //    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Red, 0.8f);
-                //} else {
-                //    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
+                //}
+                //else {
+                    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
                 //}
             }
         }
 
-        protected void DrawThis(SKCanvas canvas) {
-            canvas.DrawCircle(this._gLocation, this._gRadius, this.fillPaint);
-            canvas.DrawCircle(this._gLocation, this._gRadius, this.strokePaint);
+        public override void Draw(SKCanvas canvas) {
+            this.Invalidate();
+
+            this.DrawThis(canvas);
+        }
+
+        private void DrawThis(SKCanvas canvas) {
+            canvas.DrawCircle(this.Location, this._radius, this.fillPaint);
+            canvas.DrawCircle(this.Location, this._radius, this.strokePaint);
         }
     }
 
@@ -370,4 +383,6 @@ namespace TaskMaker {
             this.ForEach(sim => sim.DrawThis(sKCanvas));
         }
     }
+
+    public class Pair { }
 }

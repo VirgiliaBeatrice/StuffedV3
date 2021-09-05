@@ -13,13 +13,22 @@ using SkiaSharp.Views.Desktop;
 
 namespace TaskMaker {
     public partial class CanvasControl : UserControl {
-        public Modes SelectedMode { get; set; } = Modes.None;
+        public Modes SelectedMode {
+            get => this._selectedMode;
+            set {
+                this._selectedMode = value;
+
+                this.ModeChanged?.Invoke(this, null);
+            }
+        }
 
         protected SKControl skControl;
         private SKImageInfo imageInfo;
         private Canvas _canvas;
+        private Modes _selectedMode;
 
         public event EventHandler LayerUpdated;
+        public event EventHandler ModeChanged;
 
         public CanvasControl() {
             InitializeComponent();
@@ -42,7 +51,15 @@ namespace TaskMaker {
             this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
             this._canvas = new Canvas();
-            //this.LayerUpdated?.Invoke(this, null);
+        }
+
+        public void StartPointerTrace(Point position) {
+            this._canvas.PointerTrace = new PointerTrace(position.ToSKPoint());
+            this._canvas.IsShownPointerTrace = true;
+        }
+
+        public void EndPointerTrace() {
+            this._canvas.Reset();
         }
 
         public Layer GetCurrentSelectedLayer() {
@@ -70,10 +87,14 @@ namespace TaskMaker {
                 case Modes.Selection:
                     this.ProcessSelectionMouseUpEvent(e);
                     break;
+                case Modes.Manipulate:
+                    this.ProcessManipulateMouseUpEvent(e);
+                    break;
             }
 
             this.Invalidate(true);
         }
+
 
         private void SkControl_MouseEnter(object sender, EventArgs e) {
             this.skControl.Focus();
@@ -96,10 +117,23 @@ namespace TaskMaker {
 
         private void ProcessManipulatMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                this._canvas.PointerTrace = new PointerTrace(ev.Location.ToSKPoint());
-                this._canvas.IsShownPointerTrace = true;
+                this.StartPointerTrace(ev.Location);
             }
         }
+
+        private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                this._canvas.PointerTrace.Update(e.Location.ToSKPoint());
+                //this._canvas.Simplices.ForEach(sim => Console.WriteLine(sim.GetLambdas(e.Location.ToSKPoint())));
+            }
+        }
+
+        private void ProcessManipulateMouseUpEvent(MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                this.EndPointerTrace();
+            }
+        }
+
 
         private void SkControl_KeyDown(object sender, KeyEventArgs ev) {
             switch (ev.KeyCode) {
@@ -152,12 +186,7 @@ namespace TaskMaker {
             this.Invalidate(true);
         }
 
-        private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                this._canvas.PointerTrace.Update(e.Location.ToSKPoint());
-                //this._canvas.Simplices.ForEach(sim => Console.WriteLine(sim.GetLambdas(e.Location.ToSKPoint())));
-            }
-        }
+
 
         private void SkControl_MouseClick(object sender, MouseEventArgs e) {
             switch (this.SelectedMode) {
@@ -201,17 +230,6 @@ namespace TaskMaker {
             this._canvas.Draw(sKCanvas);
         }
 
-        private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {
-            if (ev.Button == MouseButtons.Left) {
-                var newLocation = ev.Location.ToSKPoint();
-                this._canvas.SelectionTool.Trace(newLocation);
-            }
-            else if (ev.Button == MouseButtons.Right) {
-                var newLocation = ev.Location.ToSKPoint();
-                this._canvas.SelectionTool.Trace(newLocation);
-            }
-        }
-
         private void ProcessSelectionMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 this._canvas.Reset();
@@ -222,6 +240,17 @@ namespace TaskMaker {
                 this._canvas.Reset();
 
                 this._canvas.SelectionTool = new RectSelectionTool(ev.Location.ToSKPoint());
+            }
+        }
+
+        private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {
+            if (ev.Button == MouseButtons.Left) {
+                var newLocation = ev.Location.ToSKPoint();
+                this._canvas.SelectionTool.Trace(newLocation);
+            }
+            else if (ev.Button == MouseButtons.Right) {
+                var newLocation = ev.Location.ToSKPoint();
+                this._canvas.SelectionTool.Trace(newLocation);
             }
         }
 
@@ -260,7 +289,7 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 this._canvas.SelectedLayer.Entities.Add(new Entity_v2() {
                     Index = this._canvas.SelectedLayer.Entities.Count,
-                    Point = e.Location.ToSKPoint(),
+                    Location = e.Location.ToSKPoint(),
                 });
             }
 

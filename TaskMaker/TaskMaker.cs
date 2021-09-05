@@ -23,8 +23,13 @@ namespace TaskMaker {
 
             this.KeyDown += TaskMaker_KeyDown;
             this.canvasControl1.LayerUpdated += this.CanvasControl1_LayerUpdated;
+            this.canvasControl1.ModeChanged += this.CanvasControl1_ModeChanged;
 
             this.UpdateTreeview();
+        }
+
+        private void CanvasControl1_ModeChanged(object sender, EventArgs e) {
+            this.toolStripStatusLabel2.Text = this.canvasControl1.SelectedMode.ToString();
         }
 
         private void CanvasControl1_LayerUpdated(object sender, EventArgs e) {
@@ -59,7 +64,6 @@ namespace TaskMaker {
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
             if (e.KeyCode == Keys.A) {
                 this.canvasControl1.SelectedMode = Modes.AddNode;
-                //this.SelectedMode = Modes.AddNode;
                 e.Handled = true;
             }
         }
@@ -95,7 +99,6 @@ namespace TaskMaker {
         /// <param name="e"></param>
         private void button5_Click(object sender, EventArgs e) {
             this.canvasControl1.AddLayer();
-            //this.UpdateTreeview();
         }
 
         /// <summary>
@@ -105,7 +108,6 @@ namespace TaskMaker {
         /// <param name="e"></param>
         private void button6_Click(object sender, EventArgs e) {
             this.canvasControl1.RemoveLayer();
-            //this.UpdateTreeview();
         }
 
         /// <summary>
