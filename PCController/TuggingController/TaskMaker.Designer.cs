@@ -29,9 +29,12 @@ namespace TuggingController
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TaskMaker));
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.toolbox = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.button8 = new System.Windows.Forms.Button();
+            this.button7 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
@@ -42,7 +45,6 @@ namespace TuggingController
             this.treeView1 = new System.Windows.Forms.TreeView();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.canvasControl1 = new TuggingController.CanvasControl();
-            this.button7 = new System.Windows.Forms.Button();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
@@ -89,6 +91,7 @@ namespace TuggingController
             // 
             this.tableLayoutPanel2.ColumnCount = 1;
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel2.Controls.Add(this.button8, 0, 7);
             this.tableLayoutPanel2.Controls.Add(this.button7, 0, 6);
             this.tableLayoutPanel2.Controls.Add(this.button6, 0, 5);
             this.tableLayoutPanel2.Controls.Add(this.button5, 0, 4);
@@ -99,7 +102,8 @@ namespace TuggingController
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(4, 17);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 8;
+            this.tableLayoutPanel2.RowCount = 9;
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -110,6 +114,28 @@ namespace TuggingController
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.Size = new System.Drawing.Size(84, 609);
             this.tableLayoutPanel2.TabIndex = 0;
+            // 
+            // button8
+            // 
+            this.button8.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button8.Location = new System.Drawing.Point(3, 206);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(78, 23);
+            this.button8.TabIndex = 7;
+            this.button8.Text = "Print Screen";
+            this.button8.UseVisualStyleBackColor = true;
+            this.button8.Click += new System.EventHandler(this.button8_Click);
+            // 
+            // button7
+            // 
+            this.button7.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button7.Location = new System.Drawing.Point(3, 177);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(78, 23);
+            this.button7.TabIndex = 6;
+            this.button7.Text = "Selection";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
             // 
             // button6
             // 
@@ -219,19 +245,10 @@ namespace TuggingController
             this.canvasControl1.Margin = new System.Windows.Forms.Padding(4);
             this.canvasControl1.Name = "canvasControl1";
             this.canvasControl1.Padding = new System.Windows.Forms.Padding(4);
+            this.canvasControl1.SelectedLayer = null;
+            this.canvasControl1.SelectedMode = TuggingController.Modes.None;
             this.canvasControl1.Size = new System.Drawing.Size(892, 609);
             this.canvasControl1.TabIndex = 0;
-            // 
-            // button7
-            // 
-            this.button7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button7.Location = new System.Drawing.Point(3, 177);
-            this.button7.Name = "button7";
-            this.button7.Size = new System.Drawing.Size(78, 23);
-            this.button7.TabIndex = 6;
-            this.button7.Text = "Selection";
-            this.button7.UseVisualStyleBackColor = true;
-            this.button7.Click += new System.EventHandler(this.button7_Click);
             // 
             // statusStrip1
             // 
@@ -263,6 +280,7 @@ namespace TuggingController
             this.ClientSize = new System.Drawing.Size(1258, 638);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "TaskMaker";
             this.Text = "TaskMaker";
             this.tableLayoutPanel1.ResumeLayout(false);
@@ -296,5 +314,6 @@ namespace TuggingController
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
+        private System.Windows.Forms.Button button8;
     }
 }
