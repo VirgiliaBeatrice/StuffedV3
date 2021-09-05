@@ -24,8 +24,13 @@ namespace TaskMaker {
             this.KeyDown += TaskMaker_KeyDown;
             this.canvasControl1.LayerUpdated += this.CanvasControl1_LayerUpdated;
             this.canvasControl1.ModeChanged += this.CanvasControl1_ModeChanged;
+            this.canvasControl1.Interpolated += this.CanvasControl1_Interpolated;
 
             this.UpdateTreeview();
+        }
+
+        private void CanvasControl1_Interpolated(object sender, InterpolatingEventArgs e) {
+            this.toolStripStatusLabel3.Text = String.Join(",", e.Values.ToArray());
         }
 
         private void CanvasControl1_ModeChanged(object sender, EventArgs e) {
@@ -117,6 +122,7 @@ namespace TaskMaker {
         /// <param name="e"></param>
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
             this.canvasControl1.ChangeLayer(e.Node);
+            this.canvasControl1.Invalidate(true);
         }
 
         /// <summary>

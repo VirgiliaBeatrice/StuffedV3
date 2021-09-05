@@ -141,10 +141,12 @@
       <DependentUpon>CanvasControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Canvas\CanvasObjects_v2.cs" />
+    <Compile Include="MathNetExtension.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Qhull\QhullCSharp.cs" />
     <Compile Include="Canvas\SelectionTool.cs" />
+    <Compile Include="SimplicialMapping\SimplicialMap.cs" />
     <Compile Include="SkiaExtension.cs" />
     <Compile Include="SkiaHelper.cs" />
     <Compile Include="SimplicialMapping\Triangulation.cs" />

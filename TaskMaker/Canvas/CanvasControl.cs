@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MathNet.Numerics.LinearAlgebra;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 
@@ -29,6 +30,7 @@ namespace TaskMaker {
 
         public event EventHandler LayerUpdated;
         public event EventHandler ModeChanged;
+        public event EventHandler<InterpolatingEventArgs> Interpolated;
 
         public CanvasControl() {
             InitializeComponent();
@@ -124,6 +126,14 @@ namespace TaskMaker {
         private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 this._canvas.PointerTrace.Update(e.Location.ToSKPoint());
+                var lambdas = this._canvas.SelectedLayer.Complex.GetLambdas(e.Location.ToSKPoint());
+
+                this.Interpolated?.Invoke(
+                    this,
+                    new InterpolatingEventArgs() {
+                        Values = lambdas
+                    });
+
                 //this._canvas.Simplices.ForEach(sim => Console.WriteLine(sim.GetLambdas(e.Location.ToSKPoint())));
             }
         }
@@ -143,10 +153,6 @@ namespace TaskMaker {
                     break;
                 case Keys.Escape:
                     this.SelectedMode = Modes.None;
-                    // Reset states of all entities
-                    foreach (var e in this._canvas.SelectedLayer.Entities) {
-                        e.IsSelected = false;
-                    }
                     this._canvas.Reset();
                     break;
                 case Keys.T:
@@ -165,6 +171,9 @@ namespace TaskMaker {
 
                     //form.Controls.Add(control);
                     //form.Show();
+                    break;
+                case Keys.M:
+                    this.SelectedMode = Modes.Manipulate;
                     break;
             }
 
@@ -298,5 +307,9 @@ namespace TaskMaker {
 
             this._canvas.Reset();
         }
+    }
+
+    public class InterpolatingEventArgs : EventArgs {
+        public Vector<float> Values { get; set; }
     }
 }

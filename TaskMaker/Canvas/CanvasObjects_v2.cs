@@ -6,8 +6,11 @@ using MathNet.Numerics.LinearAlgebra;
 using System.Text;
 using System.Windows.Forms;
 using System.Linq;
+using TaskMaker.SimplicialMapping;
+using MathNetExtension;
 
 namespace TaskMaker {
+    
     public class Canvas {
         public bool IsShownPointer { get; set; } = false;
         public bool IsShownPointerTrace { get; set; } = false;
@@ -341,6 +344,7 @@ namespace TaskMaker {
     public class Simplex_v2 {
         public SKPoint Location { get; set; }
         public List<Entity_v2> Vertices { get; set; } = new List<Entity_v2>();
+        public BarycentricCoordinates Barycentric { get; set; } = new BarycentricCoordinates(3);
 
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
@@ -356,6 +360,11 @@ namespace TaskMaker {
 
         public Simplex_v2(ICollection<Entity_v2> entities) {
             this.Vertices.AddRange(entities);
+            this.Barycentric.AddRange(this.Vertices.Select(v => v.Vector).ToArray());
+        }
+
+        public Vector<float> GetLambdas(SKPoint point) {
+            return this.Barycentric.GetLambdasOnlyInterior(point.ToVector());
         }
 
         public void Invalidate() { }
@@ -375,8 +384,12 @@ namespace TaskMaker {
 
 
     public class SimplicialComplex_v2 : List<Simplex_v2> {
-        public void GetLambdas(SKPoint point) {
+        public Vector<float> GetLambdas(SKPoint point) {
+            var result = new List<float>();
 
+            this.ForEach(s => result.AddRange(s.GetLambdas(point).ToArray()));
+
+            return Vector<float>.Build.Dense(result.ToArray());
         }
 
         public void Draw(SKCanvas sKCanvas) {
@@ -386,3 +399,4 @@ namespace TaskMaker {
 
     public class Pair { }
 }
+
