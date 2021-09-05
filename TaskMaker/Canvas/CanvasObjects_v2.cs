@@ -101,7 +101,6 @@ namespace TaskMaker {
                 }
             }
 
-
             // Reset entities' states
             this.Reset();
 
@@ -110,6 +109,7 @@ namespace TaskMaker {
     }
 
     public class Layer : TreeNode {
+        public SKPoint Pointer { get; set; } = SKPoint.Empty;
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public SimplicialComplex_v2 Complex { get; set; } = new SimplicialComplex_v2();
         public Layer NextLayer => (Layer)this.NextNode;
@@ -271,7 +271,7 @@ namespace TaskMaker {
             }
         }
         public int Index { get; set; }
-        public Pair Pair { get; set; } = new Pair();
+        public Pair Pair { get; set; }
         public Vector<float> Vector => SkiaExtension.SkiaHelper.ToVector(this.location);
 
         override public SKPoint Location {
@@ -297,9 +297,9 @@ namespace TaskMaker {
         private float _gRadius;
         private bool isSelected = false;
 
-        public Entity_v2() : base() { }
         public Entity_v2(SKPoint point) {
             this.Location = point;
+            this.Pair = new Pair(this);
         }
 
         public override string ToString() {
@@ -320,12 +320,12 @@ namespace TaskMaker {
             if (this.IsSelected) {
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
             } else {
-                //if (this.Pair.IsPaired) {
-                //    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Red, 0.8f);
-                //}
-                //else {
+                if (this.Pair.IsPaired) {
+                    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Red, 0.8f);
+                }
+                else {
                     this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
-                //}
+                }
             }
         }
 
@@ -344,7 +344,7 @@ namespace TaskMaker {
     public class Simplex_v2 {
         public SKPoint Location { get; set; }
         public List<Entity_v2> Vertices { get; set; } = new List<Entity_v2>();
-        public BarycentricCoordinates Barycentric { get; set; } = new BarycentricCoordinates(3);
+        public Pairs Pairs { get; set; } = new Pairs();
 
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
@@ -360,11 +360,12 @@ namespace TaskMaker {
 
         public Simplex_v2(ICollection<Entity_v2> entities) {
             this.Vertices.AddRange(entities);
-            this.Barycentric.AddRange(this.Vertices.Select(v => v.Vector).ToArray());
+            this.Pairs.AddRange(entities.Select(e => e.Pair).ToArray());
+            //this.Pairs.TaskBary.AddRange(this.Vertices.Select(v => v.Vector).ToArray());
         }
 
         public Vector<float> GetLambdas(SKPoint point) {
-            return this.Barycentric.GetLambdasOnlyInterior(point.ToVector());
+            return this.Pairs.TaskBary.GetLambdasOnlyInterior(point.ToVector());
         }
 
         public void Invalidate() { }
@@ -397,6 +398,51 @@ namespace TaskMaker {
         }
     }
 
-    public class Pair { }
+    public class Pair {
+        public bool IsPaired => this.Config != null;
+
+        public Entity_v2 Task { get; set; }
+        public Vector<float> Config { get; set; }
+        public event EventHandler PairUpdated;
+
+        public Pair(Entity_v2 task) {
+            this.Task = task;
+        }
+
+        public void AddPair(Vector<float> target) {
+            this.Config = target;
+            this.PairUpdated?.Invoke(this, null);
+        }
+
+        public void RemovePair() {
+            this.Config = null;
+            this.PairUpdated?.Invoke(this, null);
+        }
+    }
+
+    public class Pairs : List<Pair> {
+        public bool IsFullyPaired => this.All(e => e.IsPaired);
+        public BarycentricCoordinates TaskBary { get; set; } = new BarycentricCoordinates(3);
+        public BarycentricCoordinates ConfigBary { get; set; } = new BarycentricCoordinates(3);
+
+        public new void AddRange(IEnumerable<Pair> pairs) {
+            base.AddRange(pairs);
+            this.TaskBary.AddRange(this.Select(p => p.Task.Vector).ToArray());
+            this.ForEach(p => p.PairUpdated += this.P_PairUpdated);
+        }
+
+        private void P_PairUpdated(object sender, EventArgs e) {
+            if (this.IsFullyPaired) {
+                this.ConfigBary.AddRange(this.Select(p => p.Config).ToArray());
+            }
+        }
+
+        public Vector<float> GetConfig(SKPoint taskPoint) {
+            var lambda = this.TaskBary.GetLambdasOnlyInterior(taskPoint.ToVector());
+            var config = this.ConfigBary.GetB(lambda);
+
+            return config;
+        }
+    }
 }
 

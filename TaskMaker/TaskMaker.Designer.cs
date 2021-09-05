@@ -23,6 +23,7 @@ namespace TaskMaker {
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            this.components = new System.ComponentModel.Container();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.toolbox = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
@@ -41,6 +42,7 @@ namespace TaskMaker {
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel3 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.serialPort1 = new System.IO.Ports.SerialPort(this.components);
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -211,6 +213,7 @@ namespace TaskMaker {
             // 
             this.treeView1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeView1.HideSelection = false;
+            this.treeView1.LabelEdit = true;
             this.treeView1.Location = new System.Drawing.Point(4, 17);
             this.treeView1.Name = "treeView1";
             this.treeView1.Size = new System.Drawing.Size(234, 609);
@@ -250,7 +253,7 @@ namespace TaskMaker {
             // 
             // toolStripStatusLabel2
             // 
-            this.toolStripStatusLabel2.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Left;
+            this.toolStripStatusLabel2.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
             this.toolStripStatusLabel2.Size = new System.Drawing.Size(40, 19);
             this.toolStripStatusLabel2.Text = "None";
@@ -301,5 +304,6 @@ namespace TaskMaker {
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel2;
         private System.Windows.Forms.Button button8;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel3;
+        private System.IO.Ports.SerialPort serialPort1;
     }
 }

@@ -7,14 +7,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using PCController;
 
 namespace TaskMaker {
     public partial class TaskMaker : Form {
-        private CanvasControl canvasControl1;
+        public ProgramInfo ProgramInfo { get; set; } = new ProgramInfo();
 
+        private Timer timer = new Timer();
+        private CanvasControl canvasControl1;
         public TaskMaker() {
             InitializeComponent();
             InitializeSkControl();
+
+            this.KeyPreview = true;
 
             if (Environment.Is64BitProcess)
                 Console.WriteLine("64-bit process");
@@ -27,6 +32,26 @@ namespace TaskMaker {
             this.canvasControl1.Interpolated += this.CanvasControl1_Interpolated;
 
             this.UpdateTreeview();
+            this.treeView1.ExpandAll();
+
+            this.ProgramInfo.Boards.Serial = this.serialPort1;
+            this.ProgramInfo.RootLayer = this.canvasControl1.GetRootLayer();
+            this.timer.Interval = 100;
+            this.timer.Tick += this.Timer_Tick;
+        }
+
+        private void Timer_Tick(object sender, EventArgs e) {
+            this.UpdateMotor();
+        }
+
+        private void UpdateMotor() {
+            short[] targets = new short[this.ProgramInfo.Boards.NMotor];
+
+            for (int i = 0; i < this.ProgramInfo.Motors.Count; ++i) {
+                targets[i] = (short)this.ProgramInfo.Motors[i].position.Value;
+            }
+
+            this.ProgramInfo.Boards.SendPosDirect(targets);
         }
 
         private void CanvasControl1_Interpolated(object sender, InterpolatingEventArgs e) {
@@ -67,10 +92,39 @@ namespace TaskMaker {
         }
 
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
-            if (e.KeyCode == Keys.A) {
-                this.canvasControl1.SelectedMode = Modes.AddNode;
-                e.Handled = true;
+            switch (e.KeyCode) {
+                case Keys.A:
+                    this.canvasControl1.SelectedMode = Modes.AddNode;
+                    this.canvasControl1.StartAddNodeMode();
+                    break;
+                case Keys.Escape:
+                    this.canvasControl1.SelectedMode = Modes.None;
+                    this.canvasControl1.Reset();
+                    break;
+                case Keys.T:
+                    if (!this.canvasControl1.Triangulate()) {
+                        MessageBox.Show("Amount of nodes is less than 3. Abort.");
+                    }
+                    break;
+                case Keys.S:
+                    this.canvasControl1.SelectedMode = Modes.Selection;
+                    break;
+                case Keys.P:
+                    Form form = new Form();
+                    TargetSelection control = new TargetSelection(this.ProgramInfo);
+                    control.Dock = DockStyle.Fill;
+                    form.Size = new Size(600, 600);
+
+                    form.Controls.Add(control);
+                    form.Show();
+                    break;
+                case Keys.M:
+                    this.canvasControl1.SelectedMode = Modes.Manipulate;
+                    break;
             }
+
+            e.Handled = true;
+            //this.Invalidate(true);
         }
 
         //Add node
@@ -133,5 +187,11 @@ namespace TaskMaker {
         private void button7_Click(object sender, EventArgs e) {
             this.canvasControl1.SelectedMode = Modes.Selection;
         }
+    }
+
+    public class ProgramInfo {
+        public Boards Boards { get; set; } = new Boards();
+        public Motors Motors { get; set; } = new Motors();
+        public Layer RootLayer { get; set; }
     }
 }

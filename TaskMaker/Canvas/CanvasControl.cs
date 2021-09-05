@@ -48,11 +48,23 @@ namespace TaskMaker {
             this.skControl.MouseDown += this.SkControl_MouseDown;
             this.skControl.MouseUp += this.SkControl_MouseUp;
             this.skControl.MouseMove += this.SkControl_MouseMove;
-            this.skControl.KeyDown += this.SkControl_KeyDown;
+            //this.skControl.KeyDown += this.SkControl_KeyDown;
             //this.skControl.KeyPress += this.SkControl_KeyPress;
-            this.skControl.MouseEnter += this.SkControl_MouseEnter;
+            //this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
             this._canvas = new Canvas();
+        }
+
+        public void Reset() {
+            this._canvas.Reset();
+        }
+
+        public bool Triangulate() {
+            return this._canvas.Triangulate();
+        }
+
+        public void StartAddNodeMode() {
+            this._canvas.IsShownPointer = true;
         }
 
         public void StartPointerTrace(Point position) {
@@ -77,7 +89,7 @@ namespace TaskMaker {
             this.LayerUpdated?.Invoke(this, null);
         }
 
-        public TreeNode GetRootLayer() {
+        public Layer GetRootLayer() {
             return this._canvas.RootLayer;
         }
         public void ChangeLayer(TreeNode node) {
@@ -296,9 +308,8 @@ namespace TaskMaker {
 
         private void ProcessAddNodeMouseClickEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                this._canvas.SelectedLayer.Entities.Add(new Entity_v2() {
+                this._canvas.SelectedLayer.Entities.Add(new Entity_v2(e.Location.ToSKPoint()) {
                     Index = this._canvas.SelectedLayer.Entities.Count,
-                    Location = e.Location.ToSKPoint(),
                 });
             }
 

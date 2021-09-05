@@ -15,6 +15,7 @@ namespace TaskMaker.SimplicialMapping {
         public bool IsCompleted => this.Vertices.Count == this.dim ? true : false;
         private int dim = 3; 
         private Matrix<float> A;
+        private Matrix<float> InverseA;
 
         public BarycentricCoordinates(int dimension) {
             this.dim = dimension;
@@ -60,6 +61,16 @@ namespace TaskMaker.SimplicialMapping {
             return null;
         }
 
+        public Vector<float> GetB(Vector<float> lambda) {
+            if (this.IsCompleted) {
+                var result = this.A.Multiply(lambda);
+
+                return result;
+            }
+
+            return null;
+        }
+
         public Vector<float> GetLambdasOnlyInterior(Vector<float> point) {
             if (this.IsCompleted) {
                 var result = this.GetLambdas(point);
@@ -69,6 +80,11 @@ namespace TaskMaker.SimplicialMapping {
 
             return null;
         }
+    }
+
+    public class ConfigurationVector {
+        public List<object> Elements { get; set; }
+
     }
 
     class SimplicialMap {
