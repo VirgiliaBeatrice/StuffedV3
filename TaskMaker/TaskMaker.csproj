@@ -143,6 +143,12 @@
     </Compile>
     <Compile Include="Canvas\CanvasObjects_v2.cs" />
     <Compile Include="MathNetExtension.cs" />
+    <Compile Include="MotorPositionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MotorPositionForm.Designer.cs">
+      <DependentUpon>MotorPositionForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="PCController\Board.cs" />
     <Compile Include="PCController\Boards.cs" />
     <Compile Include="PCController\CommandId.cs" />
@@ -186,6 +192,15 @@
     <Compile Include="TaskMaker.Designer.cs">
       <DependentUpon>TaskMaker.cs</DependentUpon>
     </Compile>
+    <Compile Include="TinyCanvasForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TinyCanvasForm.Designer.cs">
+      <DependentUpon>TinyCanvasForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="MotorPositionForm.resx">
+      <DependentUpon>MotorPositionForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="PCController\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -203,6 +218,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TaskMaker.resx">
       <DependentUpon>TaskMaker.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TinyCanvasForm.resx">
+      <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />

@@ -76,9 +76,6 @@ namespace TaskMaker {
             this._canvas.Reset();
         }
 
-        public Layer GetCurrentSelectedLayer() {
-            return this._canvas.SelectedLayer;
-        }
         public void AddLayer() {
             this._canvas.SelectedLayer.Nodes.Add(new Layer());
             this.LayerUpdated?.Invoke(this, null);
@@ -92,8 +89,28 @@ namespace TaskMaker {
         public Layer GetRootLayer() {
             return this._canvas.RootLayer;
         }
+
+        public Layer GetSelectedLayer() {
+            return this._canvas.SelectedLayer;
+        }
+
+        public Canvas GetCanvas() {
+            return this._canvas;
+        }
+
         public void ChangeLayer(TreeNode node) {
             this._canvas.SelectedLayer = (Layer)node;
+        }
+
+        public void LinkToConfig() {
+            var selectedEnities = this._canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+
+            if (this._canvas.SelectedLayer.MotorConfigs == null)
+                return;
+
+            if (selectedEnities.Count == 1) {
+                selectedEnities[0].Pair.AddPair(this._canvas.SelectedLayer.MotorConfigs.ToVector(this._canvas.SelectedLayer.MotorConfigs));
+            }
         }
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {
@@ -139,6 +156,10 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 this._canvas.PointerTrace.Update(e.Location.ToSKPoint());
                 var lambdas = this._canvas.SelectedLayer.Complex.GetLambdas(e.Location.ToSKPoint());
+
+                var configVector = this._canvas.SelectedLayer.Complex.GetConfigVectors(e.Location.ToSKPoint());
+
+                this._canvas.SelectedLayer.MotorConfigs.FromVector(this._canvas.SelectedLayer.MotorConfigs, configVector);
 
                 this.Interpolated?.Invoke(
                     this,

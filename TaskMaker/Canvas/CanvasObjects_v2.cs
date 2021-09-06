@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Linq;
 using TaskMaker.SimplicialMapping;
 using MathNetExtension;
+using PCController;
 
 namespace TaskMaker {
     
@@ -113,6 +114,8 @@ namespace TaskMaker {
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public SimplicialComplex_v2 Complex { get; set; } = new SimplicialComplex_v2();
         public Layer NextLayer => (Layer)this.NextNode;
+        public Configs<Motor> MotorConfigs { get; set; }
+        public Configs<Layer> LayerConfigs { get; set; }
 
         public Layer() {
             this.Text = "NewLayer";
@@ -120,6 +123,38 @@ namespace TaskMaker {
 
         public Layer(string name) {
             this.Text = name;
+        }
+
+        public void InitializeMotorConfigs() {
+            this.MotorConfigs = new Configs<Motor>(
+                (me) => {
+                    var newConfigVector = me.Select(e => (float)e.position.Value).ToArray();
+
+                    return Vector<float>.Build.Dense(newConfigVector);
+                },
+                (me, input) => {
+                    for(int i = 0; i < input.Count; ++i) {
+                        me[i].position.Value = (int)input[i];
+                    }
+                }
+            );
+        }
+
+        public void InitializeLayerConfigs() {
+            this.LayerConfigs = new Configs<Layer>(
+                (me) => {
+                    var newConfigVector = me.Select(e => e.Pointer.ToVector()).ToList();
+                    var flattern = new List<float>();
+                    newConfigVector.ForEach(v => flattern.AddRange(v));
+
+                    return Vector<float>.Build.Dense(flattern.ToArray());
+                },
+                (me, input) => {
+                    for(int i = 0; i < input.Count / 2; ++i) {
+                        me[i].Pointer = new SKPoint(input[i * 2], input[i * 2 + 1]);
+                    }
+                });
+
         }
     }
 
@@ -391,6 +426,21 @@ namespace TaskMaker {
             this.ForEach(s => result.AddRange(s.GetLambdas(point).ToArray()));
 
             return Vector<float>.Build.Dense(result.ToArray());
+        }
+
+        public Vector<float> GetConfigVectors(SKPoint point) {
+            Vector<float> result = null;
+
+            foreach(var simplex in this) {
+                if (result == null) {
+                    result = simplex.Pairs.GetConfig(point);
+                }
+                else {
+                    result += simplex.Pairs.GetConfig(point);
+                }
+            }
+
+            return result;
         }
 
         public void Draw(SKCanvas sKCanvas) {

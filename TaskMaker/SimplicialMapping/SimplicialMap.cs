@@ -63,9 +63,11 @@ namespace TaskMaker.SimplicialMapping {
 
         public Vector<float> GetB(Vector<float> lambda) {
             if (this.IsCompleted) {
-                var result = this.A.Multiply(lambda);
+                var result = this.A.Multiply(lambda).ToList();
 
-                return result;
+                result.RemoveAt(0);
+
+                return Vector<float>.Build.Dense(result.ToArray());
             }
 
             return null;

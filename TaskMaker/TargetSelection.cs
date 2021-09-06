@@ -124,14 +124,34 @@ namespace TaskMaker {
         }
 
         private void treeView1_AfterCheck(object sender, TreeViewEventArgs e) {
-            foreach(SelectableMotor m in this.treeView1.Nodes) {
 
-            }
             
         }
 
         private void button1_Click(object sender, EventArgs e) {
+            if (this.radioButton1.Checked) {
+                this.ProgramInfo.SelectedLayer.InitializeMotorConfigs();
 
+                foreach (SelectableMotor m in this.treeView1.Nodes) {
+                    if (m.Checked) {
+                        this.ProgramInfo.SelectedLayer.MotorConfigs.Add(m.Target);
+                    }
+                }
+
+                this.ProgramInfo.Timer.Enabled = true;
+                this.ProgramInfo.Timer.Start();
+            }
+
+            if (this.radioButton2.Checked) {
+                this.ProgramInfo.SelectedLayer.InitializeLayerConfigs();
+
+                foreach(SelectableLayer l in this.treeView2.Nodes) {
+                    if (l.Checked)
+                        this.ProgramInfo.SelectedLayer.LayerConfigs.Add(l.Target);
+                }
+            }
+
+            MessageBox.Show("New configs are set.");
         }
 
         private void treeView2_AfterCheck(object sender, TreeViewEventArgs e) {
@@ -183,18 +203,29 @@ namespace TaskMaker {
         }
     }
 
-    //public class LayerConfig : Config<Layer> {
-
+    //public interface IConfigs<T> {
+    //    public Action<T> ToVector;
+    //    Action<T, Vector<float>> FromVector;
     //}
 
-    public class Config<T> {
-        public List<T> Targets { get; set; } = new List<T>();
-        public delegate Vector<float> ToVectorDelegate();
-        public ToVectorDelegate ToVector;
+    public class Configs<T> : List<T> {
+        public Func<Configs<T>, Vector<float>> ToVector;
+        public Action<Configs<T>, Vector<float>> FromVector;
 
-        public Config(List<T> targets, ToVectorDelegate func) {
-            this.Targets = targets;
-            this.ToVector += func;
+        public Configs(Func<Configs<T>, Vector<float>> funcTo, Action<Configs<T>, Vector<float>> funcFrom) {
+            this.ToVector += funcTo;
+            this.FromVector += funcFrom;
         }
     }
+
+    //public class MotorConfigs : Configs<Motor> {
+    //    public MotorConfigs(Action<MotorConfigs> funcTo, Action<MotorConfigs, Vector<float>> funcFrom) : base(funcTo, funcFrom) {
+    //    }
+    //}
+
+    //public class LayerConfigs : Configs<Layer> {
+    //    public LayerConfigs(Action<LayerConfigs> funcTo, Action<LayerConfigs, Vector<float>> funcFrom) : base(funcTo, funcFrom) {
+    //    }
+    //}
+
 }

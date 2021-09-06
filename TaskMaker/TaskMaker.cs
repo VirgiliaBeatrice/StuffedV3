@@ -7,13 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MathNet.Numerics.LinearAlgebra;
 using PCController;
 
 namespace TaskMaker {
     public partial class TaskMaker : Form {
         public ProgramInfo ProgramInfo { get; set; } = new ProgramInfo();
 
-        private Timer timer = new Timer();
+        //private Timer timer = new Timer();
         private CanvasControl canvasControl1;
         public TaskMaker() {
             InitializeComponent();
@@ -36,8 +37,10 @@ namespace TaskMaker {
 
             this.ProgramInfo.Boards.Serial = this.serialPort1;
             this.ProgramInfo.RootLayer = this.canvasControl1.GetRootLayer();
-            this.timer.Interval = 100;
-            this.timer.Tick += this.Timer_Tick;
+            this.ProgramInfo.SelectedLayer = this.canvasControl1.GetSelectedLayer();
+            this.ProgramInfo.Timer = new Timer();
+            this.ProgramInfo.Timer.Interval = 100;
+            this.ProgramInfo.Timer.Tick += this.Timer_Tick;
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -86,7 +89,7 @@ namespace TaskMaker {
 
             var root = this.canvasControl1.GetRootLayer();
             this.treeView1.Nodes.Add(root);
-            this.treeView1.SelectedNode = this.canvasControl1.GetCurrentSelectedLayer();
+            this.treeView1.SelectedNode = this.canvasControl1.GetSelectedLayer();
 
             this.treeView1.EndUpdate();
         }
@@ -100,6 +103,7 @@ namespace TaskMaker {
                 case Keys.Escape:
                     this.canvasControl1.SelectedMode = Modes.None;
                     this.canvasControl1.Reset();
+                    //this.ProgramInfo.Timer.Stop();
                     break;
                 case Keys.T:
                     if (!this.canvasControl1.Triangulate()) {
@@ -120,6 +124,34 @@ namespace TaskMaker {
                     break;
                 case Keys.M:
                     this.canvasControl1.SelectedMode = Modes.Manipulate;
+                    break;
+                case Keys.Q:
+                    if (this.ProgramInfo.SelectedLayer.MotorConfigs == null) {
+                        return;
+                    }
+
+                    var form2 = new MotorPositionForm();
+
+                    foreach(var motor in this.ProgramInfo.SelectedLayer.MotorConfigs) {
+                        form2.flowLayoutPanel1.Controls.Add(motor.position.panel);
+                    }
+
+                    form2.Size = new Size(500, 500);
+                    form2.Show();
+                    break;
+                case Keys.E:
+                    if (this.ProgramInfo.SelectedLayer.LayerConfigs == null)
+                        return;
+
+                    var form3 = new TinyCanvasForm();
+                    form3.Canvas = this.canvasControl1.GetCanvas();
+                    form3.InitializeLayers();
+                    form3.Show();
+
+                    break;
+
+                case Keys.L:
+                    this.canvasControl1.LinkToConfig();
                     break;
             }
 
@@ -176,6 +208,7 @@ namespace TaskMaker {
         /// <param name="e"></param>
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
             this.canvasControl1.ChangeLayer(e.Node);
+            this.ProgramInfo.SelectedLayer = (Layer)e.Node;
             this.canvasControl1.Invalidate(true);
         }
 
@@ -193,5 +226,8 @@ namespace TaskMaker {
         public Boards Boards { get; set; } = new Boards();
         public Motors Motors { get; set; } = new Motors();
         public Layer RootLayer { get; set; }
+        public Layer SelectedLayer { get; set; }
+        public Timer Timer { get; set; }
+
     }
 }
