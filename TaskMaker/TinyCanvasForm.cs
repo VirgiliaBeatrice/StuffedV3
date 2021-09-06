@@ -15,14 +15,13 @@ namespace TaskMaker {
 
         public Canvas Canvas { get; set; }
         private SKControl sKControl = new SKControl();
-        private Layer selectedLayer;
+        private Layer parentLayer;
 
-        public TinyCanvasForm() {
+        public TinyCanvasForm(Layer layer) {
             InitializeComponent();
 
+            this.parentLayer = layer;
 
-
-            //this.canvasControl.Dock = DockStyle.Fill;
             this.sKControl.Dock = DockStyle.Fill;
             this.panel1.Controls.Add(this.sKControl);
 
@@ -34,26 +33,12 @@ namespace TaskMaker {
             this.Invalidate(true);
         }
 
-        public void InitializeLayers() {
-            List<Layer> treeNodeList = this.Canvas.RootLayer.Nodes.OfType<Layer>().ToList();
-            this.comboBox1.Items.AddRange(treeNodeList.ToArray());
-            this.selectedLayer = treeNodeList[0];
-
-            this.Invalidate(true);
-        }
-
         private void SKControl_PaintSurface(object sender, SKPaintSurfaceEventArgs ev) {
             var canvas = ev.Surface.Canvas;
 
             canvas.Clear();
-            this.selectedLayer?.Complex.Draw(canvas);
-            this.selectedLayer?.Entities.ForEach(e => e.Draw(canvas));
-        }
 
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e) {
-            this.selectedLayer = (this.comboBox1.SelectedItem as Layer);
-
-            this.Invalidate(true);
+            this.parentLayer.Draw(canvas);
         }
     }
 }

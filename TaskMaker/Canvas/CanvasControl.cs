@@ -15,20 +15,34 @@ using SkiaSharp.Views.Desktop;
 namespace TaskMaker {
     public partial class CanvasControl : UserControl {
         public Modes SelectedMode {
-            get => this._selectedMode;
+            get => this.selectedMode;
             set {
-                this._selectedMode = value;
+                this.selectedMode = value;
 
                 this.ModeChanged?.Invoke(this, null);
             }
         }
 
+        public Layer SelectedLayer {
+            get => this.canvas.SelectedLayer;
+            set {
+                this.canvas.SelectedLayer = value;
+
+                this.LayerFocused?.Invoke(this, new LayerFocusedEventArgs { Layer = this.canvas.SelectedLayer });
+            }
+        }
+
+        public Layer RootLayer => this.canvas.RootLayer;
+        public Canvas Canvas => this.canvas;
+
+
         protected SKControl skControl;
         private SKImageInfo imageInfo;
-        private Canvas _canvas;
-        private Modes _selectedMode;
+        private Canvas canvas;
+        private Modes selectedMode;
 
         public event EventHandler LayerUpdated;
+        public event EventHandler<LayerFocusedEventArgs> LayerFocused;
         public event EventHandler ModeChanged;
         public event EventHandler<InterpolatingEventArgs> Interpolated;
 
@@ -52,64 +66,70 @@ namespace TaskMaker {
             //this.skControl.KeyPress += this.SkControl_KeyPress;
             //this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
-            this._canvas = new Canvas();
+            this.canvas = new Canvas();
         }
 
         public void Reset() {
-            this._canvas.Reset();
+            this.canvas.Reset();
         }
 
         public bool Triangulate() {
-            return this._canvas.Triangulate();
+            return this.canvas.Triangulate();
         }
 
-        public void StartAddNodeMode() {
-            this._canvas.IsShownPointer = true;
+        public void BeginAddNodeMode() {
+            this.canvas.IsShownPointer = true;
+            this.SelectedMode = Modes.AddNode;
         }
 
-        public void StartPointerTrace(Point position) {
-            this._canvas.PointerTrace = new PointerTrace(position.ToSKPoint());
-            this._canvas.IsShownPointerTrace = true;
+        public void EndAddNodeMode() {
+            this.canvas.Reset();
+        }
+
+        public void BeginNoneMode() {
+            this.SelectedMode = Modes.None;
+            this.Reset();
+        }
+
+        public void BeginManipulateMode() {
+            this.SelectedMode = Modes.Selection;
+        }
+
+        public void BeginSelectionMode() {
+            this.SelectedMode = Modes.Selection;
+        }
+
+        public void BeginPointerTrace(Point position) {
+            this.canvas.PointerTrace = new PointerTrace(position.ToSKPoint());
+            this.canvas.IsShownPointerTrace = true;
         }
 
         public void EndPointerTrace() {
-            this._canvas.Reset();
+            this.canvas.Reset();
         }
 
         public void AddLayer() {
-            this._canvas.SelectedLayer.Nodes.Add(new Layer());
+            this.SelectedLayer.Parent.Nodes.Add(new Layer());
             this.LayerUpdated?.Invoke(this, null);
         }
 
         public void RemoveLayer() {
-            this._canvas.RootLayer.Nodes.Remove(this._canvas.SelectedLayer);
+            this.canvas.RootLayer.Nodes.Remove(this.canvas.SelectedLayer);
             this.LayerUpdated?.Invoke(this, null);
         }
 
-        public Layer GetRootLayer() {
-            return this._canvas.RootLayer;
-        }
-
-        public Layer GetSelectedLayer() {
-            return this._canvas.SelectedLayer;
-        }
-
-        public Canvas GetCanvas() {
-            return this._canvas;
-        }
-
-        public void ChangeLayer(TreeNode node) {
-            this._canvas.SelectedLayer = (Layer)node;
+        public void ChooseLayer(Layer layer) {
+            this.SelectedLayer = layer;
         }
 
         public void LinkToConfig() {
-            var selectedEnities = this._canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+            var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
-            if (this._canvas.SelectedLayer.MotorConfigs == null)
+            if (this.canvas.SelectedLayer.MotorConfigs == null)
                 return;
 
             if (selectedEnities.Count == 1) {
-                selectedEnities[0].Pair.AddPair(this._canvas.SelectedLayer.MotorConfigs.ToVector(this._canvas.SelectedLayer.MotorConfigs));
+                selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
             }
         }
 
@@ -148,18 +168,18 @@ namespace TaskMaker {
 
         private void ProcessManipulatMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                this.StartPointerTrace(ev.Location);
+                this.BeginPointerTrace(ev.Location);
             }
         }
 
         private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                this._canvas.PointerTrace.Update(e.Location.ToSKPoint());
-                var lambdas = this._canvas.SelectedLayer.Complex.GetLambdas(e.Location.ToSKPoint());
+                this.canvas.PointerTrace.Update(e.Location.ToSKPoint());
+                var lambdas = this.canvas.SelectedLayer.Complex.GetLambdas(e.Location.ToSKPoint());
 
-                var configVector = this._canvas.SelectedLayer.Complex.GetConfigVectors(e.Location.ToSKPoint());
+                var configVector = this.canvas.SelectedLayer.Complex.GetConfigVectors(e.Location.ToSKPoint());
 
-                this._canvas.SelectedLayer.MotorConfigs.FromVector(this._canvas.SelectedLayer.MotorConfigs, configVector);
+                this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
 
                 this.Interpolated?.Invoke(
                     this,
@@ -177,42 +197,6 @@ namespace TaskMaker {
             }
         }
 
-
-        private void SkControl_KeyDown(object sender, KeyEventArgs ev) {
-            switch (ev.KeyCode) {
-                case Keys.A:
-                    this.SelectedMode = Modes.AddNode;
-                    this._canvas.IsShownPointer = true;
-                    break;
-                case Keys.Escape:
-                    this.SelectedMode = Modes.None;
-                    this._canvas.Reset();
-                    break;
-                case Keys.T:
-                    if (!this._canvas.Triangulate()) {
-                        MessageBox.Show("Amount of nodes is less than 3. Abort.");
-                    }
-                    break;
-                case Keys.S:
-                    this.SelectedMode = Modes.Selection;
-                    break;
-                case Keys.P:
-                    Form form = new Form();
-                    //TargetSelection control = new TargetSelection();
-                    //control.Dock = DockStyle.Fill;
-                    //form.Size = new Size(600, 600);
-
-                    //form.Controls.Add(control);
-                    //form.Show();
-                    break;
-                case Keys.M:
-                    this.SelectedMode = Modes.Manipulate;
-                    break;
-            }
-
-            this.Invalidate(true);
-        }
-
         private void SkControl_MouseMove(object sender, MouseEventArgs e) {
             switch (this.SelectedMode) {
                 case Modes.Selection:
@@ -223,7 +207,7 @@ namespace TaskMaker {
                     break;
             }
 
-            this._canvas.Pointer.Location = e.Location.ToSKPoint();
+            this.canvas.Pointer.Location = e.Location.ToSKPoint();
 
             this.Invalidate(true);
         }
@@ -269,57 +253,57 @@ namespace TaskMaker {
         protected virtual void Draw(SKCanvas sKCanvas) {
             sKCanvas.Clear();
 
-            this._canvas.Draw(sKCanvas);
+            this.canvas.Draw(sKCanvas);
         }
 
         private void ProcessSelectionMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                this._canvas.Reset();
+                this.canvas.Reset();
 
-                this._canvas.SelectionTool = new LassoSelectionTool(ev.Location.ToSKPoint());
+                this.canvas.SelectionTool = new LassoSelectionTool(ev.Location.ToSKPoint());
             }
             else if (ev.Button == MouseButtons.Right) {
-                this._canvas.Reset();
+                this.canvas.Reset();
 
-                this._canvas.SelectionTool = new RectSelectionTool(ev.Location.ToSKPoint());
+                this.canvas.SelectionTool = new RectSelectionTool(ev.Location.ToSKPoint());
             }
         }
 
         private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 var newLocation = ev.Location.ToSKPoint();
-                this._canvas.SelectionTool.Trace(newLocation);
+                this.canvas.SelectionTool.Trace(newLocation);
             }
             else if (ev.Button == MouseButtons.Right) {
                 var newLocation = ev.Location.ToSKPoint();
-                this._canvas.SelectionTool.Trace(newLocation);
+                this.canvas.SelectionTool.Trace(newLocation);
             }
         }
 
         private void ProcessSelectionMouseUpEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                foreach (var e in this._canvas.SelectedLayer.Entities) {
-                    if (this._canvas.SelectionTool.Contains(e.Location)) {
+                foreach (var e in this.canvas.SelectedLayer.Entities) {
+                    if (this.canvas.SelectionTool.Contains(e.Location)) {
                         e.IsSelected = true;
                     }
                 }
 
-                this._canvas.SelectionTool.End();
+                this.canvas.SelectionTool.End();
             }
             else if (ev.Button == MouseButtons.Right) {
-                foreach (var e in this._canvas.SelectedLayer.Entities) {
-                    if (this._canvas.SelectionTool.Contains(e.Location)) {
+                foreach (var e in this.canvas.SelectedLayer.Entities) {
+                    if (this.canvas.SelectionTool.Contains(e.Location)) {
                         e.IsSelected = true;
                     }
                 }
 
-                this._canvas.SelectionTool.End();
+                this.canvas.SelectionTool.End();
             }
         }
 
         private void ProcessGeneralMouseClickEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                foreach (var e in this._canvas.SelectedLayer.Entities) {
+                foreach (var e in this.canvas.SelectedLayer.Entities) {
                     if (e.ContainsPoint(ev.Location.ToSKPoint())) {
                         e.IsSelected = !e.IsSelected;
                     }
@@ -329,16 +313,20 @@ namespace TaskMaker {
 
         private void ProcessAddNodeMouseClickEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                this._canvas.SelectedLayer.Entities.Add(new Entity_v2(e.Location.ToSKPoint()) {
-                    Index = this._canvas.SelectedLayer.Entities.Count,
+                this.canvas.SelectedLayer.Entities.Add(new Entity_v2(e.Location.ToSKPoint()) {
+                    Index = this.canvas.SelectedLayer.Entities.Count,
                 });
             }
 
             // Quit from current mode after adding one entity
             this.SelectedMode = Modes.None;
 
-            this._canvas.Reset();
+            this.canvas.Reset();
         }
+    }
+
+    public class LayerFocusedEventArgs : EventArgs {
+        public Layer Layer { get; set; }
     }
 
     public class InterpolatingEventArgs : EventArgs {

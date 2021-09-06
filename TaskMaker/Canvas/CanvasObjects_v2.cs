@@ -9,6 +9,8 @@ using System.Linq;
 using TaskMaker.SimplicialMapping;
 using MathNetExtension;
 using PCController;
+using System.Text.Json;
+using System.Drawing;
 
 namespace TaskMaker {
     
@@ -20,23 +22,16 @@ namespace TaskMaker {
         public ISelectionTool SelectionTool { get; set; }
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
-        //public LinearSlider testSlider { get; set; }
 
         private Mapping.Triangulation _triangulation;
 
         public Canvas() {
             this._triangulation = new Mapping.Triangulation();
 
-            this.RootLayer.Nodes.Add(new Layer());
-            this.SelectedLayer = this.RootLayer;
+            this.RootLayer.Nodes.Add(new Layer("New Layer"));
+            this.SelectedLayer = this.RootLayer.FirstNode as Layer;
 
             this.Pointer = new CrossPointer();
-
-            //this.testSlider = new LinearSlider(new SKPoint(100, 100));
-        }
-
-        public void SelectLayer(Layer layer) {
-            this.SelectedLayer = layer;
         }
 
         public void Reset() {
@@ -46,8 +41,9 @@ namespace TaskMaker {
         }
 
         public void Draw(SKCanvas sKCanvas) {
-            this.SelectedLayer.Complex.Draw(sKCanvas);
-            this.SelectedLayer.Entities.ForEach(e => e.Draw(sKCanvas));
+            this.SelectedLayer.Draw(sKCanvas);
+            //this.SelectedLayer.Complex.Draw(sKCanvas);
+            //this.SelectedLayer.Entities.ForEach(e => e.Draw(sKCanvas));
 
             if (this.SelectionTool != null) {
                 this.SelectionTool.DrawThis(sKCanvas);
@@ -60,9 +56,6 @@ namespace TaskMaker {
             if (this.IsShownPointerTrace) {
                 this.PointerTrace.Draw(sKCanvas);
             }
-
-            //this.testSlider.Percentage = (new Random()).Next(0, 100);
-            //this.testSlider.Draw(sKCanvas);
         }
 
         public bool Triangulate() {
@@ -117,12 +110,72 @@ namespace TaskMaker {
         public Configs<Motor> MotorConfigs { get; set; }
         public Configs<Layer> LayerConfigs { get; set; }
 
+
         public Layer() {
             this.Text = "NewLayer";
         }
 
         public Layer(string name) {
             this.Text = name;
+        }
+
+        public void ShowTargetSelectionForm(ProgramInfo info) {
+            var form = new Form();
+            var selection = new TargetSelection(info);
+            var group = new GroupBox();
+
+            form.Text = $"Target Selection - {this.Text}";
+            form.Size = new Size(600, 600);
+            group.Text = this.Text;
+            group.Dock = DockStyle.Fill;
+            selection.Dock = DockStyle.Fill;
+
+            group.Controls.Add(selection);
+            form.Controls.Add(group);
+
+            form.Show();
+        }
+
+        public bool ShowTargetControlForm() {
+            if (this.LayerConfigs != null) {
+                this.ShowTinyCanvasForm();
+
+                return true;
+            }
+
+            if (this.MotorConfigs != null) {
+                this.ShowMotorPositionForm();
+             
+                return true;
+            }
+
+            MessageBox.Show("No config has been set. Abort.");
+            return false;
+        }
+
+        public void ShowTinyCanvasForm() {
+            var form = new TinyCanvasForm(this);
+
+            form.Text = $"Tiny Canvas - {this.Text}";
+            form.Size = new Size(600, 600);
+
+            form.Show();
+        }
+
+        public void ShowMotorPositionForm() {
+            var form = new Form();
+            var panel = new FlowLayoutPanel();
+
+            form.Text = $"Motor Position - {this.Text}";
+            form.Size = new Size(600, 600);
+            panel.Dock = DockStyle.Fill;
+
+            foreach(var motor in this.MotorConfigs) {
+                panel.Controls.Add(motor.position.panel);
+            }
+
+            form.Controls.Add(panel);
+            form.Show();
         }
 
         public void InitializeMotorConfigs() {
@@ -138,6 +191,8 @@ namespace TaskMaker {
                     }
                 }
             );
+
+            this.LayerConfigs = null;
         }
 
         public void InitializeLayerConfigs() {
@@ -155,6 +210,12 @@ namespace TaskMaker {
                     }
                 });
 
+            this.MotorConfigs = null;
+        }
+
+        public void Draw(SKCanvas sKCanvas) {
+            this.Complex.Draw(sKCanvas);
+            this.Entities.ForEach(e => e.Draw(sKCanvas));
         }
     }
 
@@ -171,6 +232,11 @@ namespace TaskMaker {
     public class CanvasObject_v2 {
         public virtual SKPoint Location { get; set; }
 
+        public virtual string ToJson() {
+            var option = new JsonSerializerOptions { WriteIndented = true };
+
+            return JsonSerializer.Serialize(this, option);
+        }
         public virtual void Invalidate() { }
         public virtual bool ContainsPoint(SKPoint point) => false;
         public virtual void Draw(SKCanvas sKCanvas) { }

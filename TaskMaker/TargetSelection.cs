@@ -153,15 +153,6 @@ namespace TaskMaker {
 
             MessageBox.Show("New configs are set.");
         }
-
-        private void treeView2_AfterCheck(object sender, TreeViewEventArgs e) {
-            //Vector<float> result = Vector<float>.Build.Dense(0);
-            
-            //foreach(SelectableLayer l in this.treeView2.Nodes) {
-            //    if (l.Checked)
-            //        result = result.Concatenate(l.ToVector());
-            //}
-        }
     }
 
     public class SelectableObject<T> : TreeNode {

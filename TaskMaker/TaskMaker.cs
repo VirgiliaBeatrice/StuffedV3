@@ -36,8 +36,8 @@ namespace TaskMaker {
             this.treeView1.ExpandAll();
 
             this.ProgramInfo.Boards.Serial = this.serialPort1;
-            this.ProgramInfo.RootLayer = this.canvasControl1.GetRootLayer();
-            this.ProgramInfo.SelectedLayer = this.canvasControl1.GetSelectedLayer();
+            this.ProgramInfo.RootLayer = this.canvasControl1.RootLayer;
+            this.ProgramInfo.SelectedLayer = this.canvasControl1.SelectedLayer;
             this.ProgramInfo.Timer = new Timer();
             this.ProgramInfo.Timer.Interval = 100;
             this.ProgramInfo.Timer.Tick += this.Timer_Tick;
@@ -87,9 +87,9 @@ namespace TaskMaker {
             this.treeView1.BeginUpdate();
             this.treeView1.Nodes.Clear();
 
-            var root = this.canvasControl1.GetRootLayer();
+            var root = this.canvasControl1.RootLayer;
             this.treeView1.Nodes.Add(root);
-            this.treeView1.SelectedNode = this.canvasControl1.GetSelectedLayer();
+            this.treeView1.SelectedNode = this.canvasControl1.SelectedLayer;
 
             this.treeView1.EndUpdate();
         }
@@ -97,12 +97,10 @@ namespace TaskMaker {
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
             switch (e.KeyCode) {
                 case Keys.A:
-                    this.canvasControl1.SelectedMode = Modes.AddNode;
-                    this.canvasControl1.StartAddNodeMode();
+                    this.canvasControl1.BeginAddNodeMode();
                     break;
                 case Keys.Escape:
-                    this.canvasControl1.SelectedMode = Modes.None;
-                    this.canvasControl1.Reset();
+                    this.canvasControl1.BeginNoneMode();
                     //this.ProgramInfo.Timer.Stop();
                     break;
                 case Keys.T:
@@ -111,45 +109,17 @@ namespace TaskMaker {
                     }
                     break;
                 case Keys.S:
-                    this.canvasControl1.SelectedMode = Modes.Selection;
+                    this.canvasControl1.BeginSelectionMode();
                     break;
                 case Keys.P:
-                    Form form = new Form();
-                    TargetSelection control = new TargetSelection(this.ProgramInfo);
-                    control.Dock = DockStyle.Fill;
-                    form.Size = new Size(600, 600);
-
-                    form.Controls.Add(control);
-                    form.Show();
+                    this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
                     break;
                 case Keys.M:
-                    this.canvasControl1.SelectedMode = Modes.Manipulate;
+                    this.canvasControl1.BeginManipulateMode();
                     break;
                 case Keys.Q:
-                    if (this.ProgramInfo.SelectedLayer.MotorConfigs == null) {
-                        return;
-                    }
-
-                    var form2 = new MotorPositionForm();
-
-                    foreach(var motor in this.ProgramInfo.SelectedLayer.MotorConfigs) {
-                        form2.flowLayoutPanel1.Controls.Add(motor.position.panel);
-                    }
-
-                    form2.Size = new Size(500, 500);
-                    form2.Show();
+                    this.canvasControl1.SelectedLayer.ShowTargetControlForm();
                     break;
-                case Keys.E:
-                    if (this.ProgramInfo.SelectedLayer.LayerConfigs == null)
-                        return;
-
-                    var form3 = new TinyCanvasForm();
-                    form3.Canvas = this.canvasControl1.GetCanvas();
-                    form3.InitializeLayers();
-                    form3.Show();
-
-                    break;
-
                 case Keys.L:
                     this.canvasControl1.LinkToConfig();
                     break;
@@ -207,8 +177,9 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
-            this.canvasControl1.ChangeLayer(e.Node);
+            this.canvasControl1.ChooseLayer(e.Node as Layer);
             this.ProgramInfo.SelectedLayer = (Layer)e.Node;
+
             this.canvasControl1.Invalidate(true);
         }
 
@@ -219,6 +190,14 @@ namespace TaskMaker {
         /// <param name="e"></param>
         private void button7_Click(object sender, EventArgs e) {
             this.canvasControl1.SelectedMode = Modes.Selection;
+        }
+
+        private void toolbox_Enter(object sender, EventArgs e) {
+
+        }
+
+        private void toolStripMenuItem2_Click(object sender, EventArgs e) {
+
         }
     }
 
