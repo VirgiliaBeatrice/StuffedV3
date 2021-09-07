@@ -135,6 +135,14 @@ namespace TaskMaker {
             this.LayerUpdated?.Invoke(this, null);
         }
 
+        public void RemoveSelectedNodes() {
+            var selectedEntities = this.SelectedLayer.Entities.Where(e => e.IsSelected);
+
+            foreach(var entity in selectedEntities.ToArray()) {
+                this.SelectedLayer.Entities.Remove(entity);
+            }
+        }
+
         public void ChooseLayer(Layer layer) {
             this.SelectedLayer = layer;
         }

@@ -163,7 +163,8 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button4_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedMode = Modes.DeleteNode;
+            //this.canvasControl1.SelectedMode = Modes.DeleteNode;
+            this.canvasControl1.RemoveSelectedNodes();
         }
 
         /// <summary>
