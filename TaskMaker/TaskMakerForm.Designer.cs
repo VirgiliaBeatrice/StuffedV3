@@ -1,6 +1,6 @@
 ﻿
 namespace TaskMaker {
-    partial class TaskMaker {
+    partial class TaskMakerForm {
         /// <summary>
         /// Required designer variable.
         /// </summary>

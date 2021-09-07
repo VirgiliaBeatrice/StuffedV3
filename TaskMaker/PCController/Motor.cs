@@ -388,7 +388,7 @@ namespace PCController
     }
 
     [DataContract]
-    public class Motor {
+    public partial class Motor {
         public MotorPosition position;
         public MotorLimit limit;
         [DataMember]

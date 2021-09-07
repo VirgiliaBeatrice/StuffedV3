@@ -34,9 +34,11 @@ namespace TaskMaker {
 
         public Layer RootLayer => this.canvas.RootLayer;
         public Canvas Canvas => this.canvas;
+        public Services Services => (this.ParentForm as TaskMakerForm).Services;
 
 
-        protected SKControl skControl;
+
+        private SKControl skControl;
         private SKImageInfo imageInfo;
         private Canvas canvas;
         private Modes selectedMode;
@@ -69,7 +71,7 @@ namespace TaskMaker {
             //this.skControl.KeyPress += this.SkControl_KeyPress;
             //this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
-            this.canvas = new Canvas();
+            this.canvas = new Canvas(this.Services);
         }
 
         public void Reset() {
@@ -507,3 +509,10 @@ namespace TaskMaker {
         Edit,
     }
 }
+
+namespace PCController {
+    public partial class Motor {
+        public int NewOffset { get; set; } = 0;
+    }
+}
+

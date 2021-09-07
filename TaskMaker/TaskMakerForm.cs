@@ -11,8 +11,8 @@ using MathNet.Numerics.LinearAlgebra;
 using PCController;
 
 namespace TaskMaker {
-    public partial class TaskMaker : Form {
-        public Services ProgramInfo { get; set; } = new Services();
+    public partial class TaskMakerForm : Form {
+        public Services Services { get; set; } = new Services();
 
         private CanvasControl canvasControl1;
         private ToolTip tooltipBtnAddLayer = new ToolTip();
@@ -22,7 +22,7 @@ namespace TaskMaker {
         public delegate void InvalidateDelgate(bool invalidateChildren);
 
 
-        public TaskMaker() {
+        public TaskMakerForm() {
             InitializeComponent();
             InitializeSkControl();
 
@@ -43,12 +43,12 @@ namespace TaskMaker {
             this.UpdateTreeview();
             this.treeView1.ExpandAll();
 
-            this.ProgramInfo.Boards.Serial = this.serialPort1;
-            this.ProgramInfo.RootLayer = this.canvasControl1.RootLayer;
-            this.ProgramInfo.SelectedLayer = this.canvasControl1.SelectedLayer;
-            this.ProgramInfo.Timer = new Timer();
-            this.ProgramInfo.Timer.Interval = 100;
-            this.ProgramInfo.Timer.Tick += this.Timer_Tick;
+            this.Services.Boards.Serial = this.serialPort1;
+            this.Services.RootLayer = this.canvasControl1.RootLayer;
+            this.Services.SelectedLayer = this.canvasControl1.SelectedLayer;
+            this.Services.Timer = new Timer();
+            this.Services.Timer.Interval = 100;
+            this.Services.Timer.Tick += this.Timer_Tick;
 
             this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
 
@@ -177,13 +177,13 @@ namespace TaskMaker {
         }
 
         private void UpdateMotor() {
-            short[] targets = new short[this.ProgramInfo.Boards.NMotor];
+            short[] targets = new short[this.Services.Boards.NMotor];
 
-            for (int i = 0; i < this.ProgramInfo.Motors.Count; ++i) {
-                targets[i] = (short)this.ProgramInfo.Motors[i].position.Value;
+            for (int i = 0; i < this.Services.Motors.Count; ++i) {
+                targets[i] = (short)this.Services.Motors[i].position.Value;
             }
 
-            this.ProgramInfo.Boards.SendPosDirect(targets);
+            this.Services.Boards.SendPosDirect(targets);
         }
 
         private void CanvasControl1_Interpolated(object sender, InterpolatingEventArgs e) {
@@ -302,13 +302,13 @@ namespace TaskMaker {
 
         private void treeView1_MouseDoubleClick(object sender, MouseEventArgs e) {
             this.canvasControl1.ChooseLayer(this.treeView1.SelectedNode as Layer);
-            this.ProgramInfo.SelectedLayer = (Layer)this.treeView1.SelectedNode;
+            this.Services.SelectedLayer = (Layer)this.treeView1.SelectedNode;
 
             this.canvasControl1.Invalidate(true);
         }
 
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e) {
-            var form = new SettingsForm(this.ProgramInfo);
+            var form = new SettingsForm(this.Services);
 
             form.ShowDialog();
             form.Dispose();
@@ -319,7 +319,7 @@ namespace TaskMaker {
         }
 
         private void button9_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
+            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.Services);
             this.canvasControl1.Reset();
         }
 
@@ -328,7 +328,7 @@ namespace TaskMaker {
         }
 
         private void layerToolStripMenuItem_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
+            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.Services);
             this.canvasControl1.Reset();
         }
 
@@ -344,6 +344,7 @@ namespace TaskMaker {
     public class Services {
         public Boards Boards { get; set; } = new Boards();
         public Motors Motors { get; set; } = new Motors();
+        public MotorOffsets MotorOffsets { get; set; } = new MotorOffsets();
         public Layer RootLayer { get; set; }
         public Layer SelectedLayer { get; set; }
         public Timer Timer { get; set; }
@@ -384,4 +385,6 @@ namespace TaskMaker {
             }
         }
     }
+
+    public class MotorOffsets: List<int> { }
 }

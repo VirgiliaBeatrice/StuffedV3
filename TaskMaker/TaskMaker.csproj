@@ -144,11 +144,11 @@
     </Compile>
     <Compile Include="Canvas\CanvasObjects_v2.cs" />
     <Compile Include="MathNetExtension.cs" />
-    <Compile Include="MotorPositionForm.cs">
-      <SubType>Form</SubType>
+    <Compile Include="MotorController.cs">
+      <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="MotorPositionForm.Designer.cs">
-      <DependentUpon>MotorPositionForm.cs</DependentUpon>
+    <Compile Include="MotorController.Designer.cs">
+      <DependentUpon>MotorController.cs</DependentUpon>
     </Compile>
     <Compile Include="PCController\Board.cs" />
     <Compile Include="PCController\Boards.cs" />
@@ -194,11 +194,11 @@
     <Compile Include="TargetSelection.designer.cs">
       <DependentUpon>TargetSelection.cs</DependentUpon>
     </Compile>
-    <Compile Include="TaskMaker.cs">
+    <Compile Include="TaskMakerForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="TaskMaker.Designer.cs">
-      <DependentUpon>TaskMaker.cs</DependentUpon>
+    <Compile Include="TaskMakerForm.Designer.cs">
+      <DependentUpon>TaskMakerForm.cs</DependentUpon>
     </Compile>
     <Compile Include="TinyCanvasForm.cs">
       <SubType>Form</SubType>
@@ -206,8 +206,8 @@
     <Compile Include="TinyCanvasForm.Designer.cs">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="MotorPositionForm.resx">
-      <DependentUpon>MotorPositionForm.cs</DependentUpon>
+    <EmbeddedResource Include="MotorController.resx">
+      <DependentUpon>MotorController.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PCController\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -227,8 +227,8 @@
     <EmbeddedResource Include="TargetSelection.resx">
       <DependentUpon>TargetSelection.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="TaskMaker.resx">
-      <DependentUpon>TaskMaker.cs</DependentUpon>
+    <EmbeddedResource Include="TaskMakerForm.resx">
+      <DependentUpon>TaskMakerForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="TinyCanvasForm.resx">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>

@@ -34,7 +34,7 @@ namespace TaskMaker {
             // button1
             // 
             this.button1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.button1.Location = new System.Drawing.Point(304, 24);
+            this.button1.Location = new System.Drawing.Point(304, 37);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 0;
@@ -45,7 +45,7 @@ namespace TaskMaker {
             // label1
             // 
             this.label1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.label1.Location = new System.Drawing.Point(3, 29);
+            this.label1.Location = new System.Drawing.Point(3, 42);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(35, 13);
             this.label1.TabIndex = 1;
@@ -56,7 +56,7 @@ namespace TaskMaker {
             // 
             this.comboBox1.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(44, 25);
+            this.comboBox1.Location = new System.Drawing.Point(44, 38);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(253, 21);
             this.comboBox1.TabIndex = 2;
@@ -70,19 +70,19 @@ namespace TaskMaker {
             this.tableLayoutPanel1.Controls.Add(this.button1, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.label1, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.comboBox1, 1, 0);
-            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(384, 72);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(384, 97);
             this.tableLayoutPanel1.TabIndex = 3;
             // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(384, 161);
+            this.ClientSize = new System.Drawing.Size(384, 97);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "SettingsForm";
             this.Text = "SettingsForm";

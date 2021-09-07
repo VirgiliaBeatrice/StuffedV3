@@ -15,6 +15,7 @@ using System.Drawing;
 namespace TaskMaker {
     
     public class Canvas {
+        public Services Services { get; set; }
         public bool IsShownPointer { get; set; } = false;
         public bool IsShownPointerTrace { get; set; } = false;
         public Layer RootLayer { get; set; } = new Layer("Root");
@@ -23,10 +24,11 @@ namespace TaskMaker {
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
 
-        private Mapping.Triangulation _triangulation;
+        private Mapping.Triangulation triangulation;
 
-        public Canvas() {
-            this._triangulation = new Mapping.Triangulation();
+        public Canvas(Services services) {
+            this.Services = services;
+            this.triangulation = new Mapping.Triangulation();
 
             this.RootLayer.Nodes.Add(new Layer("New Layer 1"));
             this.SelectedLayer = this.RootLayer.FirstNode as Layer;
@@ -107,7 +109,7 @@ namespace TaskMaker {
                 }
 
                 var input = flattern.ToArray();
-                var output = this._triangulation.RunDelaunay_v1(2, input.Length / 2, ref input);
+                var output = this.triangulation.RunDelaunay_v1(2, input.Length / 2, ref input);
 
                 foreach (var triIndices in output) {
                     var arrSelectedEntities = selectedEntities.ToArray();
@@ -202,13 +204,13 @@ namespace TaskMaker {
 
         public bool ShowTargetControlForm() {
             if (this.LayerConfigs != null) {
-                this.ShowTinyCanvasForms();
+                this.ShowTinyCanvases();
 
                 return true;
             }
 
             if (this.MotorConfigs != null) {
-                this.ShowMotorPositionForm();
+                this.ShowMotorControllers();
              
                 return true;
             }
@@ -217,7 +219,7 @@ namespace TaskMaker {
             return false;
         }
 
-        public void ShowTinyCanvasForms() {
+        public void ShowTinyCanvases() {
             foreach(var layer in this.LayerConfigs) {
                 var form = new TinyCanvasForm(layer);
 
@@ -232,8 +234,7 @@ namespace TaskMaker {
 
         }
 
-        public void ShowMotorPositionForm() {
-            //this.ProgramInfo.ResetMotor();
+        public void ShowMotorControllers() {
             var form = new Form();
             var panel = new FlowLayoutPanel();
 
@@ -242,13 +243,10 @@ namespace TaskMaker {
             panel.Dock = DockStyle.Fill;
 
             foreach(var motor in this.MotorConfigs) {
-                var group = new GroupBox();
-                group.Text = $"Motor{this.MotorConfigs.IndexOf(motor) + 1}";
-                // Recreate motor controls
-                motor.position = new MotorPosition();
+                var motorController = new MotorController(motor);
+                motorController.MotorName = $"Motor{this.MotorConfigs.IndexOf(motor) + 1}";
 
-                group.Controls.Add(motor.position.panel);
-                panel.Controls.Add(group);
+                panel.Controls.Add(motorController);
             }
 
             form.Controls.Add(panel);
