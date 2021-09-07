@@ -653,64 +653,106 @@ namespace TaskMaker {
     }
 
     public class Edge_v2 : CanvasObject_v2 {
-        public Entity_v2 E0 { get; set; }
-        public Entity_v2 E1 { get; set; }
+        public HashSet<Entity_v2> ExtremeSet { get; set; } = new HashSet<Entity_v2>();
+
+        public void Add(Entity_v2 e0, Entity_v2 e1) {
+            this.ExtremeSet.Add(e0);
+            this.ExtremeSet.Add(e1);
+        }
+
+        public bool SetEquals(HashSet<Entity_v2> targetSet) {
+            return this.ExtremeSet.SetEquals(targetSet);
+        }
+
     }
 
     public class ExteriorZone_v2 : List<ExteriorRegion_v2> {
         public CircularList<Entity_v2> Extremes { get; set; } = new CircularList<Entity_v2>();
         public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
 
-        private Edge_v2 FindTriangleEdge(Entity_v2 e0, Entity_v2 e1) {
-            return this.Edges.Where(edge => edge.HasVertex(e0) && edge.HasVertex(e1)).FirstOrDefault();
+        private void GetAllEdges(SimplicialComplex_v2 complex) {
+            var edgeSet = this.Edges;
+
+            foreach (var simplex in complex) {
+                // Vertices Combination
+                var set01 = new Edge_v2();
+                var set02 = new Edge_v2();
+                var set12 = new Edge_v2();
+
+                set01.Add(simplex.Vertices[0], simplex.Vertices[1]);
+                set02.Add(simplex.Vertices[0], simplex.Vertices[2]);
+                set12.Add(simplex.Vertices[1], simplex.Vertices[2]);
+
+                foreach (var result in edgeSet.Where(e => !e.SetEquals(set01.ExtremeSet))) {
+                    edgeSet.Add(result);
+                }
+            }
         }
+
+        private Edge_v2[] GetRelatedEdges(Entity_v2 vertex) {
+            return this.Edges.Where(e => e.ExtremeSet.Contains(vertex)).ToArray();
+        }
+
+        private Edge_v2[] GetRelatedEdges(IEnumerable<Edge_v2> edgeSet, Entity_v2 vertex) {
+            return edgeSet.Where(e => e.ExtremeSet.Contains(vertex)).ToArray();
+        }
+
+        private Edge_v2 FindEdge(Entity_v2 e0, Entity_v2 e1) {
+            return this.GetRelatedEdges(this.GetRelatedEdges(e0), e1).FirstOrDefault();
+        }
+
         private void SetExteriorRays() {
             var exteriorRays = new List<Ray_v2>();
             this.Clear();
 
             // For Order: CCW
-            foreach (var extreme in this.Extremes) {
-                var edges = this.Edges.Where(edge => edge.HasVertex(extreme.Value)).ToArray();
-                var edgeCnt = edges.Count();
+            foreach (var node in this.Extremes) {
+                var extreme = node.Value;
+                //var edges = this.Edges.Where(edge => edge.HasVertex(extreme)).ToArray();
+                var relatedEdges = this.GetRelatedEdges(extreme);
+                var edgeCnt = relatedEdges.Count();
 
                 if (edgeCnt == 2) {
                     //this.Logger.Debug($"No splitter for {extreme.Value}.");
 
-                    var prev = extreme.Prev.Value;
-                    var it = extreme.Value;
-                    var next = extreme.Next.Value;
+                    var prev = node.Prev.Value;
+                    var it = node.Value;
+                    var next = node.Next.Value;
 
-                    exteriorRays.Add(new ExteriorRay() {
-                        ExcludedTri = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it) & tri.IsVertex(next))
-                    });
+                    //exteriorRays.Add(new ExteriorRay() {
+                    //    ExcludedTri = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it) & tri.IsVertex(next))
+                    //});
                 }
                 else if (edgeCnt == 3) {
                     // Note: this case has a special condition which needs to be handled.
                     // Angle between ray and each neighbor edge that is less than 90 needs to be restricted.
-                    this.Logger.Debug($"One splitter(Extension of edge) for {extreme.Value}.");
+                    //this.Logger.Debug($"One splitter(Extension of edge) for {extreme.Value}.");
 
-                    var targetEdge = edges.Where(edge => !this.convexhullEdges.Contains(edge)).ElementAt(0);
+                    //var targetEdge = relatedEdges.Where(edge => !this.convexhullEdges.Contains(edge)).ElementAt(0);
+                    var targetEdge = relatedEdges.Where(edge => !this.Extremes.Contains(edge.ExtremeSet.ToArray()[0]) | !this.Extremes.Contains(edge.ExtremeSet.ToArray()[1])).First();
+                    var e0 = targetEdge.ExtremeSet.ToArray()[0];
+                    var e1 = targetEdge.ExtremeSet.ToArray()[1];
 
                     // Extend this edge
-                    var start = extreme.Value;
-                    var end = targetEdge.E0 == start ? targetEdge.E1 : targetEdge.E0;
-                    var edgeDirection = start.Point - end.Point;
-                    var rayOfEdgeExtension = Ray_v1.CreateRay(start.Point, edgeDirection);
+                    var start = extreme;
+                    var end = e0 == start ? e1 : e0;
+                    var edgeDirection = start.Location - end.Location;
+                    var rayOfEdgeExtension = Ray_v2.CreateRay(start.Location, edgeDirection);
 
-                    rayOfEdgeExtension.Color = SKColors.Green;
-                    rayOfEdgeExtension.E0 = start;
+                    //rayOfEdgeExtension.Color = SKColors.Green;
+                    //rayOfEdgeExtension.p0 = start;
 
                     // Compare with Normals
-                    var prev = extreme.Prev.Value;
-                    var it = extreme.Value;
-                    var next = extreme.Next.Value;
+                    var prev = node.Prev.Value;
+                    var it = node.Value;
+                    var next = node.Next.Value;
 
-                    var dirOfEdgePrevToIt = it.PointVector - prev.PointVector;
-                    var dirOfEdgeItToNext = next.PointVector - it.PointVector;
+                    var dirOfEdgePrevToIt = it.Vector - prev.Vector;
+                    var dirOfEdgeItToNext = next.Vector - it.Vector;
                     var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
                     var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
-                    var rayOfNormalPI = Ray_v1.CreateRay(it.Point, normalOfEdgePI);
-                    var rayOfNoramlIN = Ray_v1.CreateRay(it.Point, normalOfEdgeIN);
+                    var rayOfNormalPI = Ray_v2.CreateRay(it.Location, normalOfEdgePI);
+                    var rayOfNoramlIN = Ray_v2.CreateRay(it.Location, normalOfEdgeIN);
 
                     rayOfNormalPI.E0 = it;
                     rayOfNoramlIN.E0 = it;

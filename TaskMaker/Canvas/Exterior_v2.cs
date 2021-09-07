@@ -118,6 +118,10 @@ namespace TaskMaker {
             IsAntialias = true,
         };
 
+        static public Ray_v2 CreateRay(SKPoint start, SKPoint direction) {
+            return new Ray_v2(start, start + direction);
+        }
+
         public Ray_v2(SKPoint p0, SKPoint p1) {
             this.Location = p0;
             this.p0 = p0;
