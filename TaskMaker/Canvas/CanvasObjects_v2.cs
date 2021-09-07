@@ -58,12 +58,38 @@ namespace TaskMaker {
             }
         }
 
+        //public void Interpolate(SKPoint pointerLocation, Layer layer) {
+        //    var pointer = layer.Pointer;
+        //    pointer.Location = pointerLocation;
+
+        //    var lambdas = layer.Complex.GetLambdas(pointer.Location);
+        //    var configVector = layer.Complex.GetConfigVectors(pointer.Location);
+
+        //    if (layer.LayerStatus == LayerStatus.WithMotor) {
+        //        var configs = layer.MotorConfigs;
+
+        //        configs.FromVector(configs, configVector);
+        //    }
+
+
+        //    if (layer.LayerStatus == LayerStatus.WithLayer) {
+        //        var configs = layer.LayerConfigs;
+
+        //        configs.FromVector(configs, configVector);
+                
+        //        foreach(var l in configs) {
+        //            this.Interpolate(l.Pointer.Location, l);
+        //        }
+
+        //    }
+        //}
+
         public bool Triangulate() {
             var selectedEntities = this.SelectedLayer.Entities.Where(e => e.IsSelected);
             this.SelectedLayer.Complex = new SimplicialComplex_v2();
 
             // Case: amount less than 3
-            if (selectedEntities.Count() <= 3) {
+            if (selectedEntities.Count() < 3) {
                 return false;
             }
             else if (selectedEntities.Count() == 3) {
@@ -119,6 +145,32 @@ namespace TaskMaker {
                     return LayerStatus.WithLayer;
 
                 return LayerStatus.None;
+            }
+        }
+
+        static public void Interpolate(SKPoint pointerLocation, Layer layer) {
+            var pointer = layer.Pointer;
+            pointer.Location = pointerLocation;
+
+            var lambdas = layer.Complex.GetLambdas(pointer.Location);
+            var configVector = layer.Complex.GetConfigVectors(pointer.Location);
+
+            if (layer.LayerStatus == LayerStatus.WithMotor) {
+                var configs = layer.MotorConfigs;
+
+                configs.FromVector(configs, configVector);
+            }
+
+
+            if (layer.LayerStatus == LayerStatus.WithLayer) {
+                var configs = layer.LayerConfigs;
+
+                configs.FromVector(configs, configVector);
+
+                foreach (var l in configs) {
+                    Layer.Interpolate(l.Pointer.Location, l);
+                }
+
             }
         }
 
@@ -232,6 +284,34 @@ namespace TaskMaker {
                 });
 
             this.MotorConfigs = null;
+        }
+
+        public void Interpolate(SKPoint pointerLocation) {
+            Layer.Interpolate(pointerLocation, this);
+            //var layer = this;
+            //var pointer = layer.Pointer;
+            //pointer.Location = pointerLocation;
+
+            //var lambdas = layer.Complex.GetLambdas(pointer.Location);
+            //var configVector = layer.Complex.GetConfigVectors(pointer.Location);
+
+            //if (layer.LayerStatus == LayerStatus.WithMotor) {
+            //    var configs = layer.MotorConfigs;
+
+            //    configs.FromVector(configs, configVector);
+            //}
+
+
+            //if (layer.LayerStatus == LayerStatus.WithLayer) {
+            //    var configs = layer.LayerConfigs;
+
+            //    configs.FromVector(configs, configVector);
+
+            //    foreach (var l in configs) {
+            //        this.Interpolate(l.Pointer.Location);
+            //    }
+
+            //}
         }
 
         public void Draw(SKCanvas sKCanvas) {

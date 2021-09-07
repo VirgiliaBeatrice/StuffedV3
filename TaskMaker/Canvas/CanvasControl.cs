@@ -74,6 +74,7 @@ namespace TaskMaker {
 
         public void Reset() {
             this.canvas.Reset();
+            this.selectedMode = Modes.None;
         }
 
         public bool Triangulate() {
@@ -301,29 +302,31 @@ namespace TaskMaker {
 
         private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                var pointer = this.canvas.SelectedLayer.Pointer;
-                var layer = this.canvas.SelectedLayer;
-
+                this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
                 this.canvas.PointerTrace.Update(e.Location.ToSKPoint());
-                pointer.Location = e.Location.ToSKPoint();
 
-                // Get lambdas from current simplicial complex[Task => Bary.]
-                var lambdas = this.canvas.SelectedLayer.Complex.GetLambdas(pointer.Location);
+                //var pointer = this.canvas.SelectedLayer.Pointer;
+                //var layer = this.canvas.SelectedLayer;
 
-                // Get interpolated result from input on task space [Task => Config]
-                var configVector = this.canvas.SelectedLayer.Complex.GetConfigVectors(pointer.Location);
+                //pointer.Location = e.Location.ToSKPoint();
 
-                if (layer.LayerStatus == LayerStatus.WithMotor) {
-                    var configs = layer.MotorConfigs;
+                //// Get lambdas from current simplicial complex[Task => Bary.]
+                //var lambdas = this.canvas.SelectedLayer.Complex.GetLambdas(pointer.Location);
 
-                    configs.FromVector(configs, configVector);
-                }
+                //// Get interpolated result from input on task space [Task => Config]
+                //var configVector = this.canvas.SelectedLayer.Complex.GetConfigVectors(pointer.Location);
 
-                if (layer.LayerStatus == LayerStatus.WithLayer) {
-                    var configs = layer.LayerConfigs;
+                //if (layer.LayerStatus == LayerStatus.WithMotor) {
+                //    var configs = layer.MotorConfigs;
 
-                    configs.FromVector(configs, configVector);
-                }
+                //    configs.FromVector(configs, configVector);
+                //}
+
+                //if (layer.LayerStatus == LayerStatus.WithLayer) {
+                //    var configs = layer.LayerConfigs;
+
+                //    configs.FromVector(configs, configVector);
+                //}
 
                 //if (.LayerStatus == LayerStatus.WithMotor) {
                 //    this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
@@ -339,11 +342,11 @@ namespace TaskMaker {
                 //}
 
 
-                this.Interpolated?.Invoke(
-                    this,
-                    new InterpolatingEventArgs() {
-                        Values = lambdas
-                    });
+                //this.Interpolated?.Invoke(
+                //    this,
+                //    new InterpolatingEventArgs() {
+                //        Values = lambdas
+                //    });
 
                 //this._canvas.Simplices.ForEach(sim => Console.WriteLine(sim.GetLambdas(e.Location.ToSKPoint())));
             }
@@ -456,7 +459,7 @@ namespace TaskMaker {
             }
 
             // Quit from current mode after adding one entity
-            this.SelectedMode = Modes.None;
+            //this.SelectedMode = Modes.None;
 
             this.canvas.Reset();
         }

@@ -18,6 +18,10 @@ namespace TaskMaker {
         private ToolTip tooltipBtnAddLayer = new ToolTip();
         private ToolTip tooltipBtnDeleteLayer = new ToolTip();
         private ToolTip tooltipBtnTargetSelection = new ToolTip();
+
+        public delegate void InvalidateDelgate(bool invalidateChildren);
+
+
         public TaskMaker() {
             InitializeComponent();
             InitializeSkControl();

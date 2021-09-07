@@ -76,6 +76,9 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 pointer.Location = e.Location.ToSKPoint();
                 this.parentLayer.Pointer.Location = pointer.Location;
+
+                // Interpolation
+                this.parentLayer.Interpolate(e.Location.ToSKPoint());
             }
 
             this.Invalidate(true);
