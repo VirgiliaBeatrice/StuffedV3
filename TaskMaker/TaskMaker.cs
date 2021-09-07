@@ -12,9 +12,8 @@ using PCController;
 
 namespace TaskMaker {
     public partial class TaskMaker : Form {
-        public ProgramInfo ProgramInfo { get; set; } = new ProgramInfo();
+        public Services ProgramInfo { get; set; } = new Services();
 
-        //private Timer timer = new Timer();
         private CanvasControl canvasControl1;
         public TaskMaker() {
             InitializeComponent();
@@ -29,8 +28,10 @@ namespace TaskMaker {
 
             this.KeyDown += TaskMaker_KeyDown;
             this.canvasControl1.LayerUpdated += this.CanvasControl1_LayerUpdated;
+            this.canvasControl1.LayerFocused += this.CanvasControl1_LayerFocused;
             this.canvasControl1.ModeChanged += this.CanvasControl1_ModeChanged;
             this.canvasControl1.Interpolated += this.CanvasControl1_Interpolated;
+            this.canvasControl1.LayerConfigured += this.CanvasControl1_LayerConfigured;
 
             this.UpdateTreeview();
             this.treeView1.ExpandAll();
@@ -41,6 +42,17 @@ namespace TaskMaker {
             this.ProgramInfo.Timer = new Timer();
             this.ProgramInfo.Timer.Interval = 100;
             this.ProgramInfo.Timer.Tick += this.Timer_Tick;
+
+            this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
+        }
+
+        private void CanvasControl1_LayerConfigured(object sender, EventArgs e) {
+            this.toolStripStatusLabel4.Text = $"{this.canvasControl1.SelectedLayer.Text} - {this.canvasControl1.SelectedLayer.LayerStatus}";
+        }
+
+        private void CanvasControl1_LayerFocused(object sender, LayerFocusedEventArgs e) {
+            this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
+            this.toolStripStatusLabel4.Text = $"{this.canvasControl1.SelectedLayer.Text} - {this.canvasControl1.SelectedLayer.LayerStatus}";
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -92,6 +104,7 @@ namespace TaskMaker {
             this.treeView1.SelectedNode = this.canvasControl1.SelectedLayer;
 
             this.treeView1.EndUpdate();
+            this.treeView1.ExpandAll();
         }
 
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
@@ -101,7 +114,6 @@ namespace TaskMaker {
                     break;
                 case Keys.Escape:
                     this.canvasControl1.BeginNoneMode();
-                    //this.ProgramInfo.Timer.Stop();
                     break;
                 case Keys.T:
                     if (!this.canvasControl1.Triangulate()) {
@@ -113,6 +125,7 @@ namespace TaskMaker {
                     break;
                 case Keys.P:
                     this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
+                    this.canvasControl1.Reset();
                     break;
                 case Keys.M:
                     this.canvasControl1.BeginManipulateMode();
@@ -121,7 +134,7 @@ namespace TaskMaker {
                     this.canvasControl1.SelectedLayer.ShowTargetControlForm();
                     break;
                 case Keys.L:
-                    this.canvasControl1.LinkToConfig();
+                    this.canvasControl1.Pair();
                     break;
             }
 
@@ -177,10 +190,10 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
-            this.canvasControl1.ChooseLayer(e.Node as Layer);
-            this.ProgramInfo.SelectedLayer = (Layer)e.Node;
+            //this.canvasControl1.ChooseLayer(e.Node as Layer);
+            //this.ProgramInfo.SelectedLayer = (Layer)e.Node;
 
-            this.canvasControl1.Invalidate(true);
+            //this.canvasControl1.Invalidate(true);
         }
 
         /// <summary>
@@ -199,9 +212,22 @@ namespace TaskMaker {
         private void toolStripMenuItem2_Click(object sender, EventArgs e) {
 
         }
+
+        private void treeView1_MouseDoubleClick(object sender, MouseEventArgs e) {
+            this.canvasControl1.ChooseLayer(this.treeView1.SelectedNode as Layer);
+            this.ProgramInfo.SelectedLayer = (Layer)this.treeView1.SelectedNode;
+
+            this.canvasControl1.Invalidate(true);
+        }
+
+        private void settingsToolStripMenuItem_Click(object sender, EventArgs e) {
+            var form = new SettingsForm(this.ProgramInfo);
+
+            form.ShowDialog();
+        }
     }
 
-    public class ProgramInfo {
+    public class Services {
         public Boards Boards { get; set; } = new Boards();
         public Motors Motors { get; set; } = new Motors();
         public Layer RootLayer { get; set; }

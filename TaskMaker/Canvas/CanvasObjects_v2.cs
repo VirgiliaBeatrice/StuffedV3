@@ -28,7 +28,7 @@ namespace TaskMaker {
         public Canvas() {
             this._triangulation = new Mapping.Triangulation();
 
-            this.RootLayer.Nodes.Add(new Layer("New Layer"));
+            this.RootLayer.Nodes.Add(new Layer("New Layer 1"));
             this.SelectedLayer = this.RootLayer.FirstNode as Layer;
 
             this.Pointer = new CrossPointer();
@@ -103,23 +103,33 @@ namespace TaskMaker {
     }
 
     public class Layer : TreeNode {
-        public SKPoint Pointer { get; set; } = SKPoint.Empty;
+        public Point_v2 Pointer { get; set; }
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public SimplicialComplex_v2 Complex { get; set; } = new SimplicialComplex_v2();
         public Layer NextLayer => (Layer)this.NextNode;
         public Configs<Motor> MotorConfigs { get; set; }
         public Configs<Layer> LayerConfigs { get; set; }
 
+        public LayerStatus LayerStatus {
+            get {
+                if (this.MotorConfigs != null)
+                    return LayerStatus.WithMotor;
+                if (this.LayerConfigs != null)
+                    return LayerStatus.WithLayer;
+
+                return LayerStatus.None;
+            }
+        }
 
         public Layer() {
-            this.Text = "NewLayer";
+            this.Text = "New Layer";
         }
 
         public Layer(string name) {
             this.Text = name;
         }
 
-        public void ShowTargetSelectionForm(ProgramInfo info) {
+        public void ShowTargetSelectionForm(Services info) {
             var form = new Form();
             var selection = new TargetSelection(info);
             var group = new GroupBox();
@@ -138,7 +148,7 @@ namespace TaskMaker {
 
         public bool ShowTargetControlForm() {
             if (this.LayerConfigs != null) {
-                this.ShowTinyCanvasForm();
+                this.ShowTinyCanvasForms();
 
                 return true;
             }
@@ -153,13 +163,17 @@ namespace TaskMaker {
             return false;
         }
 
-        public void ShowTinyCanvasForm() {
-            var form = new TinyCanvasForm(this);
+        public void ShowTinyCanvasForms() {
+            foreach(var layer in this.LayerConfigs) {
+                var form = new TinyCanvasForm(layer);
 
-            form.Text = $"Tiny Canvas - {this.Text}";
-            form.Size = new Size(600, 600);
+                form.Text = $"Tiny Canvas - {this.Text}";
+                form.Size = new Size(600, 600);
 
-            form.Show();
+                form.Show();
+                //form.ShowDialog();
+            }
+
         }
 
         public void ShowMotorPositionForm() {
@@ -171,7 +185,11 @@ namespace TaskMaker {
             panel.Dock = DockStyle.Fill;
 
             foreach(var motor in this.MotorConfigs) {
-                panel.Controls.Add(motor.position.panel);
+                var group = new GroupBox();
+                group.Text = $"Motor{this.MotorConfigs.IndexOf(motor) + 1}";
+
+                group.Controls.Add(motor.position.panel);
+                panel.Controls.Add(group);
             }
 
             form.Controls.Add(panel);
@@ -198,7 +216,7 @@ namespace TaskMaker {
         public void InitializeLayerConfigs() {
             this.LayerConfigs = new Configs<Layer>(
                 (me) => {
-                    var newConfigVector = me.Select(e => e.Pointer.ToVector()).ToList();
+                    var newConfigVector = me.Select(e => e.Pointer.Location.ToVector()).ToList();
                     var flattern = new List<float>();
                     newConfigVector.ForEach(v => flattern.AddRange(v));
 
@@ -206,7 +224,7 @@ namespace TaskMaker {
                 },
                 (me, input) => {
                     for(int i = 0; i < input.Count / 2; ++i) {
-                        me[i].Pointer = new SKPoint(input[i * 2], input[i * 2 + 1]);
+                        me[i].Pointer.Location = new SKPoint(input[i * 2], input[i * 2 + 1]);
                     }
                 });
 
@@ -216,7 +234,14 @@ namespace TaskMaker {
         public void Draw(SKCanvas sKCanvas) {
             this.Complex.Draw(sKCanvas);
             this.Entities.ForEach(e => e.Draw(sKCanvas));
+            this.Pointer?.Draw(sKCanvas);
         }
+    }
+
+    public enum LayerStatus {
+        None,
+        WithMotor,
+        WithLayer
     }
 
     public enum Modes {
@@ -271,6 +296,25 @@ namespace TaskMaker {
             base.Invalidate();
         }
     }
+
+    public class Point_v2 : CanvasObject_v2 {
+        private SKPaint fillPaint = new SKPaint {
+            IsAntialias = true,
+            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
+            Style = SKPaintStyle.Fill
+        };
+        private SKPaint strokePaint = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+
+        public override void Draw(SKCanvas sKCanvas) {
+            sKCanvas.DrawCircle(this.Location, 2.0f, fillPaint);
+            sKCanvas.DrawCircle(this.Location, 2.0f, strokePaint);
+        }
+    } 
 
     public class CrossPointer : CanvasObject_v2 {
         private int length = 20;

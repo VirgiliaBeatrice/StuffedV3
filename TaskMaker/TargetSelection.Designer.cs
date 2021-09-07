@@ -66,6 +66,7 @@
             // 
             this.button2.AutoSize = true;
             this.button2.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.button2.Enabled = false;
             this.button2.Location = new System.Drawing.Point(517, 365);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(98, 23);
@@ -135,6 +136,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label1.Enabled = false;
             this.label1.Location = new System.Drawing.Point(8, 366);
             this.label1.Margin = new System.Windows.Forms.Padding(4);
             this.label1.Name = "label1";
@@ -147,6 +149,7 @@
             // comboBox1
             // 
             this.comboBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.comboBox1.Enabled = false;
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Location = new System.Drawing.Point(106, 366);
             this.comboBox1.Margin = new System.Windows.Forms.Padding(4);

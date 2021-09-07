@@ -42,6 +42,7 @@ namespace TaskMaker {
         private Modes selectedMode;
 
         public event EventHandler LayerUpdated;
+        public event EventHandler LayerConfigured;
         public event EventHandler<LayerFocusedEventArgs> LayerFocused;
         public event EventHandler ModeChanged;
         public event EventHandler<InterpolatingEventArgs> Interpolated;
@@ -109,7 +110,11 @@ namespace TaskMaker {
         }
 
         public void AddLayer() {
-            this.SelectedLayer.Parent.Nodes.Add(new Layer());
+            var name = this.SelectedLayer == this.RootLayer ?
+                $"New Layer {this.SelectedLayer.Nodes.Count + 1}" :
+                $"{this.SelectedLayer.Text} {this.SelectedLayer.Nodes.Count + 1}";
+
+            this.SelectedLayer.Nodes.Add(new Layer(name));
             this.LayerUpdated?.Invoke(this, null);
         }
 
@@ -122,15 +127,21 @@ namespace TaskMaker {
             this.SelectedLayer = layer;
         }
 
-        public void LinkToConfig() {
+        public void Pair() {
             var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
-            if (this.canvas.SelectedLayer.MotorConfigs == null)
-                return;
-
-            if (selectedEnities.Count == 1) {
-                selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
+            if (this.canvas.SelectedLayer.MotorConfigs != null) {
+                if (selectedEnities.Count == 1) {
+                    selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
+                }
             }
+
+            if (this.canvas.SelectedLayer.LayerConfigs != null) {
+                if (selectedEnities.Count == 1) {
+                    selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.LayerConfigs.ToVector(this.canvas.SelectedLayer.LayerConfigs));
+                }
+            }
+
         }
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {
@@ -147,9 +158,9 @@ namespace TaskMaker {
         }
 
 
-        private void SkControl_MouseEnter(object sender, EventArgs e) {
-            this.skControl.Focus();
-        }
+        //private void SkControl_MouseEnter(object sender, EventArgs e) {
+        //    this.skControl.Focus();
+        //}
 
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
@@ -179,7 +190,13 @@ namespace TaskMaker {
 
                 var configVector = this.canvas.SelectedLayer.Complex.GetConfigVectors(e.Location.ToSKPoint());
 
-                this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
+                if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithMotor) {
+                    this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
+                } else if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithLayer) {
+                    this.canvas.SelectedLayer.LayerConfigs.FromVector(this.canvas.SelectedLayer.LayerConfigs, configVector);
+
+                }
+
 
                 this.Interpolated?.Invoke(
                     this,

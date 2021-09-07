@@ -14,22 +14,50 @@ namespace TaskMaker {
     public partial class TinyCanvasForm : Form {
 
         public Canvas Canvas { get; set; }
-        private SKControl sKControl = new SKControl();
+        private SKControl sKControl;
         private Layer parentLayer;
+        private CrossPointer pointer;
 
         public TinyCanvasForm(Layer layer) {
             InitializeComponent();
 
             this.parentLayer = layer;
 
+            this.sKControl = new SKControl();
             this.sKControl.Dock = DockStyle.Fill;
-            this.panel1.Controls.Add(this.sKControl);
+            this.groupBox1.Controls.Add(this.sKControl);
 
             this.sKControl.PaintSurface += this.SKControl_PaintSurface;
+            this.sKControl.MouseDown += this.SKControl_MouseDown;
             this.sKControl.MouseMove += this.SKControl_MouseMove;
+            this.sKControl.MouseUp += this.SKControl_MouseUp;
+
+            this.groupBox1.Text = layer.Text;
+
+            this.sKControl.Invalidate();
+        }
+
+        private void SKControl_MouseUp(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                pointer = null;
+            }
+            this.Invalidate(true);
+        }
+
+        private void SKControl_MouseDown(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                pointer = new CrossPointer(e.Location.ToSKPoint());
+                this.parentLayer.Pointer = new Point_v2();
+            }
+            this.Invalidate(true);
         }
 
         private void SKControl_MouseMove(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                pointer.Location = e.Location.ToSKPoint();
+                this.parentLayer.Pointer.Location = pointer.Location;
+            }
+
             this.Invalidate(true);
         }
 
@@ -39,6 +67,12 @@ namespace TaskMaker {
             canvas.Clear();
 
             this.parentLayer.Draw(canvas);
+
+            if (pointer != null) {
+                pointer.Draw(canvas);
+            }
+
+
         }
     }
 }

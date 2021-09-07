@@ -15,14 +15,15 @@ using MathNetExtension;
 
 namespace TaskMaker {
     public partial class TargetSelection : UserControl {
-        public ProgramInfo ProgramInfo { get; set; }
+        public Services ProgramInfo { get; set; }
 
-        public TargetSelection(ProgramInfo info) {
+        public TargetSelection(Services info) {
             this.ProgramInfo = info;
 
             InitializeComponent();
-            InitializeSerialPort();
+            //InitializeSerialPort();
             InitializeLayer();
+            this.UpdateMotors();
         }
 
         private void InitializeSerialPort() {
@@ -39,6 +40,18 @@ namespace TaskMaker {
             var selectableRoot = SelectableLayer.CreateSelectableLayer(this.ProgramInfo.RootLayer);
 
             this.treeView2.Nodes.Add(selectableRoot);
+        }
+
+        private void UpdateMotors() {
+            this.treeView1.BeginUpdate();
+            this.treeView1.Nodes.Clear();
+
+            for (int i = 0; i < this.ProgramInfo.Boards.NMotor; ++i) {
+                this.treeView1.Nodes.Add(new SelectableMotor($"Motor{i}") { Target = this.ProgramInfo.Motors[i] });
+            }
+
+            this.treeView1.EndUpdate();
+            this.treeView1.ExpandAll();
         }
 
         private void ResetMotor() {
@@ -144,14 +157,27 @@ namespace TaskMaker {
 
             if (this.radioButton2.Checked) {
                 this.ProgramInfo.SelectedLayer.InitializeLayerConfigs();
+                var checkedLayers = this.GetAllLayers(this.treeView2.Nodes[0] as SelectableLayer);
 
-                foreach(SelectableLayer l in this.treeView2.Nodes) {
-                    if (l.Checked)
-                        this.ProgramInfo.SelectedLayer.LayerConfigs.Add(l.Target);
+                foreach(SelectableLayer l in checkedLayers) {
+                    this.ProgramInfo.SelectedLayer.LayerConfigs.Add(l.Target);
                 }
             }
 
             MessageBox.Show("New configs are set.");
+        }
+
+        private SelectableLayer[] GetAllLayers(SelectableLayer layer) {
+            var results = new List<SelectableLayer>();
+
+            if (layer.Checked)
+                results.Add(layer);
+
+            foreach (SelectableLayer child in layer.Nodes) {
+                results.AddRange(this.GetAllLayers(child));
+            }
+
+            return results.Where(r => r.Checked).ToArray();
         }
     }
 
@@ -175,8 +201,8 @@ namespace TaskMaker {
 
         public Vector<float> ToVector() {
             return Vector<float>.Build.Dense(new float[] {
-                this.Target.Pointer.X, this.Target.Pointer.Y
-            });
+                this.Target.Pointer.Location.X, this.Target.Pointer.Location.Y
+            });;
         }
 
         public static SelectableLayer CreateSelectableLayer(Layer layer) {

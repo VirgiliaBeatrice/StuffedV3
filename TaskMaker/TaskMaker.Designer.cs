@@ -47,6 +47,7 @@ namespace TaskMaker {
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripStatusLabel4 = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
@@ -60,7 +61,8 @@ namespace TaskMaker {
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusLabel1,
             this.toolStripStatusLabel2,
-            this.toolStripStatusLabel3});
+            this.toolStripStatusLabel3,
+            this.toolStripStatusLabel4});
             this.statusStrip1.Location = new System.Drawing.Point(0, 614);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1258, 24);
@@ -83,8 +85,9 @@ namespace TaskMaker {
             // 
             // toolStripStatusLabel3
             // 
+            this.toolStripStatusLabel3.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
             this.toolStripStatusLabel3.Name = "toolStripStatusLabel3";
-            this.toolStripStatusLabel3.Size = new System.Drawing.Size(0, 19);
+            this.toolStripStatusLabel3.Size = new System.Drawing.Size(4, 19);
             // 
             // tableLayoutPanel1
             // 
@@ -270,6 +273,7 @@ namespace TaskMaker {
             this.treeView1.Size = new System.Drawing.Size(234, 541);
             this.treeView1.TabIndex = 1;
             this.treeView1.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeView1_AfterSelect);
+            this.treeView1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.treeView1_MouseDoubleClick);
             // 
             // groupBox2
             // 
@@ -306,6 +310,13 @@ namespace TaskMaker {
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.settingsToolStripMenuItem.Text = "Settings";
+            this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
+            // 
+            // toolStripStatusLabel4
+            // 
+            this.toolStripStatusLabel4.Name = "toolStripStatusLabel4";
+            this.toolStripStatusLabel4.Size = new System.Drawing.Size(36, 19);
+            this.toolStripStatusLabel4.Text = "None";
             // 
             // TaskMaker
             // 
@@ -354,5 +365,6 @@ namespace TaskMaker {
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel4;
     }
 }

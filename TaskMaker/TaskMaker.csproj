@@ -221,6 +221,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="SettingsForm.resx">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="TargetSelection.resx">
       <DependentUpon>TargetSelection.cs</DependentUpon>
     </EmbeddedResource>
