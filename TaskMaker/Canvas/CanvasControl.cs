@@ -319,6 +319,12 @@ namespace TaskMaker {
                     configs.FromVector(configs, configVector);
                 }
 
+                if (layer.LayerStatus == LayerStatus.WithLayer) {
+                    var configs = layer.LayerConfigs;
+
+                    configs.FromVector(configs, configVector);
+                }
+
                 //if (.LayerStatus == LayerStatus.WithMotor) {
                 //    this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
                 //} else if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithLayer) {

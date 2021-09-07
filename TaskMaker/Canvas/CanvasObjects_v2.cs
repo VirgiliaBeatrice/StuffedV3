@@ -172,7 +172,9 @@ namespace TaskMaker {
                 form.Size = new Size(600, 600);
 
                 form.Show();
+
                 //form.ShowDialog();
+                //form.Dispose();
             }
 
         }

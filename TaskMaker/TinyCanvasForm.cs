@@ -17,11 +17,16 @@ namespace TaskMaker {
         private SKControl sKControl;
         private Layer parentLayer;
         private CrossPointer pointer;
+        private Timer timer;
 
         public TinyCanvasForm(Layer layer) {
             InitializeComponent();
 
             this.parentLayer = layer;
+            this.timer = new Timer();
+            this.timer.Interval = 100;
+            this.timer.Tick += this.Timer_Tick;
+            this.timer.Enabled = true;
 
             this.sKControl = new SKControl();
             this.sKControl.Dock = DockStyle.Fill;
@@ -35,6 +40,21 @@ namespace TaskMaker {
             this.groupBox1.Text = layer.Text;
 
             this.sKControl.Invalidate();
+
+            this.GotFocus += this.TinyCanvasForm_GotFocus;
+            this.LostFocus += this.TinyCanvasForm_LostFocus;
+        }
+
+        private void TinyCanvasForm_GotFocus(object sender, EventArgs e) {
+            this.timer.Stop();
+        }
+
+        private void TinyCanvasForm_LostFocus(object sender, EventArgs e) {
+            this.timer.Start();
+        }
+
+        private void Timer_Tick(object sender, EventArgs e) {
+            this.Invalidate(true);
         }
 
         private void SKControl_MouseUp(object sender, MouseEventArgs e) {
