@@ -13,7 +13,7 @@ using System.Text.Json;
 using System.Drawing;
 
 namespace TaskMaker {
-    
+
     public class Canvas {
         public Services Services { get; set; }
         public bool IsShownPointer { get; set; } = false;
@@ -649,6 +649,179 @@ namespace TaskMaker {
 
         public void Draw(SKCanvas sKCanvas) {
             this.ForEach(sim => sim.DrawThis(sKCanvas));
+        }
+    }
+
+    public class Edge_v2 : CanvasObject_v2 {
+        public Entity_v2 E0 { get; set; }
+        public Entity_v2 E1 { get; set; }
+    }
+
+    public class ExteriorZone_v2 : List<ExteriorRegion_v2> {
+        public CircularList<Entity_v2> Extremes { get; set; } = new CircularList<Entity_v2>();
+        public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
+
+        private Edge_v2 FindTriangleEdge(Entity_v2 e0, Entity_v2 e1) {
+            return this.Edges.Where(edge => edge.HasVertex(e0) && edge.HasVertex(e1)).FirstOrDefault();
+        }
+        private void SetExteriorRays() {
+            var exteriorRays = new List<Ray_v2>();
+            this.Clear();
+
+            // For Order: CCW
+            foreach (var extreme in this.Extremes) {
+                var edges = this.Edges.Where(edge => edge.HasVertex(extreme.Value)).ToArray();
+                var edgeCnt = edges.Count();
+
+                if (edgeCnt == 2) {
+                    //this.Logger.Debug($"No splitter for {extreme.Value}.");
+
+                    var prev = extreme.Prev.Value;
+                    var it = extreme.Value;
+                    var next = extreme.Next.Value;
+
+                    exteriorRays.Add(new ExteriorRay() {
+                        ExcludedTri = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it) & tri.IsVertex(next))
+                    });
+                }
+                else if (edgeCnt == 3) {
+                    // Note: this case has a special condition which needs to be handled.
+                    // Angle between ray and each neighbor edge that is less than 90 needs to be restricted.
+                    this.Logger.Debug($"One splitter(Extension of edge) for {extreme.Value}.");
+
+                    var targetEdge = edges.Where(edge => !this.convexhullEdges.Contains(edge)).ElementAt(0);
+
+                    // Extend this edge
+                    var start = extreme.Value;
+                    var end = targetEdge.E0 == start ? targetEdge.E1 : targetEdge.E0;
+                    var edgeDirection = start.Point - end.Point;
+                    var rayOfEdgeExtension = Ray_v1.CreateRay(start.Point, edgeDirection);
+
+                    rayOfEdgeExtension.Color = SKColors.Green;
+                    rayOfEdgeExtension.E0 = start;
+
+                    // Compare with Normals
+                    var prev = extreme.Prev.Value;
+                    var it = extreme.Value;
+                    var next = extreme.Next.Value;
+
+                    var dirOfEdgePrevToIt = it.PointVector - prev.PointVector;
+                    var dirOfEdgeItToNext = next.PointVector - it.PointVector;
+                    var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
+                    var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
+                    var rayOfNormalPI = Ray_v1.CreateRay(it.Point, normalOfEdgePI);
+                    var rayOfNoramlIN = Ray_v1.CreateRay(it.Point, normalOfEdgeIN);
+
+                    rayOfNormalPI.E0 = it;
+                    rayOfNoramlIN.E0 = it;
+
+                    rayOfNormalPI.Color = SKColors.PowderBlue;
+                    rayOfNoramlIN.Color = SKColors.PowderBlue;
+
+                    // Recheck condition!
+                    var angleOfEdgeExtensionAndNormalPI = Math.Atan2(
+                        rayOfEdgeExtension.UnitDirection[0] * rayOfNormalPI.UnitDirection[1] -
+                        rayOfEdgeExtension.UnitDirection[1] * rayOfNormalPI.UnitDirection[0],
+                        rayOfEdgeExtension.UnitDirection[0] * rayOfNormalPI.UnitDirection[0] + rayOfEdgeExtension.UnitDirection[1] * rayOfNormalPI.UnitDirection[1]
+                    );
+                    var angleOfEdgeExtensionAndNormalIN = Math.Atan2(
+                        rayOfEdgeExtension.UnitDirection[0] * rayOfNoramlIN.UnitDirection[1] -
+                        rayOfEdgeExtension.UnitDirection[1] * rayOfNoramlIN.UnitDirection[0],
+                        rayOfEdgeExtension.UnitDirection[0] *
+                        rayOfNoramlIN.UnitDirection[0] + rayOfEdgeExtension.UnitDirection[1] *
+                        rayOfNoramlIN.UnitDirection[1]
+                    );
+
+                    var exteriorRayNormalPI = new ExteriorRay() {
+                        Ray = rayOfNormalPI,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it))
+                    };
+                    var exteriorRayNormalIN = new ExteriorRay() {
+                        Ray = rayOfNoramlIN,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(it) & tri.IsVertex(next))
+                    };
+
+                    if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == -1 & Math.Sign(angleOfEdgeExtensionAndNormalIN) == 1) {
+                        exteriorRays.Add(new ExteriorRay() {
+                            Ray = rayOfEdgeExtension,
+                        });
+                    }
+                    else if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == Math.Sign(angleOfEdgeExtensionAndNormalIN)) {
+                        exteriorRays.Add(exteriorRayNormalPI);
+                        exteriorRays.Add(exteriorRayNormalIN);
+                    }
+                }
+                else if (edgeCnt > 3) {
+                    this.Logger.Debug($"Two perpendicular splitter for {extreme.Value}.");
+
+                    var prev = extreme.Prev.Value;
+                    var it = extreme.Value;
+                    var next = extreme.Next.Value;
+
+                    var dirOfEdgePrevToIt = it.PointVector - prev.PointVector;
+                    var dirOfEdgeItToNext = next.PointVector - it.PointVector;
+                    var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
+                    var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
+                    var rayOfNormalPI = Ray_v1.CreateRay(it.Point, normalOfEdgePI);
+                    var rayOfNoramlIN = Ray_v1.CreateRay(it.Point, normalOfEdgeIN);
+
+                    rayOfNormalPI.Color = SKColors.PowderBlue;
+                    rayOfNormalPI.E0 = it;
+                    rayOfNoramlIN.Color = SKColors.PowderBlue;
+                    rayOfNoramlIN.E0 = it;
+
+                    exteriorRays.Add(new ExteriorRay() {
+                        Ray = rayOfNormalPI,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it))
+                    });
+                    exteriorRays.Add(new ExteriorRay() {
+                        Ray = rayOfNoramlIN,
+                        Govorner = this.triangles.Find(tri => tri.IsVertex(it) & tri.IsVertex(next))
+                    });
+                }
+                else {
+                    throw new Exception("Splitter Exception");
+                }
+            }
+
+            // Generate voronoi regions
+            for (var idx = 0; idx < exteriorRays.Count; idx++) {
+                Triangle_v1 excludedTri = null;
+                Triangle_v1 governor = null;
+                var idx0 = idx;
+                var idx1 = idx + 1 < exteriorRays.Count ? idx + 1 : 0;
+
+                var exRay0 = exteriorRays[idx0];
+                var exRay1 = exteriorRays[idx1];
+                // TODO: Ugly
+
+                if (exRay0.ExcludedTri == null) {
+                    if (exRay1.ExcludedTri != null) {
+                        excludedTri = exRay1.ExcludedTri;
+
+                        idx1 = idx1 + 1 < exteriorRays.Count ? idx1 + 1 : 0;
+                        exRay1 = exteriorRays[idx1];
+
+                        idx++;
+                    }
+                    else {
+                        if (exRay0.Govorner == null & exRay1.Govorner == null) {
+                            governor = this.triangles.Find(tri => tri.IsVertex(exRay0.Ray.E0) & tri.IsVertex(exRay1.Ray.E0));
+                        }
+                    }
+
+
+                    this.voronoiRegions.Add(
+                        new VoronoiRegion_v1() {
+                            Index = this.voronoiRegions.Count,
+                            ExteriorRay0 = exRay0,
+                            ExteriorRay1 = exRay1,
+                            ExcludedTri = excludedTri,
+                            Governor = governor,
+                        }
+                    );
+                }
+            }
         }
     }
 

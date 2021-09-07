@@ -16,6 +16,10 @@ namespace MathNetExtension {
             return Vector<float>.Build.Dense(new float[] { point.X, point.Y });
         }
 
+        public static SKPoint ToSKPoint(this Vector<float> vector) {
+            return new SKPoint { X = vector[0], Y = vector[1] };
+        }
+
         public static Vector<float> Concatenate(this Vector<float> top, Vector<float> bottom) {
             var resultList = new List<float>();
 
