@@ -301,23 +301,36 @@ namespace TaskMaker {
 
         private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
+                var pointer = this.canvas.SelectedLayer.Pointer;
+                var layer = this.canvas.SelectedLayer;
+
                 this.canvas.PointerTrace.Update(e.Location.ToSKPoint());
-                var lambdas = this.canvas.SelectedLayer.Complex.GetLambdas(e.Location.ToSKPoint());
+                pointer.Location = e.Location.ToSKPoint();
 
-                var configVector = this.canvas.SelectedLayer.Complex.GetConfigVectors(e.Location.ToSKPoint());
+                // Get lambdas from current simplicial complex[Task => Bary.]
+                var lambdas = this.canvas.SelectedLayer.Complex.GetLambdas(pointer.Location);
 
-                if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithMotor) {
-                    this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
-                } else if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithLayer) {
-                    this.canvas.SelectedLayer.LayerConfigs.FromVector(this.canvas.SelectedLayer.LayerConfigs, configVector);
+                // Get interpolated result from input on task space [Task => Config]
+                var configVector = this.canvas.SelectedLayer.Complex.GetConfigVectors(pointer.Location);
 
-                    foreach(var layer in this.canvas.SelectedLayer.LayerConfigs) {
-                        if (layer.LayerStatus == LayerStatus.WithMotor) {
-                            var newVector = layer.Complex.GetConfigVectors(layer.Pointer.Location);
-                            layer.MotorConfigs.FromVector(layer.MotorConfigs, newVector);
-                        }
-                    }
+                if (layer.LayerStatus == LayerStatus.WithMotor) {
+                    var configs = layer.MotorConfigs;
+
+                    configs.FromVector(configs, configVector);
                 }
+
+                //if (.LayerStatus == LayerStatus.WithMotor) {
+                //    this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
+                //} else if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithLayer) {
+                //    this.canvas.SelectedLayer.LayerConfigs.FromVector(this.canvas.SelectedLayer.LayerConfigs, configVector);
+
+                //    foreach(var layer in this.canvas.SelectedLayer.LayerConfigs) {
+                //        if (layer.LayerStatus == LayerStatus.WithMotor) {
+                //            var newVector = layer.Complex.GetConfigVectors(layer.Pointer.Location);
+                //            layer.MotorConfigs.FromVector(layer.MotorConfigs, newVector);
+                //        }
+                //    }
+                //}
 
 
                 this.Interpolated?.Invoke(

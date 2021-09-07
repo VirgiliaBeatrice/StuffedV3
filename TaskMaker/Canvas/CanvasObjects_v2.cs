@@ -103,7 +103,8 @@ namespace TaskMaker {
     }
 
     public class Layer : TreeNode {
-        public Point_v2 Pointer { get; set; }
+        public bool IsShownPointer { get; set; } = false;
+        public Point_v2 Pointer { get; set; } = new Point_v2();
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public SimplicialComplex_v2 Complex { get; set; } = new SimplicialComplex_v2();
         public Layer NextLayer => (Layer)this.NextNode;
@@ -237,7 +238,10 @@ namespace TaskMaker {
             var reverse = new List<Entity_v2>(this.Entities);
             reverse.Reverse();
             reverse.ForEach(e => e.Draw(sKCanvas));
-            this.Pointer?.Draw(sKCanvas);
+
+            if (this.IsShownPointer) {
+                this.Pointer.Draw(sKCanvas);
+            }
         }
     }
 
@@ -426,8 +430,12 @@ namespace TaskMaker {
             get => this.location;
             set {
                 this.location = value;
+
+                this.LocationUpdated?.Invoke(this, null);
             }
         }
+
+        public event EventHandler LocationUpdated;
 
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
@@ -442,7 +450,6 @@ namespace TaskMaker {
         };
         private SKPoint location;
         private float _radius = 5.0f;
-        private float _gRadius;
         private bool isSelected = false;
 
         public Entity_v2(SKPoint point) {
@@ -592,6 +599,13 @@ namespace TaskMaker {
             base.AddRange(pairs);
             this.TaskBary.AddRange(this.Select(p => p.Task.Vector).ToArray());
             this.ForEach(p => p.PairUpdated += this.P_PairUpdated);
+            this.ForEach(p => p.Task.LocationUpdated += this.Task_LocationUpdated);
+        }
+
+        private void Task_LocationUpdated(object sender, EventArgs e) {
+            if (this.IsFullyPaired) {
+                this.TaskBary.UpdateVertices(this.Select(p => p.Task.Vector).ToArray());
+            }
         }
 
         private void P_PairUpdated(object sender, EventArgs e) {

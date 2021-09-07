@@ -41,6 +41,12 @@ namespace TaskMaker.SimplicialMapping {
             }
         }
 
+        public void UpdateVertices(ICollection<Vector<float>> collection) {
+            this.Vertices.Clear();
+
+            this.AddRange(collection);
+        }
+
         public void CalculateA() {
             if (this.IsCompleted) {
                 var mat = Matrix<float>.Build.DenseOfColumnVectors(this.Vertices.ToArray());

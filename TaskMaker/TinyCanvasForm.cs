@@ -47,7 +47,7 @@ namespace TaskMaker {
         private void SKControl_MouseDown(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 pointer = new CrossPointer(e.Location.ToSKPoint());
-                this.parentLayer.Pointer = new Point_v2();
+                this.parentLayer.IsShownPointer = true;
             }
             this.Invalidate(true);
         }

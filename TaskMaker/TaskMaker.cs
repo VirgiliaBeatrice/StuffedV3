@@ -232,6 +232,19 @@ namespace TaskMaker {
 
             form.ShowDialog();
         }
+
+        private void button10_Click(object sender, EventArgs e) {
+            this.canvasControl1.Triangulate();
+        }
+
+        private void button9_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
+            this.canvasControl1.Reset();
+        }
+
+        private void button12_Click(object sender, EventArgs e) {
+            this.canvasControl1.Pair();
+        }
     }
 
     public class Services {

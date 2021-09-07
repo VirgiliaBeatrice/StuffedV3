@@ -176,8 +176,9 @@ namespace TaskMaker {
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(98, 23);
             this.button9.TabIndex = 8;
-            this.button9.Text = "Target Selection";
+            this.button9.Text = "&Layer Property";
             this.button9.UseVisualStyleBackColor = true;
+            this.button9.Click += new System.EventHandler(this.button9_Click);
             // 
             // button8
             // 
@@ -346,6 +347,7 @@ namespace TaskMaker {
             this.button10.TabIndex = 9;
             this.button10.Text = "&Triangulation";
             this.button10.UseVisualStyleBackColor = true;
+            this.button10.Click += new System.EventHandler(this.button10_Click);
             // 
             // button11
             // 
@@ -364,8 +366,9 @@ namespace TaskMaker {
             this.button12.Name = "button12";
             this.button12.Size = new System.Drawing.Size(98, 23);
             this.button12.TabIndex = 11;
-            this.button12.Text = "NULL";
+            this.button12.Text = "&Pair";
             this.button12.UseVisualStyleBackColor = true;
+            this.button12.Click += new System.EventHandler(this.button12_Click);
             // 
             // button13
             // 
