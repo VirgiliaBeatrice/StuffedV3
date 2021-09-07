@@ -17,22 +17,23 @@ namespace TaskMaker {
                 this.groupBox1.Text = value;
             }
         }
+        // Get real value, set presentational value(w/offset)
         public decimal Max {
-            get => this.numMax.Value;
+            get => this.numMax.Value + this.Offset;
             set {
-                this.numMax.Value = value;
+                this.numMax.Value = value - this.Offset;
             }
         }
         public decimal Min {
-            get => this.numMin.Value;
+            get => this.numMin.Value + this.Offset;
             set {
-                this.numMin.Value = value;
+                this.numMin.Value = value - this.Offset;
             }
         }
         public decimal MotorValue {
-            get => this.numMotor.Value;
+            get => this.numMotor.Value + this.Offset;
             set {
-                this.numMotor.Value = value;
+                this.numMotor.Value = value - this.Offset;
             }
         }
         public decimal Offset {
@@ -54,17 +55,17 @@ namespace TaskMaker {
         private void InitializeMotorValues() {
             var m = this.motor;
 
+            this.Offset = m.NewOffset;
             this.MotorValue = m.position.Value;
             this.Min = m.position.Minimum;
             this.Max = m.position.Maximum;
-            this.Offset = m.NewOffset;
 
-            this.numMax.Maximum = this.Max;
-            this.numMax.Minimum = this.Min;
-            this.numMin.Maximum = this.Max;
-            this.numMin.Minimum = this.Max;
-            this.numOffset.Maximum = this.Max;
-            this.numOffset.Minimum = this.Min;
+            this.numMax.Maximum = this.numMax.Value;
+            this.numMax.Minimum = this.numMin.Value;
+            this.numMin.Maximum = this.numMax.Value;
+            this.numMin.Minimum = this.numMin.Value;
+            this.numOffset.Maximum = this.numMax.Value;
+            this.numOffset.Minimum = this.numMin.Value;
 
             this.numMax.Increment = (this.Max - this.Min) / 20;
             this.numMin.Increment = (this.Max - this.Min) / 20;
