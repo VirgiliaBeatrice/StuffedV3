@@ -164,10 +164,14 @@ namespace TaskMaker {
                 case Modes.Manipulate:
                     this.ProcessManipulatMouseDownEvent(e);
                     break;
+                case Modes.EditNode:
+                    this.ProcessEditNodeMouseDownEvent(e);
+                    break;
             }
 
             this.Invalidate(true);
         }
+
 
         private void SkControl_MouseMove(object sender, MouseEventArgs e) {
             switch (this.SelectedMode) {
@@ -249,6 +253,36 @@ namespace TaskMaker {
                     selectedEntities[0].Location = ev.Location.ToSKPoint();
                 }
             }
+        }
+
+
+        private void ProcessEditNodeMouseDownEvent(MouseEventArgs ev) {
+            if (ev.Button == MouseButtons.Left) {
+                if (this.editPhase == EditPhase.Select) {
+                    var entities = this.SelectedLayer.Entities;
+
+                    foreach (var entity in entities) {
+                        if (entity.ContainsPoint(ev.Location.ToSKPoint())) {
+                            entity.IsSelected = !entity.IsSelected;
+                            break;
+                        }
+                    }
+
+                    this.editPhase = EditPhase.Edit;
+                }
+                else if (this.editPhase == EditPhase.Edit) {
+                    var selectedEntities = this.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+
+                    if (selectedEntities.Count != 0) {
+                        if (!selectedEntities[0].ContainsPoint(ev.Location.ToSKPoint())) {
+                            this.canvas.Reset();
+
+                            this.editPhase = EditPhase.Select;
+                        }
+                    }
+                }
+            }
+
         }
 
         private void ProcessManipulatMouseDownEvent(MouseEventArgs ev) {

@@ -233,7 +233,10 @@ namespace TaskMaker {
 
         public void Draw(SKCanvas sKCanvas) {
             this.Complex.Draw(sKCanvas);
-            this.Entities.ForEach(e => e.Draw(sKCanvas));
+
+            var reverse = new List<Entity_v2>(this.Entities);
+            reverse.Reverse();
+            reverse.ForEach(e => e.Draw(sKCanvas));
             this.Pointer?.Draw(sKCanvas);
         }
     }
