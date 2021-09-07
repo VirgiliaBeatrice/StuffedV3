@@ -56,6 +56,7 @@ namespace TaskMaker {
                 
                 if (this.services.Boards.NMotor != 0) {
                     MessageBox.Show("Motor ready.");
+                    this.Close();
                 }
             }
         }

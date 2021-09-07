@@ -348,5 +348,40 @@ namespace TaskMaker {
         public Layer SelectedLayer { get; set; }
         public Timer Timer { get; set; }
 
+
+        public void ResetMotor() {
+            this.Motors.Clear();
+
+            for (int i = 0; i < this.Boards.NMotor; ++i) {
+                Motor m = new Motor();
+
+                this.Motors.Add(m);
+            }
+
+            short[] k = new short[this.Boards.NMotor];
+            short[] b = new short[this.Boards.NMotor];
+            short[] a = new short[this.Boards.NMotor];
+            short[] limit = new short[this.Boards.NMotor];
+            short[] release = new short[this.Boards.NMotor];
+            short[] torqueMin = new short[this.Boards.NMotor];
+            short[] torqueMax = new short[this.Boards.NMotor];
+
+            this.Boards.RecvParamPd(ref k, ref b);
+            this.Boards.RecvParamCurrent(ref a);
+            this.Boards.RecvParamTorque(ref torqueMin, ref torqueMax);
+            this.Boards.RecvParamHeat(ref limit, ref release);
+
+            for (int i = 0; i < this.Boards.NMotor; ++i) {
+                this.Motors[i].pd.K = k[i];
+                this.Motors[i].pd.B = b[i];
+                this.Motors[i].pd.A = a[i];
+                if (limit[i] > 32000) limit[i] = 32000;
+                if (limit[i] < 0) limit[i] = 0;
+                this.Motors[i].heat.HeatLimit = limit[i] * release[i];
+                this.Motors[i].heat.HeatRelease = release[i];
+                this.Motors[i].torque.Minimum = torqueMin[i];
+                this.Motors[i].torque.Maximum = torqueMax[i];
+            }
+        }
     }
 }

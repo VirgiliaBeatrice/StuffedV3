@@ -168,7 +168,7 @@ namespace TaskMaker {
                 configs.FromVector(configs, configVector);
 
                 foreach (var l in configs) {
-                    Layer.Interpolate(l.Pointer.Location, l);
+                    Interpolate(l.Pointer.Location, l);
                 }
 
             }
@@ -233,6 +233,7 @@ namespace TaskMaker {
         }
 
         public void ShowMotorPositionForm() {
+            //this.ProgramInfo.ResetMotor();
             var form = new Form();
             var panel = new FlowLayoutPanel();
 
@@ -243,6 +244,8 @@ namespace TaskMaker {
             foreach(var motor in this.MotorConfigs) {
                 var group = new GroupBox();
                 group.Text = $"Motor{this.MotorConfigs.IndexOf(motor) + 1}";
+                // Recreate motor controls
+                motor.position = new MotorPosition();
 
                 group.Controls.Add(motor.position.panel);
                 panel.Controls.Add(group);
