@@ -320,11 +320,13 @@ namespace TaskMaker {
             this.settingsToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
-            this.fileToolStripMenuItem.Text = "Settings";
+            this.fileToolStripMenuItem.Text = "&Settings";
             // 
             // settingsToolStripMenuItem
             // 
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
+            this.settingsToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+,";
+            this.settingsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Oemcomma)));
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.settingsToolStripMenuItem.Text = "ComPort";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
@@ -342,7 +344,7 @@ namespace TaskMaker {
             this.button10.Name = "button10";
             this.button10.Size = new System.Drawing.Size(98, 23);
             this.button10.TabIndex = 9;
-            this.button10.Text = "Triangulation";
+            this.button10.Text = "&Triangulation";
             this.button10.UseVisualStyleBackColor = true;
             // 
             // button11
@@ -352,7 +354,7 @@ namespace TaskMaker {
             this.button11.Name = "button11";
             this.button11.Size = new System.Drawing.Size(98, 23);
             this.button11.TabIndex = 10;
-            this.button11.Text = "Mini Controller";
+            this.button11.Text = "Mini &Controller";
             this.button11.UseVisualStyleBackColor = true;
             // 
             // button12

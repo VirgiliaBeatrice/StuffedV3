@@ -15,6 +15,9 @@ namespace TaskMaker {
         public Services ProgramInfo { get; set; } = new Services();
 
         private CanvasControl canvasControl1;
+        private ToolTip tooltipBtnAddLayer = new ToolTip();
+        private ToolTip tooltipBtnDeleteLayer = new ToolTip();
+        private ToolTip tooltipBtnTargetSelection = new ToolTip();
         public TaskMaker() {
             InitializeComponent();
             InitializeSkControl();
@@ -44,6 +47,10 @@ namespace TaskMaker {
             this.ProgramInfo.Timer.Tick += this.Timer_Tick;
 
             this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
+
+            tooltipBtnAddLayer.SetToolTip(this.button5, "Ctrl+A");
+            tooltipBtnDeleteLayer.SetToolTip(this.button6, "Ctrl+D");
+            tooltipBtnTargetSelection.SetToolTip(this.button9, "Ctrl+T");
         }
 
         private void CanvasControl1_LayerConfigured(object sender, EventArgs e) {
@@ -109,20 +116,20 @@ namespace TaskMaker {
 
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
             switch (e.KeyCode) {
-                case Keys.A:
-                    this.canvasControl1.BeginAddNodeMode();
-                    break;
+                //case Keys.A:
+                //    //this.canvasControl1.BeginAddNodeMode();
+                //    break;
                 case Keys.Escape:
                     this.canvasControl1.BeginNoneMode();
                     break;
-                case Keys.T:
-                    if (!this.canvasControl1.Triangulate()) {
-                        MessageBox.Show("Amount of nodes is less than 3. Abort.");
-                    }
-                    break;
-                case Keys.S:
-                    this.canvasControl1.BeginSelectionMode();
-                    break;
+                //case Keys.T:
+                //    if (!this.canvasControl1.Triangulate()) {
+                //        MessageBox.Show("Amount of nodes is less than 3. Abort.");
+                //    }
+                //    break;
+                //case Keys.S:
+                //    this.canvasControl1.BeginSelectionMode();
+                //    break;
                 case Keys.P:
                     this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
                     this.canvasControl1.Reset();
@@ -163,7 +170,6 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button4_Click(object sender, EventArgs e) {
-            //this.canvasControl1.SelectedMode = Modes.DeleteNode;
             this.canvasControl1.RemoveSelectedNodes();
         }
 
