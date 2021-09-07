@@ -132,8 +132,22 @@ namespace TaskMaker {
         }
 
         public void RemoveLayer() {
-            this.canvas.RootLayer.Nodes.Remove(this.canvas.SelectedLayer);
+            if (this.SelectedLayer == this.RootLayer) {
+                MessageBox.Show("Root layer could not be deleted.");
+
+                return;
+            }
+
+            var parentNode = this.SelectedLayer.Parent;
+            var idxInParentNode = parentNode.Nodes.IndexOf(this.SelectedLayer);
+            var childNodes = this.SelectedLayer.Nodes.Cast<Layer>().ToArray();
+            parentNode.Nodes.Remove(this.canvas.SelectedLayer);
+            parentNode.Nodes.AddRange(childNodes);
+            this.SelectedLayer = parentNode as Layer;
+
             this.LayerUpdated?.Invoke(this, null);
+
+            this.Invalidate(true);
         }
 
         public void RemoveSelectedNodes() {
@@ -141,6 +155,7 @@ namespace TaskMaker {
 
             foreach(var entity in selectedEntities.ToArray()) {
                 this.SelectedLayer.Entities.Remove(entity);
+                this.SelectedLayer.Complex.Clear();
             }
         }
 
@@ -155,14 +170,19 @@ namespace TaskMaker {
                 if (selectedEnities.Count == 1) {
                     selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
                 }
+
+                return;
             }
 
             if (this.canvas.SelectedLayer.LayerConfigs != null) {
                 if (selectedEnities.Count == 1) {
                     selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.LayerConfigs.ToVector(this.canvas.SelectedLayer.LayerConfigs));
                 }
+
+                return;
             }
 
+            MessageBox.Show("This layer did not bind with any configuration.");
         }
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {

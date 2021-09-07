@@ -165,6 +165,7 @@ namespace TaskMaker {
             }
 
             MessageBox.Show("New configs are set.");
+            this.ParentForm.Close();
         }
 
         private SelectableLayer[] GetAllLayers(SelectableLayer layer) {

@@ -57,6 +57,110 @@ namespace TaskMaker {
             tooltipBtnTargetSelection.SetToolTip(this.button9, "Ctrl+T");
 
             this.canvasControl1.ContextMenuStrip = this.contextMenuStrip1;
+
+            this.treeView1.AllowDrop = true;
+            this.treeView1.ItemDrag += this.TreeView1_ItemDrag;
+            this.treeView1.DragOver += this.TreeView1_DragOver;
+            this.treeView1.DragDrop += this.TreeView1_DragDrop;
+        }
+
+        private void TreeView1_DragDrop(object sender, DragEventArgs e) {
+            //ドロップされたデータがTreeNodeか調べる
+            if (e.Data.GetDataPresent(typeof(Layer))) {
+                TreeView tv = (TreeView)sender;
+                //ドロップされたデータ(TreeNode)を取得
+                Layer source =
+                    (Layer)e.Data.GetData(typeof(Layer));
+                //ドロップ先のTreeNodeを取得する
+                Layer target =
+                    tv.GetNodeAt(tv.PointToClient(new Point(e.X, e.Y))) as Layer;
+                //マウス下のNodeがドロップ先として適切か調べる
+                if (target != null && target != source &&
+                    !IsChildNode(source, target)) {
+                    //ドロップされたNodeのコピーを作成
+                    var cln = (Layer)source.Clone();
+                    //Nodeを追加
+                    target.Nodes.Add(cln);
+                    //ドロップ先のNodeを展開
+                    target.Expand();
+                    //追加されたNodeを選択
+                    tv.SelectedNode = cln;
+
+                }
+                else
+                    e.Effect = DragDropEffects.None;
+            }
+            else
+                e.Effect = DragDropEffects.None;
+        }
+
+        private void TreeView1_DragOver(object sender, DragEventArgs e) {
+            //ドラッグされているデータがTreeNodeか調べる
+            if (e.Data.GetDataPresent(typeof(Layer))) {
+                if ((e.KeyState & 8) == 8 &&
+                    (e.AllowedEffect & DragDropEffects.Copy) ==
+                    DragDropEffects.Copy)
+                    //Ctrlキーが押されていればCopy
+                    //"8"はCtrlキーを表す
+                    e.Effect = DragDropEffects.Copy;
+                else if ((e.AllowedEffect & DragDropEffects.Move) ==
+                    DragDropEffects.Move)
+                    //何も押されていなければMove
+                    e.Effect = DragDropEffects.Move;
+                else
+                    e.Effect = DragDropEffects.None;
+            }
+            else
+                //TreeNodeでなければ受け入れない
+                e.Effect = DragDropEffects.None;
+
+            //マウス下のNodeを選択する
+            if (e.Effect != DragDropEffects.None) {
+                TreeView tv = (TreeView)sender;
+                //マウスのあるNodeを取得する
+                TreeNode target =
+                    tv.GetNodeAt(tv.PointToClient(new Point(e.X, e.Y)));
+                //ドラッグされているNodeを取得する
+                TreeNode source =
+                    (TreeNode)e.Data.GetData(typeof(Layer));
+                //マウス下のNodeがドロップ先として適切か調べる
+                if (target != null && target != source &&
+                        !IsChildNode(source, target)) {
+                    //Nodeを選択する
+                    if (target.IsSelected == false)
+                        tv.SelectedNode = target;
+                }
+                else
+                    e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private void TreeView1_ItemDrag(object sender, ItemDragEventArgs e) {
+            var tv = sender as TreeView;
+
+            tv.SelectedNode = e.Item as TreeNode;
+            tv.Focus();
+
+            DragDropEffects dde = tv.DoDragDrop(e.Item, DragDropEffects.All);
+
+            if((dde & DragDropEffects.Move) == DragDropEffects.Move) {
+                tv.Nodes.Remove(e.Item as TreeNode);
+            }
+        }
+
+        /// <summary>
+        /// あるTreeNodeが別のTreeNodeの子ノードか調べる
+        /// </summary>
+        /// <param name="parentNode">親ノードか調べるTreeNode</param>
+        /// <param name="childNode">子ノードか調べるTreeNode</param>
+        /// <returns>子ノードの時はTrue</returns>
+        private static bool IsChildNode(TreeNode parentNode, TreeNode childNode) {
+            if (childNode.Parent == parentNode)
+                return true;
+            else if (childNode.Parent != null)
+                return IsChildNode(parentNode, childNode.Parent);
+            else
+                return false;
         }
 
         private void CanvasControl1_LayerConfigured(object sender, EventArgs e) {
@@ -122,37 +226,15 @@ namespace TaskMaker {
 
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
             switch (e.KeyCode) {
-                //case Keys.A:
-                //    //this.canvasControl1.BeginAddNodeMode();
-                //    break;
                 case Keys.Escape:
                     this.canvasControl1.BeginNoneMode();
+                    e.Handled = true;
                     break;
-                //case Keys.T:
-                //    if (!this.canvasControl1.Triangulate()) {
-                //        MessageBox.Show("Amount of nodes is less than 3. Abort.");
-                //    }
-                //    break;
-                //case Keys.S:
-                //    this.canvasControl1.BeginSelectionMode();
-                //    break;
                 case Keys.P:
-                    this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
-                    this.canvasControl1.Reset();
-                    break;
-                case Keys.M:
-                    this.canvasControl1.BeginManipulateMode();
-                    break;
-                case Keys.Q:
-                    this.canvasControl1.SelectedLayer.ShowTargetControlForm();
-                    break;
-                case Keys.L:
                     this.canvasControl1.Pair();
+                    e.Handled = true;
                     break;
             }
-
-            e.Handled = true;
-            //this.Invalidate(true);
         }
 
         //Add node
@@ -218,14 +300,6 @@ namespace TaskMaker {
             this.canvasControl1.SelectedMode = Modes.Selection;
         }
 
-        private void toolbox_Enter(object sender, EventArgs e) {
-
-        }
-
-        private void toolStripMenuItem2_Click(object sender, EventArgs e) {
-
-        }
-
         private void treeView1_MouseDoubleClick(object sender, MouseEventArgs e) {
             this.canvasControl1.ChooseLayer(this.treeView1.SelectedNode as Layer);
             this.ProgramInfo.SelectedLayer = (Layer)this.treeView1.SelectedNode;
@@ -256,6 +330,10 @@ namespace TaskMaker {
         private void layerToolStripMenuItem_Click(object sender, EventArgs e) {
             this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
             this.canvasControl1.Reset();
+        }
+
+        private void button11_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedLayer.ShowTargetControlForm();
         }
     }
 

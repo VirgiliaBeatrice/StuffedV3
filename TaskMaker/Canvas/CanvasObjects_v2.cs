@@ -196,7 +196,8 @@ namespace TaskMaker {
             group.Controls.Add(selection);
             form.Controls.Add(group);
 
-            form.Show();
+            form.ShowDialog();
+            form.Dispose();
         }
 
         public bool ShowTargetControlForm() {
