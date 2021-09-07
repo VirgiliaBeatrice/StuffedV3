@@ -149,12 +149,12 @@ namespace TaskMaker {
 
         // Edit node
         private void button2_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedMode = Modes.EditNode;
+            this.canvasControl1.BeginEditMode();
         }
 
         // Manipulate
         private void button3_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedMode = Modes.Manipulate;
+            this.canvasControl1.BeginManipulateMode();
         }
 
         /// <summary>

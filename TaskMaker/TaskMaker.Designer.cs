@@ -48,6 +48,11 @@ namespace TaskMaker {
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripStatusLabel4 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.button10 = new System.Windows.Forms.Button();
+            this.button11 = new System.Windows.Forms.Button();
+            this.button12 = new System.Windows.Forms.Button();
+            this.button13 = new System.Windows.Forms.Button();
+            this.button14 = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
@@ -126,19 +131,24 @@ namespace TaskMaker {
             // 
             this.tableLayoutPanel2.ColumnCount = 1;
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Controls.Add(this.button9, 0, 8);
+            this.tableLayoutPanel2.Controls.Add(this.button14, 0, 13);
+            this.tableLayoutPanel2.Controls.Add(this.button13, 0, 12);
+            this.tableLayoutPanel2.Controls.Add(this.button12, 0, 11);
+            this.tableLayoutPanel2.Controls.Add(this.button11, 0, 8);
+            this.tableLayoutPanel2.Controls.Add(this.button10, 0, 10);
+            this.tableLayoutPanel2.Controls.Add(this.button9, 0, 9);
             this.tableLayoutPanel2.Controls.Add(this.button8, 0, 7);
-            this.tableLayoutPanel2.Controls.Add(this.button7, 0, 6);
-            this.tableLayoutPanel2.Controls.Add(this.button6, 0, 5);
-            this.tableLayoutPanel2.Controls.Add(this.button5, 0, 4);
-            this.tableLayoutPanel2.Controls.Add(this.button4, 0, 3);
-            this.tableLayoutPanel2.Controls.Add(this.button3, 0, 2);
+            this.tableLayoutPanel2.Controls.Add(this.button7, 0, 3);
+            this.tableLayoutPanel2.Controls.Add(this.button6, 0, 6);
+            this.tableLayoutPanel2.Controls.Add(this.button5, 0, 5);
+            this.tableLayoutPanel2.Controls.Add(this.button4, 0, 2);
+            this.tableLayoutPanel2.Controls.Add(this.button3, 0, 4);
             this.tableLayoutPanel2.Controls.Add(this.button2, 0, 1);
             this.tableLayoutPanel2.Controls.Add(this.button1, 0, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(4, 17);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 10;
+            this.tableLayoutPanel2.RowCount = 17;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -149,17 +159,24 @@ namespace TaskMaker {
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(104, 541);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
             // button9
             // 
             this.button9.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button9.Location = new System.Drawing.Point(3, 237);
+            this.button9.Location = new System.Drawing.Point(3, 266);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(98, 23);
             this.button9.TabIndex = 8;
-            this.button9.Text = "Motor";
+            this.button9.Text = "Target Selection";
             this.button9.UseVisualStyleBackColor = true;
             // 
             // button8
@@ -175,7 +192,7 @@ namespace TaskMaker {
             // button7
             // 
             this.button7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button7.Location = new System.Drawing.Point(3, 179);
+            this.button7.Location = new System.Drawing.Point(3, 92);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(98, 23);
             this.button7.TabIndex = 6;
@@ -186,7 +203,7 @@ namespace TaskMaker {
             // button6
             // 
             this.button6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button6.Location = new System.Drawing.Point(3, 150);
+            this.button6.Location = new System.Drawing.Point(3, 179);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(98, 23);
             this.button6.TabIndex = 5;
@@ -197,7 +214,7 @@ namespace TaskMaker {
             // button5
             // 
             this.button5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button5.Location = new System.Drawing.Point(3, 121);
+            this.button5.Location = new System.Drawing.Point(3, 150);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(98, 23);
             this.button5.TabIndex = 4;
@@ -208,18 +225,18 @@ namespace TaskMaker {
             // button4
             // 
             this.button4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button4.Location = new System.Drawing.Point(3, 92);
+            this.button4.Location = new System.Drawing.Point(3, 63);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(98, 23);
             this.button4.TabIndex = 3;
-            this.button4.Text = "Delete Node";
+            this.button4.Text = "&Delete Node";
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
             // button3
             // 
             this.button3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button3.Location = new System.Drawing.Point(3, 63);
+            this.button3.Location = new System.Drawing.Point(3, 121);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(98, 23);
             this.button3.TabIndex = 2;
@@ -234,7 +251,7 @@ namespace TaskMaker {
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(98, 23);
             this.button2.TabIndex = 1;
-            this.button2.Text = "Edit Node";
+            this.button2.Text = "&Edit Node";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
@@ -302,14 +319,14 @@ namespace TaskMaker {
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.settingsToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
-            this.fileToolStripMenuItem.Text = "File";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
+            this.fileToolStripMenuItem.Text = "Settings";
             // 
             // settingsToolStripMenuItem
             // 
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.settingsToolStripMenuItem.Text = "Settings";
+            this.settingsToolStripMenuItem.Text = "ComPort";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
             // 
             // toolStripStatusLabel4
@@ -317,6 +334,56 @@ namespace TaskMaker {
             this.toolStripStatusLabel4.Name = "toolStripStatusLabel4";
             this.toolStripStatusLabel4.Size = new System.Drawing.Size(36, 19);
             this.toolStripStatusLabel4.Text = "None";
+            // 
+            // button10
+            // 
+            this.button10.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button10.Location = new System.Drawing.Point(3, 295);
+            this.button10.Name = "button10";
+            this.button10.Size = new System.Drawing.Size(98, 23);
+            this.button10.TabIndex = 9;
+            this.button10.Text = "Triangulation";
+            this.button10.UseVisualStyleBackColor = true;
+            // 
+            // button11
+            // 
+            this.button11.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button11.Location = new System.Drawing.Point(3, 237);
+            this.button11.Name = "button11";
+            this.button11.Size = new System.Drawing.Size(98, 23);
+            this.button11.TabIndex = 10;
+            this.button11.Text = "Mini Controller";
+            this.button11.UseVisualStyleBackColor = true;
+            // 
+            // button12
+            // 
+            this.button12.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button12.Location = new System.Drawing.Point(3, 324);
+            this.button12.Name = "button12";
+            this.button12.Size = new System.Drawing.Size(98, 23);
+            this.button12.TabIndex = 11;
+            this.button12.Text = "NULL";
+            this.button12.UseVisualStyleBackColor = true;
+            // 
+            // button13
+            // 
+            this.button13.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button13.Location = new System.Drawing.Point(3, 353);
+            this.button13.Name = "button13";
+            this.button13.Size = new System.Drawing.Size(98, 23);
+            this.button13.TabIndex = 12;
+            this.button13.Text = "NULL";
+            this.button13.UseVisualStyleBackColor = true;
+            // 
+            // button14
+            // 
+            this.button14.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button14.Location = new System.Drawing.Point(3, 382);
+            this.button14.Name = "button14";
+            this.button14.Size = new System.Drawing.Size(98, 23);
+            this.button14.TabIndex = 13;
+            this.button14.Text = "NULL";
+            this.button14.UseVisualStyleBackColor = true;
             // 
             // TaskMaker
             // 
@@ -366,5 +433,10 @@ namespace TaskMaker {
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel4;
+        private System.Windows.Forms.Button button14;
+        private System.Windows.Forms.Button button13;
+        private System.Windows.Forms.Button button12;
+        private System.Windows.Forms.Button button11;
+        private System.Windows.Forms.Button button10;
     }
 }

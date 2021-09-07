@@ -47,6 +47,8 @@ namespace TaskMaker {
         public event EventHandler ModeChanged;
         public event EventHandler<InterpolatingEventArgs> Interpolated;
 
+        private EditPhase editPhase = EditPhase.None;
+
         public CanvasControl() {
             InitializeComponent();
 
@@ -87,13 +89,23 @@ namespace TaskMaker {
             this.canvas.Reset();
         }
 
+        public void BeginEditMode() {
+            this.SelectedMode = Modes.EditNode;
+            this.editPhase = EditPhase.Select;
+        }
+
+        public void EndEditMode() {
+            this.canvas.Reset();
+        }
+
         public void BeginNoneMode() {
-            this.SelectedMode = Modes.None;
             this.Reset();
+            this.SelectedMode = Modes.None;
+            this.editPhase = EditPhase.None;
         }
 
         public void BeginManipulateMode() {
-            this.SelectedMode = Modes.Selection;
+            this.SelectedMode = Modes.Manipulate;
         }
 
         public void BeginSelectionMode() {
@@ -144,25 +156,6 @@ namespace TaskMaker {
 
         }
 
-        private void SkControl_MouseUp(object sender, MouseEventArgs e) {
-            switch (this.SelectedMode) {
-                case Modes.Selection:
-                    this.ProcessSelectionMouseUpEvent(e);
-                    break;
-                case Modes.Manipulate:
-                    this.ProcessManipulateMouseUpEvent(e);
-                    break;
-            }
-
-            this.Invalidate(true);
-        }
-
-
-        //private void SkControl_MouseEnter(object sender, EventArgs e) {
-        //    this.skControl.Focus();
-        //}
-
-
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
             switch (this.SelectedMode) {
                 case Modes.Selection:
@@ -171,10 +164,91 @@ namespace TaskMaker {
                 case Modes.Manipulate:
                     this.ProcessManipulatMouseDownEvent(e);
                     break;
-
             }
 
             this.Invalidate(true);
+        }
+
+        private void SkControl_MouseMove(object sender, MouseEventArgs e) {
+            switch (this.SelectedMode) {
+                case Modes.Selection:
+                    this.ProcessSelectionMouseMoveEvent(e);
+                    break;
+                case Modes.Manipulate:
+                    this.ProcessManipulateMouseMoveEvent(e);
+                    break;
+                case Modes.EditNode:
+                    this.ProcessEditNodeMouseMoveEvent(e);
+                    break;
+            }
+
+            this.canvas.Pointer.Location = e.Location.ToSKPoint();
+
+            this.Invalidate(true);
+        }
+
+        private void SkControl_MouseClick(object sender, MouseEventArgs e) {
+            switch (this.SelectedMode) {
+                case Modes.None:
+                    this.ProcessGeneralMouseClickEvent(e);
+                    break;
+                case Modes.AddNode:
+                    this.ProcessAddNodeMouseClickEvent(e);
+                    break;
+                case Modes.EditNode:
+                    //this.ProcessEditNodeMouseClickEvent(e);
+                    break;
+            }
+
+            this.Invalidate(true);
+        }
+
+        private void SkControl_MouseUp(object sender, MouseEventArgs e) {
+            switch (this.SelectedMode) {
+                case Modes.Selection:
+                    this.ProcessSelectionMouseUpEvent(e);
+                    break;
+                case Modes.Manipulate:
+                    this.ProcessManipulateMouseUpEvent(e);
+                    break;
+                case Modes.EditNode:
+                    this.ProcessEditNodeMouseUpEvent(e);
+                    break;
+            }
+
+            this.Invalidate(true);
+        }
+
+        private void ProcessEditNodeMouseUpEvent(MouseEventArgs ev) {
+            if (ev.Button == MouseButtons.Left) {
+                if (this.editPhase == EditPhase.Select) {
+                    var entities = this.SelectedLayer.Entities;
+
+                    foreach (var entity in entities) {
+                        if (entity.ContainsPoint(ev.Location.ToSKPoint())) {
+                            entity.IsSelected = !entity.IsSelected;
+                            break;
+                        }
+                    }
+
+                    this.editPhase = EditPhase.Edit;
+                }
+                else if (this.editPhase == EditPhase.Edit) {
+                    this.canvas.Reset();
+
+                    this.editPhase = EditPhase.Select;
+                }
+            }
+        }
+
+        private void ProcessEditNodeMouseMoveEvent(MouseEventArgs ev) {
+            if (ev.Button == MouseButtons.Left) {
+                var selectedEntities = this.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+
+                if (selectedEntities.Count != 0) {
+                    selectedEntities[0].Location = ev.Location.ToSKPoint();
+                }
+            }
         }
 
         private void ProcessManipulatMouseDownEvent(MouseEventArgs ev) {
@@ -195,6 +269,12 @@ namespace TaskMaker {
                 } else if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithLayer) {
                     this.canvas.SelectedLayer.LayerConfigs.FromVector(this.canvas.SelectedLayer.LayerConfigs, configVector);
 
+                    foreach(var layer in this.canvas.SelectedLayer.LayerConfigs) {
+                        if (layer.LayerStatus == LayerStatus.WithMotor) {
+                            var newVector = layer.Complex.GetConfigVectors(layer.Pointer.Location);
+                            layer.MotorConfigs.FromVector(layer.MotorConfigs, newVector);
+                        }
+                    }
                 }
 
 
@@ -214,35 +294,11 @@ namespace TaskMaker {
             }
         }
 
-        private void SkControl_MouseMove(object sender, MouseEventArgs e) {
-            switch (this.SelectedMode) {
-                case Modes.Selection:
-                    this.ProcessSelectionMouseMoveEvent(e);
-                    break;
-                case Modes.Manipulate:
-                    this.ProcessManipulateMouseMoveEvent(e);
-                    break;
-            }
-
-            this.canvas.Pointer.Location = e.Location.ToSKPoint();
-
-            this.Invalidate(true);
-        }
 
 
 
-        private void SkControl_MouseClick(object sender, MouseEventArgs e) {
-            switch (this.SelectedMode) {
-                case Modes.None:
-                    this.ProcessGeneralMouseClickEvent(e);
-                    break;
-                case Modes.AddNode:
-                    this.ProcessAddNodeMouseClickEvent(e);
-                    break;
-            }
 
-            this.Invalidate(true);
-        }
+
 
         private void SkControl_PaintSurface(object sender, SKPaintSurfaceEventArgs e) {
             this.imageInfo = e.Info;
@@ -320,9 +376,12 @@ namespace TaskMaker {
 
         private void ProcessGeneralMouseClickEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
+                this.canvas.Reset();
+                
                 foreach (var e in this.canvas.SelectedLayer.Entities) {
                     if (e.ContainsPoint(ev.Location.ToSKPoint())) {
                         e.IsSelected = !e.IsSelected;
+                        break;
                     }
                 }
             }
@@ -348,5 +407,11 @@ namespace TaskMaker {
 
     public class InterpolatingEventArgs : EventArgs {
         public Vector<float> Values { get; set; }
+    }
+
+    public enum EditPhase {
+        None,
+        Select,
+        Edit,
     }
 }
