@@ -185,6 +185,13 @@ namespace TaskMaker {
             MessageBox.Show("This layer did not bind with any configuration.");
         }
 
+
+        public void Unpair() {
+            var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+
+            selectedEnities.ForEach(e => e.Pair.RemovePair());
+        }
+
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
             switch (this.SelectedMode) {
                 case Modes.Selection:
@@ -371,6 +378,7 @@ namespace TaskMaker {
                 //this._canvas.Simplices.ForEach(sim => Console.WriteLine(sim.GetLambdas(e.Location.ToSKPoint())));
             }
         }
+
 
         private void ProcessManipulateMouseUpEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {

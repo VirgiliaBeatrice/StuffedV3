@@ -335,6 +335,10 @@ namespace TaskMaker {
         private void button11_Click(object sender, EventArgs e) {
             this.canvasControl1.SelectedLayer.ShowTargetControlForm();
         }
+
+        private void button13_Click(object sender, EventArgs e) {
+            this.canvasControl1.Unpair();
+        }
     }
 
     public class Services {
