@@ -53,12 +53,16 @@ namespace TaskMaker {
             this.button12 = new System.Windows.Forms.Button();
             this.button13 = new System.Windows.Forms.Button();
             this.button14 = new System.Windows.Forms.Button();
+            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.propertyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.layerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
+            this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // statusStrip1
@@ -390,6 +394,28 @@ namespace TaskMaker {
             this.button14.Text = "NULL";
             this.button14.UseVisualStyleBackColor = true;
             // 
+            // contextMenuStrip1
+            // 
+            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.propertyToolStripMenuItem});
+            this.contextMenuStrip1.Name = "contextMenuStrip1";
+            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 48);
+            // 
+            // propertyToolStripMenuItem
+            // 
+            this.propertyToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.layerToolStripMenuItem});
+            this.propertyToolStripMenuItem.Name = "propertyToolStripMenuItem";
+            this.propertyToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.propertyToolStripMenuItem.Text = "Property";
+            // 
+            // layerToolStripMenuItem
+            // 
+            this.layerToolStripMenuItem.Name = "layerToolStripMenuItem";
+            this.layerToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.layerToolStripMenuItem.Text = "Layer";
+            this.layerToolStripMenuItem.Click += new System.EventHandler(this.layerToolStripMenuItem_Click);
+            // 
             // TaskMaker
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -408,6 +434,7 @@ namespace TaskMaker {
             this.groupBox1.ResumeLayout(false);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -443,5 +470,8 @@ namespace TaskMaker {
         private System.Windows.Forms.Button button12;
         private System.Windows.Forms.Button button11;
         private System.Windows.Forms.Button button10;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem propertyToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem layerToolStripMenuItem;
     }
 }

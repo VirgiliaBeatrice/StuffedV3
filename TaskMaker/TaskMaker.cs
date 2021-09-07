@@ -55,6 +55,8 @@ namespace TaskMaker {
             tooltipBtnAddLayer.SetToolTip(this.button5, "Ctrl+A");
             tooltipBtnDeleteLayer.SetToolTip(this.button6, "Ctrl+D");
             tooltipBtnTargetSelection.SetToolTip(this.button9, "Ctrl+T");
+
+            this.canvasControl1.ContextMenuStrip = this.contextMenuStrip1;
         }
 
         private void CanvasControl1_LayerConfigured(object sender, EventArgs e) {
@@ -249,6 +251,11 @@ namespace TaskMaker {
 
         private void button12_Click(object sender, EventArgs e) {
             this.canvasControl1.Pair();
+        }
+
+        private void layerToolStripMenuItem_Click(object sender, EventArgs e) {
+            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.ProgramInfo);
+            this.canvasControl1.Reset();
         }
     }
 
