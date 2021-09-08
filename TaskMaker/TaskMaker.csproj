@@ -143,6 +143,7 @@
       <DependentUpon>CanvasControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Canvas\CanvasObjects_v2.cs" />
+    <Compile Include="Canvas\Exterior_v2.cs" />
     <Compile Include="MathNetExtension.cs" />
     <Compile Include="MotorController.cs">
       <SubType>UserControl</SubType>
