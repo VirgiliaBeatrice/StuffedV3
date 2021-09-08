@@ -12,7 +12,7 @@ using PCController;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
-        public Services Services { get; set; } = new Services();
+        public Services Services { get; set; }
 
         private CanvasControl canvasControl1;
         private ToolTip tooltipBtnAddLayer = new ToolTip();
@@ -23,6 +23,8 @@ namespace TaskMaker {
 
 
         public TaskMakerForm() {
+            this.Services = new Services();
+
             InitializeComponent();
             InitializeSkControl();
 
@@ -206,7 +208,7 @@ namespace TaskMaker {
 
         private void InitializeSkControl() {
             // Bug: UserControl is not working on design-time.
-            this.canvasControl1 = new CanvasControl();
+            this.canvasControl1 = new CanvasControl(this.Services);
             this.canvasControl1.Dock = DockStyle.Fill;
             this.canvasControl1.Location = new Point(4, 17);
             this.canvasControl1.Margin = new Padding(4);

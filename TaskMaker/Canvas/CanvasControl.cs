@@ -34,7 +34,7 @@ namespace TaskMaker {
 
         public Layer RootLayer => this.canvas.RootLayer;
         public Canvas Canvas => this.canvas;
-        public Services Services => (this.ParentForm as TaskMakerForm).Services;
+        //public Services Services => (this.ParentForm as TaskMakerForm).Services;
 
 
 
@@ -51,7 +51,7 @@ namespace TaskMaker {
 
         private EditPhase editPhase = EditPhase.None;
 
-        public CanvasControl() {
+        public CanvasControl(Services services) {
             InitializeComponent();
 
             this.skControl = new SKControl();
@@ -71,7 +71,7 @@ namespace TaskMaker {
             //this.skControl.KeyPress += this.SkControl_KeyPress;
             //this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
-            this.canvas = new Canvas(this.Services);
+            this.canvas = new Canvas(services);
         }
 
         public void Reset() {
