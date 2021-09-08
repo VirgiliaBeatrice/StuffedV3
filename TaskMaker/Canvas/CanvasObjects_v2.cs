@@ -607,6 +607,10 @@ namespace TaskMaker {
             return this.Pairs.TaskBary.GetLambdasOnlyInterior(point.ToVector());
         }
 
+        public bool IsVertex(Entity_v2 e) {
+            return this.Vertices.Contains(e);
+        }
+
         public void Invalidate() { }
 
         public void DrawThis(SKCanvas sKCanvas) {
@@ -670,7 +674,10 @@ namespace TaskMaker {
         public CircularList<Entity_v2> Extremes { get; set; } = new CircularList<Entity_v2>();
         public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
 
+        private SimplicialComplex_v2 complex;
+
         private void GetAllEdges(SimplicialComplex_v2 complex) {
+            this.complex = complex;
             var edgeSet = this.Edges;
 
             foreach (var simplex in complex) {
@@ -702,7 +709,7 @@ namespace TaskMaker {
         }
 
         private void SetExteriorRays() {
-            var exteriorRays = new List<Ray_v2>();
+            var exteriorRays = new List<ExteriorRay>();
             this.Clear();
 
             // For Order: CCW
@@ -719,9 +726,9 @@ namespace TaskMaker {
                     var it = node.Value;
                     var next = node.Next.Value;
 
-                    //exteriorRays.Add(new ExteriorRay() {
-                    //    ExcludedTri = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it) & tri.IsVertex(next))
-                    //});
+                    exteriorRays.Add(new ExteriorRay() {
+                        ExcludedSimplex = this.complex.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it) & tri.IsVertex(next))
+                    });
                 }
                 else if (edgeCnt == 3) {
                     // Note: this case has a special condition which needs to be handled.
@@ -754,33 +761,33 @@ namespace TaskMaker {
                     var rayOfNormalPI = Ray_v2.CreateRay(it.Location, normalOfEdgePI);
                     var rayOfNoramlIN = Ray_v2.CreateRay(it.Location, normalOfEdgeIN);
 
-                    rayOfNormalPI.E0 = it;
-                    rayOfNoramlIN.E0 = it;
+                    //rayOfNormalPI.E0 = it;
+                    //rayOfNoramlIN.E0 = it;
 
-                    rayOfNormalPI.Color = SKColors.PowderBlue;
-                    rayOfNoramlIN.Color = SKColors.PowderBlue;
+                    //rayOfNormalPI.Color = SKColors.PowderBlue;
+                    //rayOfNoramlIN.Color = SKColors.PowderBlue;
 
                     // Recheck condition!
                     var angleOfEdgeExtensionAndNormalPI = Math.Atan2(
-                        rayOfEdgeExtension.UnitDirection[0] * rayOfNormalPI.UnitDirection[1] -
-                        rayOfEdgeExtension.UnitDirection[1] * rayOfNormalPI.UnitDirection[0],
-                        rayOfEdgeExtension.UnitDirection[0] * rayOfNormalPI.UnitDirection[0] + rayOfEdgeExtension.UnitDirection[1] * rayOfNormalPI.UnitDirection[1]
+                        rayOfEdgeExtension.LineProperty.UnitDirection[0] * rayOfNormalPI.LineProperty.UnitDirection[1] -
+                        rayOfEdgeExtension.LineProperty.UnitDirection[1] * rayOfNormalPI.LineProperty.UnitDirection[0],
+                        rayOfEdgeExtension.LineProperty.UnitDirection[0] * rayOfNormalPI.LineProperty.UnitDirection[0] + rayOfEdgeExtension.LineProperty.UnitDirection[1] * rayOfNormalPI.LineProperty.UnitDirection[1]
                     );
                     var angleOfEdgeExtensionAndNormalIN = Math.Atan2(
-                        rayOfEdgeExtension.UnitDirection[0] * rayOfNoramlIN.UnitDirection[1] -
-                        rayOfEdgeExtension.UnitDirection[1] * rayOfNoramlIN.UnitDirection[0],
-                        rayOfEdgeExtension.UnitDirection[0] *
-                        rayOfNoramlIN.UnitDirection[0] + rayOfEdgeExtension.UnitDirection[1] *
-                        rayOfNoramlIN.UnitDirection[1]
+                        rayOfEdgeExtension.LineProperty.UnitDirection[0] * rayOfNoramlIN.LineProperty.UnitDirection[1] -
+                        rayOfEdgeExtension.LineProperty.UnitDirection[1] * rayOfNoramlIN.LineProperty.UnitDirection[0],
+                        rayOfEdgeExtension.LineProperty.UnitDirection[0] *
+                        rayOfNoramlIN.LineProperty.UnitDirection[0] + rayOfEdgeExtension.LineProperty.UnitDirection[1] *
+                        rayOfNoramlIN.LineProperty.UnitDirection[1]
                     );
 
                     var exteriorRayNormalPI = new ExteriorRay() {
                         Ray = rayOfNormalPI,
-                        Govorner = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it))
+                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(prev) & sim.Vertices.Contains(it))
                     };
                     var exteriorRayNormalIN = new ExteriorRay() {
                         Ray = rayOfNoramlIN,
-                        Govorner = this.triangles.Find(tri => tri.IsVertex(it) & tri.IsVertex(next))
+                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(it) & sim.Vertices.Contains(next))
                     };
 
                     if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == -1 & Math.Sign(angleOfEdgeExtensionAndNormalIN) == 1) {
@@ -794,31 +801,31 @@ namespace TaskMaker {
                     }
                 }
                 else if (edgeCnt > 3) {
-                    this.Logger.Debug($"Two perpendicular splitter for {extreme.Value}.");
+                    //this.Logger.Debug($"Two perpendicular splitter for {extreme.Value}.");
 
-                    var prev = extreme.Prev.Value;
-                    var it = extreme.Value;
-                    var next = extreme.Next.Value;
+                    var prev = node.Prev.Value;
+                    var it = node.Value;
+                    var next = node.Next.Value;
 
-                    var dirOfEdgePrevToIt = it.PointVector - prev.PointVector;
-                    var dirOfEdgeItToNext = next.PointVector - it.PointVector;
+                    var dirOfEdgePrevToIt = it.Vector - prev.Vector;
+                    var dirOfEdgeItToNext = next.Vector - it.Vector;
                     var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
                     var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
-                    var rayOfNormalPI = Ray_v1.CreateRay(it.Point, normalOfEdgePI);
-                    var rayOfNoramlIN = Ray_v1.CreateRay(it.Point, normalOfEdgeIN);
+                    var rayOfNormalPI = Ray_v2.CreateRay(it.Location, normalOfEdgePI);
+                    var rayOfNoramlIN = Ray_v2.CreateRay(it.Location, normalOfEdgeIN);
 
-                    rayOfNormalPI.Color = SKColors.PowderBlue;
-                    rayOfNormalPI.E0 = it;
-                    rayOfNoramlIN.Color = SKColors.PowderBlue;
-                    rayOfNoramlIN.E0 = it;
+                    //rayOfNormalPI.Color = SKColors.PowderBlue;
+                    //rayOfNormalPI.E0 = it;
+                    //rayOfNoramlIN.Color = SKColors.PowderBlue;
+                    //rayOfNoramlIN.E0 = it;
 
                     exteriorRays.Add(new ExteriorRay() {
                         Ray = rayOfNormalPI,
-                        Govorner = this.triangles.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it))
+                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(prev) & sim.Vertices.Contains(it))
                     });
                     exteriorRays.Add(new ExteriorRay() {
                         Ray = rayOfNoramlIN,
-                        Govorner = this.triangles.Find(tri => tri.IsVertex(it) & tri.IsVertex(next))
+                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(it) & sim.Vertices.Contains(next))
                     });
                 }
                 else {
@@ -826,10 +833,22 @@ namespace TaskMaker {
                 }
             }
 
+            var newExteriorRays = new CircularList<ExteriorRay>(exteriorRays);
+
+            foreach(var node in newExteriorRays) {
+                var it = node.Value;
+                var prev = node.Prev.Value;
+                var next = node.Next.Value;
+                Simplex_v2 govorner = null;
+
+                if ()
+
+            }
+
             // Generate voronoi regions
             for (var idx = 0; idx < exteriorRays.Count; idx++) {
-                Triangle_v1 excludedTri = null;
-                Triangle_v1 governor = null;
+                Simplex_v2 excludedSimplex = null;
+                Simplex_v2 governor = null;
                 var idx0 = idx;
                 var idx1 = idx + 1 < exteriorRays.Count ? idx + 1 : 0;
 
@@ -837,9 +856,11 @@ namespace TaskMaker {
                 var exRay1 = exteriorRays[idx1];
                 // TODO: Ugly
 
-                if (exRay0.ExcludedTri == null) {
-                    if (exRay1.ExcludedTri != null) {
-                        excludedTri = exRay1.ExcludedTri;
+
+
+                if (exRay0.ExcludedSimplex == null) {
+                    if (exRay1.ExcludedSimplex != null) {
+                        excludedSimplex = exRay1.ExcludedSimplex;
 
                         idx1 = idx1 + 1 < exteriorRays.Count ? idx1 + 1 : 0;
                         exRay1 = exteriorRays[idx1];
@@ -848,23 +869,29 @@ namespace TaskMaker {
                     }
                     else {
                         if (exRay0.Govorner == null & exRay1.Govorner == null) {
-                            governor = this.triangles.Find(tri => tri.IsVertex(exRay0.Ray.E0) & tri.IsVertex(exRay1.Ray.E0));
+                            governor = this.complex.Find(tri => tri.IsVertex(exRay0.Ray.E0) & tri.IsVertex(exRay1.Ray.E0));
                         }
                     }
 
 
-                    this.voronoiRegions.Add(
-                        new VoronoiRegion_v1() {
-                            Index = this.voronoiRegions.Count,
-                            ExteriorRay0 = exRay0,
-                            ExteriorRay1 = exRay1,
-                            ExcludedTri = excludedTri,
+                    this.Add(
+                        new ExteriorRegion_v2() {
+                            //Index = this.voronoiRegions.Count,
+                            Ray0 = exRay0,
+                            Ray1 = exRay1,
+                            ExcludedSimplex = excludedSimplex,
                             Governor = governor,
                         }
                     );
                 }
             }
         }
+    }
+
+    public class ExteriorRay {
+        public Ray_v2 Ray { get; set; }
+        public Simplex_v2 Govorner { get; set; }
+        public Simplex_v2 ExcludedSimplex { get; set; }
     }
 
     public class Pair {

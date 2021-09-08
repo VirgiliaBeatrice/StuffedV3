@@ -109,7 +109,8 @@ namespace TaskMaker {
     }
 
     public class Ray_v2 : CanvasObject_v2 {
-
+        public GeometryLine LineProperty { get; set; }
+        public Entity_v2 BindedEntity { get; set; }
         private SKPoint p0;
         private SKPoint p1;
         private SKPaint rayPaint = new SKPaint() {
@@ -126,6 +127,8 @@ namespace TaskMaker {
             this.Location = p0;
             this.p0 = p0;
             this.p1 = p1;
+
+            this.LineProperty = new GeometryLine() { V0 = this.p0.ToVector(), V1 = this.p1.ToVector() };
         }
 
         public GeometryLine ToGeometryLine() {
@@ -220,6 +223,11 @@ namespace TaskMaker {
     }
 
     public class ExteriorRegion_v2 : CanvasObject_v2 {
+        public ExteriorRay Ray0 { get; set; }
+        public ExteriorRay Ray1 { get; set; }
+        public Simplex_v2 Governor { get; set; }
+        public Simplex_v2 ExcludedSimplex { get; set; }
+
         private Ray_v2 ray0;
         private Ray_v2 ray1;
         private SKPath path;
