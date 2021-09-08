@@ -504,9 +504,9 @@ namespace TaskMaker {
                 this.isSelected = value;
                 
                 if (this.isSelected) {
-                    this._radius = 7.0f;
+                    this._radius = 12.0f;
                 } else {
-                    this._radius = 5.0f;
+                    this._radius = 10.0f;
                 }
             }
         }
@@ -537,7 +537,7 @@ namespace TaskMaker {
             StrokeWidth = 2
         };
         private SKPoint location;
-        private float _radius = 5.0f;
+        private float _radius = 10.0f;
         private bool isSelected = false;
 
         public Entity_v2(SKPoint point) {

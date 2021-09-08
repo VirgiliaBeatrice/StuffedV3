@@ -266,7 +266,12 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button4_Click(object sender, EventArgs e) {
-            this.canvasControl1.RemoveSelectedNodes();
+            var confirmResult = MessageBox.Show("Are you sure to delete this item ??",
+                                     "Confirm Delete!!",
+                                     MessageBoxButtons.OKCancel);
+            if (confirmResult == DialogResult.OK) {
+                this.canvasControl1.RemoveSelectedNodes();
+            }
         }
 
         /// <summary>
@@ -284,7 +289,12 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button6_Click(object sender, EventArgs e) {
-            this.canvasControl1.RemoveLayer();
+            var confirmResult = MessageBox.Show("Are you sure to delete this item ??",
+                                     "Confirm Delete!!",
+                                     MessageBoxButtons.OKCancel);
+
+            if (confirmResult == DialogResult.OK)
+                this.canvasControl1.RemoveLayer();
         }
 
         /// <summary>
