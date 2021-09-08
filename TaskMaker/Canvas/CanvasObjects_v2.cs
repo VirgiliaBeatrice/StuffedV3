@@ -240,6 +240,7 @@ namespace TaskMaker {
 
             form.Text = $"Motor Position - {this.Text}";
             form.Size = new Size(600, 600);
+            form.AutoSize = true;
             panel.Dock = DockStyle.Fill;
 
             foreach(var motor in this.MotorConfigs) {
@@ -289,7 +290,10 @@ namespace TaskMaker {
         }
 
         public void Interpolate(SKPoint pointerLocation) {
-            Layer.Interpolate(pointerLocation, this);
+            if (this.Complex.IsPaired) {
+                Interpolate(pointerLocation, this);
+            }
+
             //var layer = this;
             //var pointer = layer.Pointer;
             //pointer.Location = pointerLocation;
@@ -583,6 +587,8 @@ namespace TaskMaker {
     public class Simplex_v2 {
         public SKPoint Location { get; set; }
         public List<Entity_v2> Vertices { get; set; } = new List<Entity_v2>();
+
+        public bool IsPaired => this.Pairs.IsFullyPaired;
         public Pairs Pairs { get; set; } = new Pairs();
 
         private SKPaint fillPaint = new SKPaint {
@@ -624,6 +630,7 @@ namespace TaskMaker {
 
 
     public class SimplicialComplex_v2 : List<Simplex_v2> {
+        public bool IsPaired => this.TrueForAll(sim => sim.IsPaired);
         public Vector<float> GetLambdas(SKPoint point) {
             var result = new List<float>();
 

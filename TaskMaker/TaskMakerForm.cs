@@ -186,7 +186,7 @@ namespace TaskMaker {
                     targets[i] = 0;
                 } else {
                     var motor = this.Services.Motors[i];
-                    targets[i] = (short)(motor.position.Value - motor.NewOffset);
+                    targets[i] = (short)(motor.position.Value);
                     //targets[i] = (short)this.Services.Motors[i].position.Value;
                 }
             }
