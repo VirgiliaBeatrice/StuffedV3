@@ -54,18 +54,21 @@ namespace TaskMaker {
 
         private void InitializeMotorValues() {
             var m = this.motor;
+            var initMax = m.position.Maximum;
+            var initMin = m.position.Minimum;
+
+            this.numMax.Maximum = initMax;
+            this.numMax.Minimum = initMin;
+            this.numMin.Maximum = initMax;
+            this.numMin.Minimum = initMin;
+            this.numOffset.Maximum = initMax;
+            this.numOffset.Minimum = initMin;
 
             this.Offset = m.NewOffset;
             this.MotorValue = m.position.Value;
             this.Min = m.position.Minimum;
             this.Max = m.position.Maximum;
 
-            this.numMax.Maximum = this.numMax.Value;
-            this.numMax.Minimum = this.numMin.Value;
-            this.numMin.Maximum = this.numMax.Value;
-            this.numMin.Minimum = this.numMin.Value;
-            this.numOffset.Maximum = this.numMax.Value;
-            this.numOffset.Minimum = this.numMin.Value;
 
             this.numMax.Increment = (this.Max - this.Min) / 20;
             this.numMin.Increment = (this.Max - this.Min) / 20;
@@ -73,16 +76,18 @@ namespace TaskMaker {
 
             this.trackBar1.TickFrequency = 20;
             this.trackBar1.SmallChange = (int)(this.Max - this.Min) / 50;
-            this.trackBar1.LargeChange = (int)(this.Max - this.Min) / 5;
+            this.trackBar1.LargeChange = (int)(this.Max - this.Min) / 20;
 
         }
 
         private void numMotor_ValueChanged(object sender, EventArgs e) {
-            motor.position.Value = (int)this.MotorValue;
+            motor.position.Value = (int)this.numMotor.Value;
+            //this.trackBar1.Value = (int)this.numMotor.Value;
         }
 
         private void trackBar1_Scroll(object sender, EventArgs e) {
-            motor.position.Value = (int)this.MotorValue;
+            motor.position.Value = (int)this.trackBar1.Value;
+            //this.
         }
 
         private void numMin_ValueChanged(object sender, EventArgs e) {
