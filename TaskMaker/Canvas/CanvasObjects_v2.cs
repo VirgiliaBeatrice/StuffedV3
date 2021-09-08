@@ -701,7 +701,7 @@ namespace TaskMaker {
 
         private void P_PairUpdated(object sender, EventArgs e) {
             if (this.IsFullyPaired) {
-                this.ConfigBary.AddRange(this.Select(p => p.Config).ToArray());
+                this.ConfigBary.UpdateVertices(this.Select(p => p.Config).ToArray());
             }
         }
 
