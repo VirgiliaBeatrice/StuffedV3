@@ -157,6 +157,12 @@ namespace TaskMaker {
             pointer.Location = pointerLocation;
 
             var lambdas = layer.Complex.GetLambdas(pointer.Location);
+            
+            // no return zero
+            if (lambdas.All(lambda => lambda == 0)) {
+                return;
+            }
+
             var configVector = layer.Complex.GetConfigVectors(pointer.Location);
 
             if (layer.LayerStatus == LayerStatus.WithMotor) {
@@ -239,21 +245,32 @@ namespace TaskMaker {
         public void ShowMotorControllers() {
             var form = new Form();
             var panel = new FlowLayoutPanel();
+            var btn = new Button();
 
             form.Text = $"Motor Position - {this.Text}";
             form.Size = new Size(600, 600);
             form.AutoSize = true;
             panel.Dock = DockStyle.Fill;
+            btn.Text = "All Return Zero";
+            
 
             foreach(var motor in this.MotorConfigs) {
                 var motorController = new MotorController(motor);
                 motorController.MotorName = $"Motor{this.MotorConfigs.IndexOf(motor) + 1}";
+                btn.Click += (sender, e) => {
+                    motorController.ReturnZero();
+                };
 
                 panel.Controls.Add(motorController);
             }
 
+            panel.Controls.Add(btn);
             form.Controls.Add(panel);
             form.Show();
+        }
+
+        private void Btn_Click(object sender, EventArgs e) {
+            throw new NotImplementedException();
         }
 
         public void InitializeMotorConfigs() {

@@ -79,6 +79,10 @@ namespace TaskMaker {
 
         }
 
+        public void ReturnZero() {
+            this.numMotor.Value = 0;
+        }
+
         private void numMotor_ValueChanged(object sender, EventArgs e) {
             //Console.WriteLine($"Real: {this.MotorValue}");
             motor.position.Value = (int)this.MotorValue;
