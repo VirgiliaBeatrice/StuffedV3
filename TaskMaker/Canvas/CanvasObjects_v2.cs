@@ -252,6 +252,7 @@ namespace TaskMaker {
             form.AutoSize = true;
             panel.Dock = DockStyle.Fill;
             btn.Text = "All Return Zero";
+            btn.AutoSize = true;
             
 
             foreach(var motor in this.MotorConfigs) {
