@@ -36,11 +36,9 @@ namespace TaskMaker {
                 Console.WriteLine("32-bit process");
 
             this.KeyDown += TaskMaker_KeyDown;
-            this.canvasControl1.LayerUpdated += this.CanvasControl1_LayerUpdated;
             this.canvasControl1.LayerFocused += this.CanvasControl1_LayerFocused;
             this.canvasControl1.ModeChanged += this.CanvasControl1_ModeChanged;
             this.canvasControl1.Interpolated += this.CanvasControl1_Interpolated;
-            this.canvasControl1.LayerConfigured += this.CanvasControl1_LayerConfigured;
 
             this.UpdateTreeview();
             this.treeView1.ExpandAll();
@@ -247,7 +245,7 @@ namespace TaskMaker {
 
         //Add node
         private void button1_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedMode = Modes.AddNode;
+            this.canvasControl1.BeginAddNodeMode();
         }
 
         // Edit node
@@ -266,7 +264,7 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button4_Click(object sender, EventArgs e) {
-            var confirmResult = MessageBox.Show("Are you sure to delete this item ??",
+            var confirmResult = MessageBox.Show("Are you sure to delete this item ?",
                                      "Confirm Delete!!",
                                      MessageBoxButtons.OKCancel);
             if (confirmResult == DialogResult.OK) {
@@ -289,7 +287,7 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button6_Click(object sender, EventArgs e) {
-            var confirmResult = MessageBox.Show("Are you sure to delete this item ??",
+            var confirmResult = MessageBox.Show("Are you sure to delete this item ?",
                                      "Confirm Delete!!",
                                      MessageBoxButtons.OKCancel);
 
@@ -297,17 +295,6 @@ namespace TaskMaker {
                 this.canvasControl1.RemoveLayer();
         }
 
-        /// <summary>
-        /// Set selected property after select.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
-            //this.canvasControl1.ChooseLayer(e.Node as Layer);
-            //this.ProgramInfo.SelectedLayer = (Layer)e.Node;
-
-            //this.canvasControl1.Invalidate(true);
-        }
 
         /// <summary>
         /// Selection
@@ -316,13 +303,6 @@ namespace TaskMaker {
         /// <param name="e"></param>
         private void button7_Click(object sender, EventArgs e) {
             this.canvasControl1.SelectedMode = Modes.Selection;
-        }
-
-        private void treeView1_MouseDoubleClick(object sender, MouseEventArgs e) {
-            this.canvasControl1.ChooseLayer(this.treeView1.SelectedNode as Layer);
-            this.Services.SelectedLayer = (Layer)this.treeView1.SelectedNode;
-
-            this.canvasControl1.Invalidate(true);
         }
 
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -363,6 +343,42 @@ namespace TaskMaker {
                 this.UpdateMotorPosition(true);
             }
         }
+
+        private void treeView1_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
+            this.Services.SelectedLayer = (Layer)e.Node;
+            this.canvasControl1.ChooseLayer(e.Node as Layer);
+            this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
+            this.toolStripStatusLabel4.Text = $"{this.canvasControl1.SelectedLayer.Text} - {this.canvasControl1.SelectedLayer.LayerStatus}";
+        }
+
+        private void treeView1_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
+            this.groupBox2.Text = $"Canvas - [{e.Label}]";
+            this.toolStripStatusLabel4.Text = $"{e.Label} - {this.canvasControl1.SelectedLayer.LayerStatus}";
+        }
+
+        private void button8_Click(object sender, EventArgs e) {
+            this.canvasControl1.SaveAsImage();
+        }
+
+        //private void treeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) {
+        //    var target = (e.Node as Layer);
+
+        //    var renameDialog = new Form();
+        //    var input = new TextBox();
+
+        //    renameDialog.Text = "Rename";
+        //    renameDialog.ClientSize = new Size(100, 40);
+        //    input.Dock = DockStyle.Fill;
+        //    renameDialog.Controls.Add(input);
+
+        //    // Show testDialog as a modal dialog and determine if DialogResult = OK.
+        //    if (renameDialog.ShowDialog(this) == DialogResult.OK) {
+        //        // Read the contents of testDialog's TextBox.
+        //        target.Text = input.Text;
+        //    }
+
+        //    renameDialog.Dispose();
+        //}
     }
 
     public class Services {

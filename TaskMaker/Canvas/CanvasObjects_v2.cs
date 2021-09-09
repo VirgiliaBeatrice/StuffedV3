@@ -123,8 +123,10 @@ namespace TaskMaker {
                 }
             }
 
+
             // Reset entities' states
             this.Reset();
+            this.SelectedLayer.Invalidate();
 
             return true;
         }
@@ -293,31 +295,12 @@ namespace TaskMaker {
             if (this.Complex.IsPaired) {
                 Interpolate(pointerLocation, this);
             }
+        }
 
-            //var layer = this;
-            //var pointer = layer.Pointer;
-            //pointer.Location = pointerLocation;
-
-            //var lambdas = layer.Complex.GetLambdas(pointer.Location);
-            //var configVector = layer.Complex.GetConfigVectors(pointer.Location);
-
-            //if (layer.LayerStatus == LayerStatus.WithMotor) {
-            //    var configs = layer.MotorConfigs;
-
-            //    configs.FromVector(configs, configVector);
-            //}
-
-
-            //if (layer.LayerStatus == LayerStatus.WithLayer) {
-            //    var configs = layer.LayerConfigs;
-
-            //    configs.FromVector(configs, configVector);
-
-            //    foreach (var l in configs) {
-            //        this.Interpolate(l.Pointer.Location);
-            //    }
-
-            //}
+        public void Invalidate() {
+            foreach(var simplex in this.Complex) {
+                simplex.Pairs.UpdateBary();
+            }
         }
 
         public void Draw(SKCanvas sKCanvas) {
@@ -598,7 +581,7 @@ namespace TaskMaker {
         };
         private SKPaint strokePaint = new SKPaint {
             IsAntialias = true,
-            Color = SKColors.Black,
+            Color = SKColors.Gray,
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 2
         };
@@ -625,6 +608,7 @@ namespace TaskMaker {
             path.Close();
 
             sKCanvas.DrawPath(path, this.fillPaint);
+            sKCanvas.DrawPath(path, this.strokePaint);
         }
     }
 
@@ -688,18 +672,24 @@ namespace TaskMaker {
 
         public new void AddRange(IEnumerable<Pair> pairs) {
             base.AddRange(pairs);
-            this.TaskBary.AddRange(this.Select(p => p.Task.Vector).ToArray());
-            this.ForEach(p => p.PairUpdated += this.P_PairUpdated);
-            this.ForEach(p => p.Task.LocationUpdated += this.Task_LocationUpdated);
+
+            UpdateConfigBary();
+            UpdateTaskBary();
+            //this.TaskBary.AddRange(this.Select(p => p.Task.Vector).ToArray());
         }
 
-        private void Task_LocationUpdated(object sender, EventArgs e) {
+        public void UpdateBary() {
+            UpdateConfigBary();
+            UpdateTaskBary();
+        }
+
+        public void UpdateTaskBary() {
             if (this.IsFullyPaired) {
                 this.TaskBary.UpdateVertices(this.Select(p => p.Task.Vector).ToArray());
             }
         }
 
-        private void P_PairUpdated(object sender, EventArgs e) {
+        public void UpdateConfigBary() {
             if (this.IsFullyPaired) {
                 this.ConfigBary.UpdateVertices(this.Select(p => p.Config).ToArray());
             }

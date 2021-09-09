@@ -39,12 +39,12 @@ namespace TaskMaker {
 
 
         private SKControl skControl;
+        private SKMatrix translate = SKMatrix.Empty;
+        private SKPoint prevMid;
         private SKImageInfo imageInfo;
         private Canvas canvas;
         private Modes selectedMode;
 
-        public event EventHandler LayerUpdated;
-        public event EventHandler LayerConfigured;
         public event EventHandler<LayerFocusedEventArgs> LayerFocused;
         public event EventHandler ModeChanged;
         public event EventHandler<InterpolatingEventArgs> Interpolated;
@@ -67,11 +67,22 @@ namespace TaskMaker {
             this.skControl.MouseDown += this.SkControl_MouseDown;
             this.skControl.MouseUp += this.SkControl_MouseUp;
             this.skControl.MouseMove += this.SkControl_MouseMove;
+            this.skControl.Resize += this.SkControl_Resize;
             //this.skControl.KeyDown += this.SkControl_KeyDown;
             //this.skControl.KeyPress += this.SkControl_KeyPress;
             //this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
+            this.prevMid = new SKPoint(this.skControl.ClientSize.Width / 2, this.skControl.ClientSize.Height / 2);
+
             this.canvas = new Canvas(services);
+        }
+
+        private void SkControl_Resize(object sender, EventArgs e) {
+            //var mid = new SKPoint(this.skControl.ClientSize.Width / 2, this.skControl.ClientSize.Width / 2);
+            //this.translate.TransX = mid.X - prevMid.X;
+            //this.translate.TransY = mid.Y - prevMid.Y;
+
+            //prevMid = mid;
         }
 
         public void Reset() {
@@ -90,6 +101,7 @@ namespace TaskMaker {
 
         public void EndAddNodeMode() {
             this.canvas.Reset();
+            this.SelectedLayer.Invalidate();
         }
 
         public void BeginEditMode() {
@@ -99,6 +111,7 @@ namespace TaskMaker {
 
         public void EndEditMode() {
             this.canvas.Reset();
+            this.SelectedLayer.Invalidate();
         }
 
         public void BeginNoneMode() {
@@ -130,7 +143,7 @@ namespace TaskMaker {
                 $"{this.SelectedLayer.Text} {this.SelectedLayer.Nodes.Count + 1}";
 
             this.SelectedLayer.Nodes.Add(new Layer(name));
-            this.LayerUpdated?.Invoke(this, null);
+            //this.LayerUpdated?.Invoke(this, null);
         }
 
         public void RemoveLayer() {
@@ -147,7 +160,7 @@ namespace TaskMaker {
             parentNode.Nodes.AddRange(childNodes);
             this.SelectedLayer = parentNode as Layer;
 
-            this.LayerUpdated?.Invoke(this, null);
+            //this.LayerUpdated?.Invoke(this, null);
 
             this.Invalidate(true);
         }
@@ -163,6 +176,7 @@ namespace TaskMaker {
 
         public void ChooseLayer(Layer layer) {
             this.SelectedLayer = layer;
+            this.SelectedLayer.Invalidate();
         }
 
         public void Pair() {
@@ -171,6 +185,7 @@ namespace TaskMaker {
             if (this.canvas.SelectedLayer.MotorConfigs != null) {
                 if (selectedEnities.Count == 1) {
                     selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
+                    this.SelectedLayer.Invalidate();
                 }
 
                 return;
@@ -179,6 +194,7 @@ namespace TaskMaker {
             if (this.canvas.SelectedLayer.LayerConfigs != null) {
                 if (selectedEnities.Count == 1) {
                     selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.LayerConfigs.ToVector(this.canvas.SelectedLayer.LayerConfigs));
+                    this.SelectedLayer.Invalidate();
                 }
 
                 return;
@@ -192,6 +208,7 @@ namespace TaskMaker {
             var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
             selectedEnities.ForEach(e => e.Pair.RemovePair());
+            this.SelectedLayer.Invalidate();
         }
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
@@ -333,51 +350,6 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
                 this.canvas.PointerTrace.Update(e.Location.ToSKPoint());
-
-                //var pointer = this.canvas.SelectedLayer.Pointer;
-                //var layer = this.canvas.SelectedLayer;
-
-                //pointer.Location = e.Location.ToSKPoint();
-
-                //// Get lambdas from current simplicial complex[Task => Bary.]
-                //var lambdas = this.canvas.SelectedLayer.Complex.GetLambdas(pointer.Location);
-
-                //// Get interpolated result from input on task space [Task => Config]
-                //var configVector = this.canvas.SelectedLayer.Complex.GetConfigVectors(pointer.Location);
-
-                //if (layer.LayerStatus == LayerStatus.WithMotor) {
-                //    var configs = layer.MotorConfigs;
-
-                //    configs.FromVector(configs, configVector);
-                //}
-
-                //if (layer.LayerStatus == LayerStatus.WithLayer) {
-                //    var configs = layer.LayerConfigs;
-
-                //    configs.FromVector(configs, configVector);
-                //}
-
-                //if (.LayerStatus == LayerStatus.WithMotor) {
-                //    this.canvas.SelectedLayer.MotorConfigs.FromVector(this.canvas.SelectedLayer.MotorConfigs, configVector);
-                //} else if (this.canvas.SelectedLayer.LayerStatus == LayerStatus.WithLayer) {
-                //    this.canvas.SelectedLayer.LayerConfigs.FromVector(this.canvas.SelectedLayer.LayerConfigs, configVector);
-
-                //    foreach(var layer in this.canvas.SelectedLayer.LayerConfigs) {
-                //        if (layer.LayerStatus == LayerStatus.WithMotor) {
-                //            var newVector = layer.Complex.GetConfigVectors(layer.Pointer.Location);
-                //            layer.MotorConfigs.FromVector(layer.MotorConfigs, newVector);
-                //        }
-                //    }
-                //}
-
-
-                //this.Interpolated?.Invoke(
-                //    this,
-                //    new InterpolatingEventArgs() {
-                //        Values = lambdas
-                //    });
-
-                //this._canvas.Simplices.ForEach(sim => Console.WriteLine(sim.GetLambdas(e.Location.ToSKPoint())));
             }
         }
 
@@ -389,27 +361,31 @@ namespace TaskMaker {
         }
 
 
-
-
-
-
-
         private void SkControl_PaintSurface(object sender, SKPaintSurfaceEventArgs e) {
             this.imageInfo = e.Info;
+            //e.Surface.Canvas.Translate(this.translate.TransX, this.translate.TransY);
+            //this.translate = SKMatrix.Empty;
             this.Draw(e.Surface.Canvas);
         }
 
-        public void SaveAsImage(string path) {
+        public void SaveAsImage() {
             using (var bitmap = new SKBitmap(imageInfo.Width, imageInfo.Height)) {
                 var canvas = new SKCanvas(bitmap);
 
                 canvas.Clear();
 
+                canvas.DrawColor(SKColors.White);
                 this.Draw(canvas);
 
                 var image = SKImage.FromBitmap(bitmap);
 
-                using (var stream = File.Create(path)) {
+                var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)}\\TaskMaker\\";
+
+                Directory.CreateDirectory(path);
+                var fileName = $"Canvas_{this.SelectedLayer.Text.Replace(" ", "")}";
+                fileName = File.Exists(path + fileName + ".png") ? fileName + "_d" : fileName;
+
+                using (var stream = File.Create(path + fileName + ".png")) {
                     var data = image.Encode(SKEncodedImageFormat.Png, 100);
 
                     data.SaveTo(stream);

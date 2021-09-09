@@ -49,6 +49,7 @@ namespace TaskMaker {
             var m = this.motor;
             var initMax = m.position.Maximum;
             var initMin = m.position.Minimum;
+            var motorValue = m.position.Value;
 
             this.numMax.Maximum = initMax;
             this.numMax.Minimum = initMin;
@@ -63,6 +64,8 @@ namespace TaskMaker {
             this.trackBar1.Maximum = initMax;
             this.numMotor.Minimum = initMin;
             this.trackBar1.Minimum = initMin;
+            this.numMotor.Value = motorValue;
+            this.trackBar1.Value = motorValue;
 
             this.numMax.Increment = (this.Max - this.Min) / 20;
             this.numMin.Increment = (this.Max - this.Min) / 20;
