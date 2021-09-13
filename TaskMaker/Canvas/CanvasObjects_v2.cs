@@ -627,7 +627,16 @@ namespace TaskMaker {
     }
 
 
+    public class ConvexHull_v2 : CanvasObject_v2 {
+        public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
+        public List<Entity_v2> Extremes { get; set; } = new List<Entity_v2>();
+
+
+    }
+
     public class SimplicialComplex_v2 : List<Simplex_v2> {
+        public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
+
         public Vector<float> GetLambdas(SKPoint point) {
             var result = new List<float>();
 
@@ -835,16 +844,6 @@ namespace TaskMaker {
 
             var newExteriorRays = new CircularList<ExteriorRay>(exteriorRays);
 
-            foreach(var node in newExteriorRays) {
-                var it = node.Value;
-                var prev = node.Prev.Value;
-                var next = node.Next.Value;
-                Simplex_v2 govorner = null;
-
-                if ()
-
-            }
-
             // Generate voronoi regions
             for (var idx = 0; idx < exteriorRays.Count; idx++) {
                 Simplex_v2 excludedSimplex = null;
@@ -869,7 +868,7 @@ namespace TaskMaker {
                     }
                     else {
                         if (exRay0.Govorner == null & exRay1.Govorner == null) {
-                            governor = this.complex.Find(tri => tri.IsVertex(exRay0.Ray.E0) & tri.IsVertex(exRay1.Ray.E0));
+                            //governor = this.complex.Find(tri => tri.IsVertex(exRay0.Ray.E0) & tri.IsVertex(exRay1.Ray.E0));
                         }
                     }
 

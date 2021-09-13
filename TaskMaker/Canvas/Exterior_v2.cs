@@ -108,6 +108,90 @@ namespace TaskMaker {
         }
     }
 
+    public class Ray_v3 : CanvasObject_v2 {
+        private SKPoint origin;
+        private SKPoint direction;
+        private SKPoint invDirection;
+        private SKPaint rayPaint = new SKPaint() {
+            Color = SKColors.Green,
+            StrokeWidth = 2,
+            IsAntialias = true,
+        };
+
+        public Ray_v3(SKPoint origin, SKPoint direction) {
+            this.origin = origin;
+            this.direction = direction;
+            this.invDirection = new SKPoint(1 / direction.X, 1 / direction.Y);
+        }
+
+        // https://tavianator.com/2011/ray_box.html
+        public (float tmin, float tmax)? Intersect(SKRect rect) {
+            float t0x, t1x, t0y, t1y;
+
+            t0x = (rect.Left - origin.X) * invDirection.X;
+            t1x = (rect.Right - origin.X) * invDirection.X;
+            t0y = (rect.Top - origin.Y) * invDirection.Y;
+            t1y = (rect.Bottom - origin.Y) * invDirection.Y;
+
+            var txmax = Math.Max(t0x, t1x);
+            var tymax = Math.Max(t0y, t1y);
+            var txmin = Math.Min(t0x, t1x);
+            var tymin = Math.Min(t0y, t1y);
+
+            var tmin = Math.Max(txmin, tymin);
+            var tmax = Math.Min(txmax, tymax);
+
+
+            if (tmin <= tmax) {
+                return (tmin, tmax);
+            } else {
+                return null;
+            }
+        }
+
+        private SKPoint[] Clip(SKRect rect) {
+            //var t = this.Intersect(rect);
+            var t = this.Intersect(rect);
+            var rets = new List<SKPoint>();
+
+            if (t != null) {
+                if (t.Value.tmin >= 0) {
+                    var intersectionPoint = origin + this.direction.Multiply(t.Value.tmin);
+
+                    rets.Add(intersectionPoint);
+                }
+
+                if (t.Value.tmax >= 0) {
+                    var intersectionPoint = origin + this.direction.Multiply(t.Value.tmax);
+
+                    rets.Add(intersectionPoint);
+                }
+            }
+
+            return rets.ToArray();
+        }
+
+        public override void Draw(SKCanvas sKCanvas) {
+            SKRectI bounds;
+            sKCanvas.GetDeviceClipBounds(out bounds);
+
+            Console.WriteLine(this.Intersect(bounds));
+
+            var intersectionPoints = this.Clip(bounds);
+
+            if (intersectionPoints.Length == 1) {
+                sKCanvas.DrawLine(origin, intersectionPoints[0], rayPaint);
+                sKCanvas.DrawCircle(intersectionPoints[0], 5.0f, rayPaint);
+            } else if (intersectionPoints.Length == 2) {
+                sKCanvas.DrawLine(intersectionPoints[0], intersectionPoints[1], rayPaint);
+                sKCanvas.DrawCircle(intersectionPoints[0], 5.0f, rayPaint);
+                sKCanvas.DrawCircle(intersectionPoints[1], 5.0f, rayPaint);
+            }
+
+            sKCanvas.DrawCircle(this.origin, 5.0f, rayPaint);
+        }
+    }
+
     public class Ray_v2 : CanvasObject_v2 {
         public GeometryLine LineProperty { get; set; }
         public Entity_v2 BindedEntity { get; set; }

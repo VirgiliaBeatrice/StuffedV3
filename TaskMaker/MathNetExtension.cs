@@ -28,5 +28,9 @@ namespace MathNetExtension {
 
             return Vector<float>.Build.Dense(resultList.ToArray());
         }
+
+        public static SKPoint Multiply(this SKPoint point, float factor) {
+            return new SKPoint(factor * point.X, factor * point.Y);
+        }
     }
 }
