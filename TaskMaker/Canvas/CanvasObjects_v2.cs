@@ -822,6 +822,11 @@ namespace TaskMaker {
 
     public class VoronoiRegions : List<VoronoiRegion> { }
 
+    public struct LineSegment {
+        public SKPoint P0 { get; set; }
+        public SKPoint P1 { get; set; }
+    }
+
     public class VoronoiRegion : CanvasObject_v2 {
         public ExteriorRay_v3 ExteriorRay0 { get; set; }
         public ExteriorRay_v3 ExteriorRay1 { get; set; }
@@ -829,7 +834,7 @@ namespace TaskMaker {
 
         private SKPaint stroke = new SKPaint {
             IsAntialias = true,
-            Color = SKColors.Black,
+            Color = SKColors.DeepSkyBlue,
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 2
         };
@@ -840,17 +845,162 @@ namespace TaskMaker {
             this.ExcludedEntity = exEntity;
         }
 
-        public override void Draw(SKCanvas sKCanvas) {
-            this.ExteriorRay0.Draw(sKCanvas);
+        public override bool ContainsPoint(SKPoint point) {
+            var lines = new List<LineSegment>();
 
-            if (this.ExcludedEntity != null) {
-                sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExcludedEntity.Location, stroke);
-                sKCanvas.DrawLine(this.ExcludedEntity.Location, this.ExteriorRay1.E0.Location, stroke);
-            } else if (this.ExcludedEntity == null & this.ExteriorRay0.E0 != this.ExteriorRay1.E0) {
-                sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExteriorRay1.E0.Location, stroke);
+            lines.Add(new LineSegment() {
+                P0 = ExteriorRay0.E0.Location + ExteriorRay0.Direction,
+                P1 = ExteriorRay0.E0.Location
+            });
+
+            if (ExcludedEntity != null) {
+                lines.Add(new LineSegment {
+                    P0 = ExteriorRay0.E0.Location,
+                    P1 = ExcludedEntity.Location
+                });
+                lines.Add(new LineSegment {
+                    P0 = ExcludedEntity.Location,
+                    P1 = ExteriorRay1.E0.Location,
+                });
+            }
+            else {
+                if (ExteriorRay0.E0 != ExteriorRay1.E0) {
+                    lines.Add(new LineSegment {
+                        P0 = ExteriorRay0.E0.Location,
+                        P1 = ExteriorRay1.E0.Location
+                    });
+                }
             }
 
-            this.ExteriorRay1.Draw(sKCanvas);
+            lines.Add(new LineSegment() {
+                P0 = ExteriorRay1.E0.Location,
+                P1 = ExteriorRay1.E0.Location + ExteriorRay1.Direction
+            });
+
+            var results = new List<int>();
+            foreach (var line in lines) {
+                var a = line.P1 - line.P0;
+                var b = point - line.P0;
+                var crossProduct = a.X * b.Y - a.Y * b.X;
+                var theta = Math.Asin(crossProduct / (a.Length * b.Length));
+
+                results.Add(Math.Sign(theta));
+            }
+
+            // left < 0, right > 0 , in = 0
+            if (results.Any(res => res > 0)) {
+                return false; // out
+            }
+            else {
+                return true; // on or in
+            }
+        }
+
+        private int GetSide(SKPoint target) {
+            var lines = new List<LineSegment>();
+
+            lines.Add(new LineSegment() {
+                P0 = ExteriorRay0.E0.Location + ExteriorRay0.Direction,
+                P1 = ExteriorRay0.E0.Location
+            });
+
+            if (ExcludedEntity != null) {
+                lines.Add(new LineSegment {
+                    P0 = ExteriorRay0.E0.Location,
+                    P1 = ExcludedEntity.Location
+                });
+                lines.Add(new LineSegment {
+                    P0 = ExcludedEntity.Location,
+                    P1 = ExteriorRay1.E0.Location,
+                });
+            } else {
+                if (ExteriorRay0.E0 != ExteriorRay1.E0) {
+                    lines.Add(new LineSegment {
+                        P0 = ExteriorRay0.E0.Location,
+                        P1 = ExteriorRay1.E0.Location
+                    });
+                }
+            }
+
+            lines.Add(new LineSegment() {
+                P0 = ExteriorRay1.E0.Location,
+                P1 = ExteriorRay1.E0.Location + ExteriorRay1.Direction
+            });
+
+            var results = new List<int>();
+            foreach(var line in lines) {
+                var a = line.P1 - line.P0;
+                var b = target - line.P0;
+                var crossProduct = a.X * b.Y - a.Y * b.X;
+                var theta = Math.Asin(crossProduct / (a.Length * b.Length));
+
+                results.Add(Math.Sign(theta));
+            }
+
+            // left < 0, right > 0 , in = 0
+            if (results.Any(res => res > 0)) {
+                return -1; // out
+            } else if (results.All(res => res < 0)) {
+                return 1; // in
+            } else {
+                return 0; // on
+            }
+        }
+        
+        private SKPath GetClipPath(SKCanvas sKCanvas) {
+            var path = new SKPath();
+
+            sKCanvas.GetDeviceClipBounds(out var bounds);
+
+            // CCW
+            var corners = new SKPoint[] {
+                new SKPoint(bounds.Left, bounds.Top),
+                new SKPoint(bounds.Left, bounds.Bottom),
+                new SKPoint(bounds.Right, bounds.Bottom),
+                new SKPoint(bounds.Right, bounds.Top),
+            };
+
+            path.MoveTo(ExteriorRay0.E0.Location + ExteriorRay0.Direction.Multiply(10));
+            path.LineTo(ExteriorRay0.E0.Location);
+
+            if (ExcludedEntity != null)
+                path.LineTo(ExcludedEntity.Location);
+
+            if (ExteriorRay0.E0 != ExteriorRay1.E0)
+                path.LineTo(ExteriorRay1.E0.Location);
+
+            path.LineTo(ExteriorRay1.E0.Location + ExteriorRay1.Direction.Multiply(10));
+
+            foreach(var corner in corners) {
+                if (this.ContainsPoint(corner))
+                    path.LineTo(corner);
+            }
+
+            path.Close();
+
+
+            return path;
+        }
+
+        public override void Draw(SKCanvas sKCanvas) {
+            var path = this.GetClipPath(sKCanvas);
+
+            //sKCanvas.DrawPath(path, stroke);
+            sKCanvas.GetDeviceClipBounds(out var bounds);
+
+            var region = new SKRegion(bounds);
+            region.SetPath(path);
+            sKCanvas.DrawRegion(region, stroke);
+            //this.ExteriorRay0.Draw(sKCanvas);
+
+            //if (this.ExcludedEntity != null) {
+            //    sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExcludedEntity.Location, stroke);
+            //    sKCanvas.DrawLine(this.ExcludedEntity.Location, this.ExteriorRay1.E0.Location, stroke);
+            //} else if (this.ExcludedEntity == null & this.ExteriorRay0.E0 != this.ExteriorRay1.E0) {
+            //    sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExteriorRay1.E0.Location, stroke);
+            //}
+
+            //this.ExteriorRay1.Draw(sKCanvas);
         }
     }
 

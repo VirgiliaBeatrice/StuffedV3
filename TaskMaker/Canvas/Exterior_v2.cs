@@ -109,6 +109,9 @@ namespace TaskMaker {
     }
 
     public class Ray_v3 : CanvasObject_v2 {
+        public SKPoint InvDirection => this.invDirection;
+        public SKPoint Direction => this.direction;
+
         private SKPoint origin;
         private SKPoint direction;
         private SKPoint invDirection;
