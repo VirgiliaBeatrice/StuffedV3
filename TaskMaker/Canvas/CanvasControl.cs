@@ -398,10 +398,10 @@ namespace TaskMaker {
             this.imageInfo = e.Info;
             this.Draw(e.Surface.Canvas);
 
-            var start = new SKPoint(-50, 10);
-            var direction = new SKPoint(600, 450) - start;
-            var ray = new Ray_v3(start, direction);
-            ray.Draw(e.Surface.Canvas);
+            //var start = new SKPoint(-50, 10);
+            //var direction = new SKPoint(600, 450) - start;
+            //var ray = new Ray_v3(start, direction);
+            //ray.Draw(e.Surface.Canvas);
         }
 
         public void SaveAsImage(string path) {

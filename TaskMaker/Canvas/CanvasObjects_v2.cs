@@ -98,6 +98,7 @@ namespace TaskMaker {
                 var tri = selectedEntities.ToArray();
 
                 this.SelectedLayer.Complex.Add(new Simplex_v2(tri));
+                //this.SelectedLayer.Complex.
             }
             else {
                 // Case: amount larger than 3
@@ -110,6 +111,7 @@ namespace TaskMaker {
 
                 var input = flattern.ToArray();
                 var output = this.triangulation.RunDelaunay_v1(2, input.Length / 2, ref input);
+                var outputConvex = new LinkedList<int>(this.triangulation.RunConvexHull_v1(2, input.Length / 2, ref input));
 
                 foreach (var triIndices in output) {
                     var arrSelectedEntities = selectedEntities.ToArray();
@@ -121,6 +123,29 @@ namespace TaskMaker {
 
                     this.SelectedLayer.Complex.Add(new Simplex_v2(tri));
                 }
+
+                // Get all edges of convex hull.
+                for (var it = outputConvex.First; it != null; it = it.Next) {
+                    Entity_v2 e1;
+                    var arrSelectedEntities = selectedEntities.ToArray();
+
+                    var e0 = arrSelectedEntities[it.Value];
+
+                    this.SelectedLayer.Complex.AddExtreme(e0);
+
+                    if (it == outputConvex.Last) {
+                        e1 = arrSelectedEntities[outputConvex.First.Value];
+                    }
+                    else {
+                        e1 = arrSelectedEntities[it.Next.Value];
+                    }
+
+                    var edge = this.SelectedLayer.Complex.GetAllEdges().Where(e => e.Contains(e0) & e.Contains(e1));
+
+                    this.SelectedLayer.Complex.AddComplexEdge(edge.First());
+                }
+
+                this.SelectedLayer.Complex.SetVoronoiRegions();
             }
 
             // Reset entities' states
@@ -623,19 +648,120 @@ namespace TaskMaker {
             path.Close();
 
             sKCanvas.DrawPath(path, this.fillPaint);
+            sKCanvas.DrawPath(path, this.strokePaint);
         }
     }
 
 
-    public class ConvexHull_v2 : CanvasObject_v2 {
-        public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
-        public List<Entity_v2> Extremes { get; set; } = new List<Entity_v2>();
-
-
-    }
-
     public class SimplicialComplex_v2 : List<Simplex_v2> {
-        public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
+        private List<Edge_v2> edges = new List<Edge_v2>();
+        private List<Edge_v2> complexEdges = new List<Edge_v2>();
+        private CircularList<Entity_v2> extremes = new CircularList<Entity_v2>();
+        private VoronoiRegions voronoiRegions = new VoronoiRegions();
+
+        public new void Add(Simplex_v2 simplex) {
+
+            var edge0 = new Edge_v2();
+            var edge1 = new Edge_v2();
+            var edge2 = new Edge_v2();
+
+            edge0.Add(simplex.Vertices[0], simplex.Vertices[1]);
+            edge1.Add(simplex.Vertices[1], simplex.Vertices[2]);
+            edge2.Add(simplex.Vertices[2], simplex.Vertices[0]);
+
+            
+
+            if (!this.edges.Any(e => e.SetEquals(edge0)))
+                this.edges.Add(edge0);
+
+            if (!this.edges.Any(e => e.SetEquals(edge1)))
+                this.edges.Add(edge1);
+            
+            if (!this.edges.Any(e => e.SetEquals(edge2)))
+                this.edges.Add(edge2);
+
+            base.Add(simplex);
+        }
+
+        //public void SetExtremes(List<Entity_v2> extremes) {
+        //    this.extremes = new CircularList<Entity_v2>(extremes);
+        //}
+
+        public void AddExtreme(Entity_v2 extreme) {
+            this.extremes.Add(extreme);
+        }
+
+        public void AddComplexEdge(Edge_v2 edge) {
+            if (this.complexEdges.Where(e => e.SetEquals(edge)).Count() == 0)
+                this.complexEdges.Add(edge);
+        }
+
+        public List<Edge_v2> GetAllEdges() {
+            return this.edges;
+        }
+
+        private List<Edge_v2> FindInAllEdges(Entity_v2 target) {
+            return this.edges.FindAll(e => e.Contains(target));
+        }
+
+        private List<Edge_v2> FindInComplexEdges(Entity_v2 t0, Entity_v2 t1) {
+            return this.complexEdges.FindAll(e => e.Contains(t0) & e.Contains(t1));
+        }
+
+        private List<Edge_v2> FindInComplexEdges(Entity_v2 target) {
+            return this.complexEdges.FindAll(e => e.Contains(target));
+        }
+
+        public void SetVoronoiRegions() {
+            var traces = new List<ExteriorRay_v3>();
+            //var voronoiRegions = new VoronoiRegions();
+
+            foreach(var node in extremes) { 
+                var it = node.Value;
+                var prev = node.Prev.Value;
+                var next = node.Next.Value;
+                var relatedEdges = this.FindInAllEdges(it);
+                
+                if (relatedEdges.Count == 3) {
+                    var targetEdge = relatedEdges.Find(e => !this.complexEdges.Contains(e));
+                    var direction = it.Location - targetEdge.Where(e => e != it).First().Location;
+                    var extension = new ExteriorRay_v3(it, direction);
+
+                    traces.Add(extension);
+                }
+                else if (relatedEdges.Count > 3) {
+                    var rotate = SKMatrix.CreateRotationDegrees(-90);
+                    var dirPerp0 = rotate.MapPoint(it.Location - prev.Location);
+                    var dirPerp1 = rotate.MapPoint(next.Location - it.Location);
+                    var perp0 = new ExteriorRay_v3(it, dirPerp0);
+                    var perp1 = new ExteriorRay_v3(it, dirPerp1);
+
+                    traces.Add(perp0);
+                    traces.Add(perp1);
+                }
+            }
+
+            for(int i = 0; i < traces.Count; ++i) {
+                var it = traces[i];
+                var next = traces[i + 1 == traces.Count ? 0 : i + 1];
+
+                if (it.E0 == next.E0) {
+                    var region = new VoronoiRegion(it, next, null);
+
+                    voronoiRegions.Add(region);
+                } else if (it.E0 != next.E0) {
+                    var region = new VoronoiRegion(it, next, null);
+
+                    if (this.FindInComplexEdges(it.E0, next.E0).Count == 0) {
+                        var target = this.extremes.Where(e => e.Value == it.E0).FirstOrDefault();
+
+                        region.ExcludedEntity = target.Next.Value;
+                    }
+
+                    voronoiRegions.Add(region);
+                }
+            }
+        }
 
         public Vector<float> GetLambdas(SKPoint point) {
             var result = new List<float>();
@@ -662,236 +788,72 @@ namespace TaskMaker {
 
         public void Draw(SKCanvas sKCanvas) {
             this.ForEach(sim => sim.DrawThis(sKCanvas));
+            this.complexEdges.ForEach(edge => edge.Draw(sKCanvas));
+            this.voronoiRegions.ForEach(v => v.Draw(sKCanvas));
         }
     }
 
-    public class Edge_v2 : CanvasObject_v2 {
-        public HashSet<Entity_v2> ExtremeSet { get; set; } = new HashSet<Entity_v2>();
+    public class Edge_v2 : HashSet<Entity_v2> {
+        public HashSet<Entity_v2> Extremes => this;
 
+        private SKPaint stroke = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.PaleVioletRed,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
         public void Add(Entity_v2 e0, Entity_v2 e1) {
-            this.ExtremeSet.Add(e0);
-            this.ExtremeSet.Add(e1);
+            this.Add(e0);
+            this.Add(e1);
         }
 
-        public bool SetEquals(HashSet<Entity_v2> targetSet) {
-            return this.ExtremeSet.SetEquals(targetSet);
-        }
-
-    }
-
-    public class ExteriorZone_v2 : List<ExteriorRegion_v2> {
-        public CircularList<Entity_v2> Extremes { get; set; } = new CircularList<Entity_v2>();
-        public List<Edge_v2> Edges { get; set; } = new List<Edge_v2>();
-
-        private SimplicialComplex_v2 complex;
-
-        private void GetAllEdges(SimplicialComplex_v2 complex) {
-            this.complex = complex;
-            var edgeSet = this.Edges;
-
-            foreach (var simplex in complex) {
-                // Vertices Combination
-                var set01 = new Edge_v2();
-                var set02 = new Edge_v2();
-                var set12 = new Edge_v2();
-
-                set01.Add(simplex.Vertices[0], simplex.Vertices[1]);
-                set02.Add(simplex.Vertices[0], simplex.Vertices[2]);
-                set12.Add(simplex.Vertices[1], simplex.Vertices[2]);
-
-                foreach (var result in edgeSet.Where(e => !e.SetEquals(set01.ExtremeSet))) {
-                    edgeSet.Add(result);
-                }
-            }
-        }
-
-        private Edge_v2[] GetRelatedEdges(Entity_v2 vertex) {
-            return this.Edges.Where(e => e.ExtremeSet.Contains(vertex)).ToArray();
-        }
-
-        private Edge_v2[] GetRelatedEdges(IEnumerable<Edge_v2> edgeSet, Entity_v2 vertex) {
-            return edgeSet.Where(e => e.ExtremeSet.Contains(vertex)).ToArray();
-        }
-
-        private Edge_v2 FindEdge(Entity_v2 e0, Entity_v2 e1) {
-            return this.GetRelatedEdges(this.GetRelatedEdges(e0), e1).FirstOrDefault();
-        }
-
-        private void SetExteriorRays() {
-            var exteriorRays = new List<ExteriorRay>();
-            this.Clear();
-
-            // For Order: CCW
-            foreach (var node in this.Extremes) {
-                var extreme = node.Value;
-                //var edges = this.Edges.Where(edge => edge.HasVertex(extreme)).ToArray();
-                var relatedEdges = this.GetRelatedEdges(extreme);
-                var edgeCnt = relatedEdges.Count();
-
-                if (edgeCnt == 2) {
-                    //this.Logger.Debug($"No splitter for {extreme.Value}.");
-
-                    var prev = node.Prev.Value;
-                    var it = node.Value;
-                    var next = node.Next.Value;
-
-                    exteriorRays.Add(new ExteriorRay() {
-                        ExcludedSimplex = this.complex.Find(tri => tri.IsVertex(prev) & tri.IsVertex(it) & tri.IsVertex(next))
-                    });
-                }
-                else if (edgeCnt == 3) {
-                    // Note: this case has a special condition which needs to be handled.
-                    // Angle between ray and each neighbor edge that is less than 90 needs to be restricted.
-                    //this.Logger.Debug($"One splitter(Extension of edge) for {extreme.Value}.");
-
-                    //var targetEdge = relatedEdges.Where(edge => !this.convexhullEdges.Contains(edge)).ElementAt(0);
-                    var targetEdge = relatedEdges.Where(edge => !this.Extremes.Contains(edge.ExtremeSet.ToArray()[0]) | !this.Extremes.Contains(edge.ExtremeSet.ToArray()[1])).First();
-                    var e0 = targetEdge.ExtremeSet.ToArray()[0];
-                    var e1 = targetEdge.ExtremeSet.ToArray()[1];
-
-                    // Extend this edge
-                    var start = extreme;
-                    var end = e0 == start ? e1 : e0;
-                    var edgeDirection = start.Location - end.Location;
-                    var rayOfEdgeExtension = Ray_v2.CreateRay(start.Location, edgeDirection);
-
-                    //rayOfEdgeExtension.Color = SKColors.Green;
-                    //rayOfEdgeExtension.p0 = start;
-
-                    // Compare with Normals
-                    var prev = node.Prev.Value;
-                    var it = node.Value;
-                    var next = node.Next.Value;
-
-                    var dirOfEdgePrevToIt = it.Vector - prev.Vector;
-                    var dirOfEdgeItToNext = next.Vector - it.Vector;
-                    var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
-                    var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
-                    var rayOfNormalPI = Ray_v2.CreateRay(it.Location, normalOfEdgePI);
-                    var rayOfNoramlIN = Ray_v2.CreateRay(it.Location, normalOfEdgeIN);
-
-                    //rayOfNormalPI.E0 = it;
-                    //rayOfNoramlIN.E0 = it;
-
-                    //rayOfNormalPI.Color = SKColors.PowderBlue;
-                    //rayOfNoramlIN.Color = SKColors.PowderBlue;
-
-                    // Recheck condition!
-                    var angleOfEdgeExtensionAndNormalPI = Math.Atan2(
-                        rayOfEdgeExtension.LineProperty.UnitDirection[0] * rayOfNormalPI.LineProperty.UnitDirection[1] -
-                        rayOfEdgeExtension.LineProperty.UnitDirection[1] * rayOfNormalPI.LineProperty.UnitDirection[0],
-                        rayOfEdgeExtension.LineProperty.UnitDirection[0] * rayOfNormalPI.LineProperty.UnitDirection[0] + rayOfEdgeExtension.LineProperty.UnitDirection[1] * rayOfNormalPI.LineProperty.UnitDirection[1]
-                    );
-                    var angleOfEdgeExtensionAndNormalIN = Math.Atan2(
-                        rayOfEdgeExtension.LineProperty.UnitDirection[0] * rayOfNoramlIN.LineProperty.UnitDirection[1] -
-                        rayOfEdgeExtension.LineProperty.UnitDirection[1] * rayOfNoramlIN.LineProperty.UnitDirection[0],
-                        rayOfEdgeExtension.LineProperty.UnitDirection[0] *
-                        rayOfNoramlIN.LineProperty.UnitDirection[0] + rayOfEdgeExtension.LineProperty.UnitDirection[1] *
-                        rayOfNoramlIN.LineProperty.UnitDirection[1]
-                    );
-
-                    var exteriorRayNormalPI = new ExteriorRay() {
-                        Ray = rayOfNormalPI,
-                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(prev) & sim.Vertices.Contains(it))
-                    };
-                    var exteriorRayNormalIN = new ExteriorRay() {
-                        Ray = rayOfNoramlIN,
-                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(it) & sim.Vertices.Contains(next))
-                    };
-
-                    if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == -1 & Math.Sign(angleOfEdgeExtensionAndNormalIN) == 1) {
-                        exteriorRays.Add(new ExteriorRay() {
-                            Ray = rayOfEdgeExtension,
-                        });
-                    }
-                    else if (Math.Sign(angleOfEdgeExtensionAndNormalPI) == Math.Sign(angleOfEdgeExtensionAndNormalIN)) {
-                        exteriorRays.Add(exteriorRayNormalPI);
-                        exteriorRays.Add(exteriorRayNormalIN);
-                    }
-                }
-                else if (edgeCnt > 3) {
-                    //this.Logger.Debug($"Two perpendicular splitter for {extreme.Value}.");
-
-                    var prev = node.Prev.Value;
-                    var it = node.Value;
-                    var next = node.Next.Value;
-
-                    var dirOfEdgePrevToIt = it.Vector - prev.Vector;
-                    var dirOfEdgeItToNext = next.Vector - it.Vector;
-                    var normalOfEdgePI = new SKPoint(dirOfEdgePrevToIt[1], -dirOfEdgePrevToIt[0]);
-                    var normalOfEdgeIN = new SKPoint(dirOfEdgeItToNext[1], -dirOfEdgeItToNext[0]);
-                    var rayOfNormalPI = Ray_v2.CreateRay(it.Location, normalOfEdgePI);
-                    var rayOfNoramlIN = Ray_v2.CreateRay(it.Location, normalOfEdgeIN);
-
-                    //rayOfNormalPI.Color = SKColors.PowderBlue;
-                    //rayOfNormalPI.E0 = it;
-                    //rayOfNoramlIN.Color = SKColors.PowderBlue;
-                    //rayOfNoramlIN.E0 = it;
-
-                    exteriorRays.Add(new ExteriorRay() {
-                        Ray = rayOfNormalPI,
-                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(prev) & sim.Vertices.Contains(it))
-                    });
-                    exteriorRays.Add(new ExteriorRay() {
-                        Ray = rayOfNoramlIN,
-                        Govorner = this.complex.Find(sim => sim.Vertices.Contains(it) & sim.Vertices.Contains(next))
-                    });
-                }
-                else {
-                    throw new Exception("Splitter Exception");
-                }
-            }
-
-            var newExteriorRays = new CircularList<ExteriorRay>(exteriorRays);
-
-            // Generate voronoi regions
-            for (var idx = 0; idx < exteriorRays.Count; idx++) {
-                Simplex_v2 excludedSimplex = null;
-                Simplex_v2 governor = null;
-                var idx0 = idx;
-                var idx1 = idx + 1 < exteriorRays.Count ? idx + 1 : 0;
-
-                var exRay0 = exteriorRays[idx0];
-                var exRay1 = exteriorRays[idx1];
-                // TODO: Ugly
-
-
-
-                if (exRay0.ExcludedSimplex == null) {
-                    if (exRay1.ExcludedSimplex != null) {
-                        excludedSimplex = exRay1.ExcludedSimplex;
-
-                        idx1 = idx1 + 1 < exteriorRays.Count ? idx1 + 1 : 0;
-                        exRay1 = exteriorRays[idx1];
-
-                        idx++;
-                    }
-                    else {
-                        if (exRay0.Govorner == null & exRay1.Govorner == null) {
-                            //governor = this.complex.Find(tri => tri.IsVertex(exRay0.Ray.E0) & tri.IsVertex(exRay1.Ray.E0));
-                        }
-                    }
-
-
-                    this.Add(
-                        new ExteriorRegion_v2() {
-                            //Index = this.voronoiRegions.Count,
-                            Ray0 = exRay0,
-                            Ray1 = exRay1,
-                            ExcludedSimplex = excludedSimplex,
-                            Governor = governor,
-                        }
-                    );
-                }
-            }
+        public void Draw(SKCanvas canvas) {
+            canvas.DrawLine(this.First().Location, this.Last().Location, stroke);
         }
     }
 
-    public class ExteriorRay {
-        public Ray_v2 Ray { get; set; }
-        public Simplex_v2 Govorner { get; set; }
-        public Simplex_v2 ExcludedSimplex { get; set; }
+    public class ExteriorRay_v3 : Ray_v3 {
+        public Entity_v2 E0 { get; set; }
+
+        public ExteriorRay_v3(Entity_v2 entity, SKPoint direction) : base(entity.Location, direction) {
+            this.E0 = entity;
+        }
     }
+
+    public class VoronoiRegions : List<VoronoiRegion> { }
+
+    public class VoronoiRegion : CanvasObject_v2 {
+        public ExteriorRay_v3 ExteriorRay0 { get; set; }
+        public ExteriorRay_v3 ExteriorRay1 { get; set; }
+        public Entity_v2 ExcludedEntity { get; set; }
+
+        private SKPaint stroke = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.Black,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+
+        public VoronoiRegion(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Entity_v2 exEntity) {
+            this.ExteriorRay0 = ray0;
+            this.ExteriorRay1 = ray1;
+            this.ExcludedEntity = exEntity;
+        }
+
+        public override void Draw(SKCanvas sKCanvas) {
+            this.ExteriorRay0.Draw(sKCanvas);
+
+            if (this.ExcludedEntity != null) {
+                sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExcludedEntity.Location, stroke);
+                sKCanvas.DrawLine(this.ExcludedEntity.Location, this.ExteriorRay1.E0.Location, stroke);
+            } else if (this.ExcludedEntity == null & this.ExteriorRay0.E0 != this.ExteriorRay1.E0) {
+                sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExteriorRay1.E0.Location, stroke);
+            }
+
+            this.ExteriorRay1.Draw(sKCanvas);
+        }
+    }
+
 
     public class Pair {
         public bool IsPaired => this.Config != null;
