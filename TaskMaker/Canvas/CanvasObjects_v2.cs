@@ -729,7 +729,8 @@ namespace TaskMaker {
             var traces = new List<ExteriorRay_v3>();
             //var voronoiRegions = new VoronoiRegions();
 
-            foreach(var node in extremes) { 
+            // extremesa order: cw
+            foreach(var node in extremes.Reverse()) { 
                 var it = node.Value;
                 var prev = node.Prev.Value;
                 var next = node.Next.Value;
@@ -810,6 +811,11 @@ namespace TaskMaker {
         public void Draw(SKCanvas sKCanvas) {
             this.ForEach(sim => sim.DrawThis(sKCanvas));
             this.complexEdges.ForEach(edge => edge.Draw(sKCanvas));
+
+            // Test
+            //if (this.voronoiRegions.Count != 0) {
+            //    this.voronoiRegions[0].Draw(sKCanvas);
+            //}
             this.voronoiRegions.ForEach(v => v.Draw(sKCanvas));
         }
     }
@@ -1119,8 +1125,8 @@ namespace TaskMaker {
 
                 if (ExRay0.Location != ExRay1.Location) {
                     var colors = new SKColor[] {
-                        SKColors.Blue,
-                        SKColors.Red
+                        SKColors.Blue.WithAlpha(0.5f),
+                        SKColors.White.WithAlpha(0.5f)
                     };
                     var dir = ExRay1.Location - ExRay0.Location;
                     var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(dir);
@@ -1140,10 +1146,10 @@ namespace TaskMaker {
                 ;
             }
             finally {
-                ExRay0.Draw(sKCanvas);
-                sKCanvas.DrawText("Ray0", ExRay0.Location, text);
-                ExRay1.Draw(sKCanvas);
-                sKCanvas.DrawText("Ray1", ExRay1.Location, text);
+                //ExRay0.Draw(sKCanvas);
+                //sKCanvas.DrawText("Ray0", ExRay0.Location, text);
+                //ExRay1.Draw(sKCanvas);
+                //sKCanvas.DrawText("Ray1", ExRay1.Location, text);
                 stroke.StrokeWidth = 3.0f;
                 sKCanvas.DrawLine(ExRay0.Location, ExRay1.Location, stroke);
             }
@@ -1347,8 +1353,8 @@ namespace TaskMaker {
 
                 if (ExRay0.Location != ExRay1.Location) {
                     var colors = new SKColor[] {
-                        SKColors.Blue,
-                        SKColors.Red
+                        SKColors.Blue.WithAlpha(0.5f),
+                        SKColors.White.WithAlpha(0.5f)
                     };
                     var dir = ExRay1.Location - ExRay0.Location;
                     var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(dir);
@@ -1368,10 +1374,10 @@ namespace TaskMaker {
                 ;
             }
             finally {
-                ExRay0.Draw(sKCanvas);
-                sKCanvas.DrawText("Ray0", ExRay0.Location, text);
-                ExRay1.Draw(sKCanvas);
-                sKCanvas.DrawText("Ray1", ExRay1.Location, text);
+                //ExRay0.Draw(sKCanvas);
+                //sKCanvas.DrawText("Ray0", ExRay0.Location, text);
+                //ExRay1.Draw(sKCanvas);
+                //sKCanvas.DrawText("Ray1", ExRay1.Location, text);
                 stroke.StrokeWidth = 3.0f;
                 sKCanvas.DrawLine(ExRay0.Location, ExRay1.Location, stroke);
             }
