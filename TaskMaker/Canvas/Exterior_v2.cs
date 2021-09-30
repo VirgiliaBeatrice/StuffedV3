@@ -7,6 +7,7 @@ using System.Linq;
 
 namespace TaskMaker {
 
+
     public class GeometryLine {
         public Vector<float> V0 { get; set; }
         public Vector<float> V1 { get; set; }
@@ -123,12 +124,13 @@ namespace TaskMaker {
 
         public Ray_v3(SKPoint origin, SKPoint direction) {
             this.origin = origin;
+            this.Location = origin;
             this.direction = direction;
             this.invDirection = new SKPoint(1 / direction.X, 1 / direction.Y);
         }
 
         // https://tavianator.com/2011/ray_box.html
-        public (float tmin, float tmax)? Intersect(SKRect rect) {
+        public (float tmin, float tmax) Intersect(SKRect rect) {
             float t0x, t1x, t0y, t1y;
 
             t0x = (rect.Left - origin.X) * invDirection.X;
@@ -147,25 +149,26 @@ namespace TaskMaker {
 
             if (tmin <= tmax) {
                 return (tmin, tmax);
-            } else {
-                return null;
+            }
+            else {
+                return (float.NaN, float.NaN);
             }
         }
 
         public SKPoint[] Clip(SKRect rect) {
             //var t = this.Intersect(rect);
-            var t = this.Intersect(rect);
+            var (tmin, tmax) = this.Intersect(rect);
             var rets = new List<SKPoint>();
 
-            if (t != null) {
-                if (t.Value.tmin >= 0) {
-                    var intersectionPoint = origin + this.direction.Multiply(t.Value.tmin);
+            if (!float.IsNaN(tmin) & !float.IsNaN(tmax)) {
+                if (tmin >= 0) {
+                    var intersectionPoint = origin + this.direction.Multiply(tmin);
 
                     rets.Add(intersectionPoint);
                 }
 
-                if (t.Value.tmax >= 0) {
-                    var intersectionPoint = origin + this.direction.Multiply(t.Value.tmax);
+                if (tmax >= 0) {
+                    var intersectionPoint = origin + this.direction.Multiply(tmax);
 
                     rets.Add(intersectionPoint);
                 }

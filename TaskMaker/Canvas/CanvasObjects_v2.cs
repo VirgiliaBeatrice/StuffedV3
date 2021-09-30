@@ -11,6 +11,7 @@ using MathNetExtension;
 using PCController;
 using System.Text.Json;
 using System.Drawing;
+using TaskMaker.Geometry;
 
 namespace TaskMaker {
 
@@ -602,6 +603,12 @@ namespace TaskMaker {
         private void DrawThis(SKCanvas canvas) {
             canvas.DrawCircle(this.Location, this._radius, this.fillPaint);
             canvas.DrawCircle(this.Location, this._radius, this.strokePaint);
+
+            var text = new SKPaint() {
+                TextSize = 12.0f,
+                Color = SKColors.Black,
+            };
+            canvas.DrawText($"Enitity-{this.Index}", this.location, text);
         }
     }
 
@@ -626,6 +633,12 @@ namespace TaskMaker {
             this.Vertices.AddRange(entities);
             this.Pairs.AddRange(entities.Select(e => e.Pair).ToArray());
             //this.Pairs.TaskBary.AddRange(this.Vertices.Select(v => v.Vector).ToArray());
+        }
+
+        public bool ContainsPoint(SKPoint p) {
+            var ret = this.GetLambdas(p);
+
+            return ret != null;
         }
 
         public Vector<float> GetLambdas(SKPoint point) {
@@ -746,19 +759,27 @@ namespace TaskMaker {
                 var next = traces[i + 1 == traces.Count ? 0 : i + 1];
 
                 if (it.E0 == next.E0) {
-                    var region = new VoronoiRegion(it, next, null);
+                    //var region = new VoronoiRegion(it, next, null);
+                    var region = new VoronoiRegion_Type1(it, next, null, null);
 
                     voronoiRegions.Add(region);
                 } else if (it.E0 != next.E0) {
-                    var region = new VoronoiRegion(it, next, null);
+                    //var region = new VoronoiRegion(it, next, null);
 
                     if (this.FindInComplexEdges(it.E0, next.E0).Count == 0) {
                         var target = this.extremes.Where(e => e.Value == it.E0).FirstOrDefault();
 
-                        region.ExcludedEntity = target.Next.Value;
+                        //region.ExcludedEntity = target.Next.Value;
+                        var region = new VoronoiRegion_Type2(it, next, null);
+
+                        voronoiRegions.Add(region);
+                    }
+                    else {
+                        var region = new VoronoiRegion_Type0(it, next, null);
+
+                        voronoiRegions.Add(region);
                     }
 
-                    voronoiRegions.Add(region);
                 }
             }
         }
@@ -793,6 +814,35 @@ namespace TaskMaker {
         }
     }
 
+    public class ArrowCap {
+        public SKPoint Location { get; set; }
+        public SKPoint Direction { get; set; }
+        public float Size { get; set; } = 10.0f;
+
+        public ArrowCap(SKPoint location, SKPoint direction) {
+            this.Location = location;
+            this.Direction = direction;
+        }
+
+        public void Draw(SKCanvas sKCanvas) {
+            var rotateLeft = SKMatrix.CreateRotationDegrees(-90 - 75);
+            var rotateRight = SKMatrix.CreateRotationDegrees(90 + 75);
+
+            var p = Direction.DivideBy(Direction.Length).Multiply(this.Size);
+            var pLeft = rotateLeft.MapPoint(p) + Location;
+            var pRight = rotateRight.MapPoint(p) + Location;
+
+            var path = new SKPath();
+            var stroke = new SKPaint() { Color = SKColors.DeepSkyBlue, IsAntialias = true, StrokeWidth = 2.0f, Style = SKPaintStyle.Stroke, StrokeJoin = SKStrokeJoin.Bevel };
+
+            path.MoveTo(pLeft);
+            path.LineTo(Location);
+            path.LineTo(pRight);
+
+            sKCanvas.DrawPath(path, stroke);
+        }
+    }
+
     public class Edge_v2 : HashSet<Entity_v2> {
         public HashSet<Entity_v2> Extremes => this;
 
@@ -814,17 +864,530 @@ namespace TaskMaker {
 
     public class ExteriorRay_v3 : Ray_v3 {
         public Entity_v2 E0 { get; set; }
+        private ArrowCap cap; 
 
         public ExteriorRay_v3(Entity_v2 entity, SKPoint direction) : base(entity.Location, direction) {
             this.E0 = entity;
         }
+
+        private void Measure() {
+            
+        } 
+
+        public override void Draw(SKCanvas sKCanvas) {
+            base.Draw(sKCanvas);
+
+            cap = new ArrowCap(this.Location, this.Direction);
+            cap.Draw(sKCanvas);
+        }
     }
 
-    public class VoronoiRegions : List<VoronoiRegion> { }
+    public class VoronoiRegions : List<IVoronoiRegion> { }
 
     public struct LineSegment {
         public SKPoint P0 { get; set; }
         public SKPoint P1 { get; set; }
+    }
+
+    public interface IVoronoiRegion {
+        void Draw(SKCanvas sKCanvas);
+    }
+
+    /// <summary>
+    /// VoronoiRegion Type0 : two different vertices, no excluded simplex.
+    /// </summary>
+    public class VoronoiRegion_Type0 : CanvasObject_v2, IVoronoiRegion {
+        public ExteriorRay_v3 ExRay0 { get; set; }
+        public ExteriorRay_v3 ExRay1 { get; set; }
+        public Simplex_v2 Triangle { get; set; }
+
+        private SKPaint stroke = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.DeepSkyBlue,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+
+        public VoronoiRegion_Type0(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex_v2 triangle) {
+            this.ExRay0 = ray0;
+            this.ExRay1 = ray1;
+            this.Triangle = triangle;
+        }
+
+        public override bool ContainsPoint(SKPoint p) {
+            var ret0 = Geometry.LineSegment.GetSide(ExRay0.Location, ExRay0.Location + ExRay0.Direction, p) <= 0;
+            var ret1 = Geometry.LineSegment.GetSide(ExRay0.Location, ExRay1.Location, p) >= 0;
+            var ret2 = Geometry.LineSegment.GetSide(ExRay1.Location, ExRay1.Location + ExRay1.Direction, p) >= 0;
+
+            return ret0 & ret1 & ret2;
+        }
+
+        private SKPoint[] GetCorners(SKRect bounds, SKPoint start, SKPoint end) {
+            var lt = new SKPoint(bounds.Left, bounds.Top);
+            var lb = new SKPoint(bounds.Left, bounds.Bottom);
+            var rt = new SKPoint(bounds.Right, bounds.Top);
+            var rb = new SKPoint(bounds.Right, bounds.Bottom);
+
+            var ccw = new CircularList<LineSegment> {
+                new LineSegment() { P0 = lt, P1 = lb },
+                new LineSegment() { P0 = lb, P1 = rb },
+                new LineSegment() { P0 = rb, P1 = rt },
+                new LineSegment() { P0 = lb, P1 = lt },
+            };
+            var cw = new CircularList<LineSegment> {
+                new LineSegment() {P0 = lt, P1 = rt },
+                new LineSegment() {P0 = rt, P1 = rb },
+                new LineSegment() {P0 = rb, P1 = lb },
+                new LineSegment() {P0 = lb, P1 = lt },
+            };
+
+            var it = cw.First;
+            var points = new List<SKPoint>();
+
+            var init = it;
+            do {
+                if (Geometry.LineSegment.IsPointOnLine(start, it.Value.P0, it.Value.P1))
+                    break;
+                else
+                    it = it.Next;
+            } while (it != init);
+
+            init = it;
+            do {
+                if (Geometry.LineSegment.IsPointOnLine(end, it.Value.P0, it.Value.P1))
+                    break;
+                else {
+                    points.Add(it.Value.P1);
+                    it = it.Next;
+                }
+            } while (it != init);
+
+            return points.ToArray();
+        }
+
+        private SKPoint[] Measure(SKRect bounds) {
+            var (t0min, t0max) = ExRay0.Intersect(bounds);
+            var (t1min, t1max) = ExRay1.Intersect(bounds);
+            var (tlmin, tlmax) = Geometry.LineSegment.IntersectWithBox(ExRay0.Location, ExRay1.Location, bounds);
+
+            var iPointsExRay0 = new List<SKPoint>();
+            var iPointsExRay1 = new List<SKPoint>();
+            var iPointsL = new List<SKPoint>();
+            var iPoints = new List<SKPoint>();
+            var dirL = ExRay1.Location - ExRay0.Location;
+
+            if (!float.IsNaN(t0min) & !float.IsNaN(t0max)) {
+                if (t0min >= 0 & t0max >= 0) {
+                    iPointsExRay0.Add(ExRay0.Location + ExRay0.Direction.Multiply(t0max));
+                    iPointsExRay0.Add(ExRay0.Location + ExRay0.Direction.Multiply(t0min));
+                }
+                else if (t0min < 0 & t0max >= 0) {
+                    iPointsExRay0.Add(ExRay0.Location + ExRay0.Direction.Multiply(t0max));
+                    //iPointsExRay0.Add(ExRay0.Location);
+                }
+                else if (t0min < 0 & t0max < 0) {
+                    // Outside
+                    Console.WriteLine("ExRay0 Outside");
+                    ;
+                }
+                else {
+                    throw new Exception("Unhandled condition.");
+                }
+            }
+
+            if (!float.IsNaN(tlmin) & !float.IsNaN(tlmax)) {
+                if (tlmin < 0.0f & tlmax >= 1.0f) {
+                    iPointsL.Add(ExRay0.Location);
+                    iPointsL.Add(ExRay1.Location);
+                    //iPointsL.Add(ExRay0.Location + dirL.Multiply(tlmin));
+                    //iPointsL.Add(ExRay0.Location + dirL.Multiply(tlmax));
+                }
+                else if (tlmin < 0 & tlmax >= 0 & tlmax <= 1.0f) {
+                    iPointsL.Add(ExRay0.Location);
+                    iPointsL.Add(ExRay0.Location + dirL.Multiply(tlmax));
+                }
+                else if (tlmin >= 0 & tlmin <= 1.0f & tlmax >= 0 & tlmax <= 1.0f) {
+                    iPointsL.Add(ExRay0.Location + dirL.Multiply(tlmin));
+                    iPointsL.Add(ExRay0.Location + dirL.Multiply(tlmax));
+                }
+                else if (tlmin >= 0 & tlmin <= 1.0f & tlmax > 1.0f) {
+                    iPointsL.Add(ExRay0.Location + dirL.Multiply(tlmin));
+                    iPointsL.Add(ExRay1.Location);
+                }
+                else if (tlmin < 0 & tlmax < 0) {
+                    Console.WriteLine("Line Segment Outside");
+                }
+                else if (tlmin > 1.0f & tlmax > 1.0f) {
+                    Console.WriteLine("Line Segment Outside");
+                }
+                else {
+                    throw new Exception("Unhandled condition.");
+                }
+            }
+
+            if (!float.IsNaN(t1min) & !float.IsNaN(t1max)) {
+                if (t1min >= 0 & t1max >= 0) {
+                    iPointsExRay1.Add(ExRay1.Location + ExRay1.Direction.Multiply(t1min));
+                    iPointsExRay1.Add(ExRay1.Location + ExRay1.Direction.Multiply(t1max));
+                }
+                else if (t1min < 0 & t1max >= 0) {
+                    //iPointsExRay1.Add(ExRay1.Location);
+                    iPointsExRay1.Add(ExRay1.Location + ExRay1.Direction.Multiply(t1max));
+                }
+                else if (t1min < 0 & t1max < 0) {
+                    // Outside
+                    Console.WriteLine("ExRay1 Outside");
+                    ;
+                }
+                else {
+                    throw new Exception("Unhandled condition.");
+                }
+            }
+
+            iPoints.AddRange(iPointsExRay0);
+            iPoints.AddRange(iPointsL);
+            iPoints.AddRange(iPointsExRay1);
+
+
+            var lt = new SKPoint(bounds.Left, bounds.Top);
+            var lb = new SKPoint(bounds.Left, bounds.Bottom);
+            var rt = new SKPoint(bounds.Right, bounds.Top);
+            var rb = new SKPoint(bounds.Right, bounds.Bottom);
+            // Special case 1: no intersection at all
+            if (iPoints.Count == 0) {
+                var ret0 = this.ContainsPoint(lt);
+                var ret1 = this.ContainsPoint(lb);
+                var ret2 = this.ContainsPoint(rb);
+                var ret3 = this.ContainsPoint(rt);
+
+                if (ret0 & ret1 & ret2 & ret3)
+                    iPoints.AddRange(new SKPoint[] { lt, lb, rb, rt });
+            }
+            else {
+                SKPoint first, last;
+                SKPoint[] contains;
+
+                if (iPointsExRay0.Count == 2 & iPointsExRay1.Count == 2 & iPointsL.Count == 0) {
+                    first = iPoints[1];
+                    last = iPoints[2];
+                    contains = this.GetCorners(bounds, first, last);
+
+                    iPoints.InsertRange(2, contains);
+                }
+
+                first = iPoints.First();
+                last = iPoints.Last();
+                contains = this.GetCorners(bounds, last, first);
+
+                iPoints.AddRange(contains);
+            }
+
+            return iPoints.ToArray();
+        }
+
+        public override void Draw(SKCanvas sKCanvas) {
+            var stroke = new SKPaint() { Color = SKColors.DeepSkyBlue, IsAntialias = true, StrokeWidth = 2.0f, Style = SKPaintStyle.Stroke, StrokeJoin = SKStrokeJoin.Bevel };
+            var fill = new SKPaint() { Color = SKColors.BlueViolet.WithAlpha(0.5f), IsAntialias = true, Style = SKPaintStyle.Fill, };
+            var text = new SKPaint() { Color = SKColors.IndianRed, IsAntialias = true, StrokeWidth = 1.0f, Style = SKPaintStyle.Stroke, StrokeJoin = SKStrokeJoin.Bevel, TextSize = 18.0f };
+            var path = new SKPath();
+
+            SKRectI bounds;
+            sKCanvas.GetDeviceClipBounds(out bounds);
+
+            try {
+                SKPoint[] points;
+
+                points = this.Measure(bounds);
+
+
+                var idx = 0;
+                foreach (var p in points) {
+                    sKCanvas.DrawCircle(p, 10.0f, stroke);
+                    sKCanvas.DrawText($"{idx + 1}", p, text);
+
+                    if (idx == 0) {
+                        path.MoveTo(p);
+                    }
+                    else {
+                        path.LineTo(p);
+                    }
+
+                    ++idx;
+                }
+
+                path.Close();
+
+                if (ExRay0.Location != ExRay1.Location) {
+                    var colors = new SKColor[] {
+                        SKColors.Blue,
+                        SKColors.Red
+                    };
+                    var dir = ExRay1.Location - ExRay0.Location;
+                    var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(dir);
+                    var shader = SKShader.CreateLinearGradient(
+                        ExRay0.Location + dir.Multiply(0.5f),
+                        ExRay0.Location + dir.Multiply(0.5f) + perp,
+                        colors,
+                        null,
+                        SKShaderTileMode.Clamp);
+
+                    fill.Shader = shader;
+                }
+
+                sKCanvas.DrawPath(path, fill);
+            }
+            catch {
+                ;
+            }
+            finally {
+                ExRay0.Draw(sKCanvas);
+                sKCanvas.DrawText("Ray0", ExRay0.Location, text);
+                ExRay1.Draw(sKCanvas);
+                sKCanvas.DrawText("Ray1", ExRay1.Location, text);
+                stroke.StrokeWidth = 3.0f;
+                sKCanvas.DrawLine(ExRay0.Location, ExRay1.Location, stroke);
+            }
+        }
+    }
+
+    /// <summary>
+    /// VoronoiRegion Type1 : same vertex, no excluded simplex.
+    /// </summary>
+    public class VoronoiRegion_Type1 : CanvasObject_v2, IVoronoiRegion {
+        public ExteriorRay_v3 ExRay0 { get; set; }
+        public ExteriorRay_v3 ExRay1 { get; set; }
+        public Simplex_v2 Triangle0 { get; set; }
+        public Simplex_v2 Triangle1 { get; set; }
+
+        private SKPaint stroke = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.DeepSkyBlue,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+
+        public VoronoiRegion_Type1(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex_v2 tri0, Simplex_v2 tri1) {
+            this.ExRay0 = ray0;
+            this.ExRay1 = ray1;
+            this.Triangle0 = tri0;
+            this.Triangle1 = tri1;
+        }
+
+        public override bool ContainsPoint(SKPoint p) {
+            var ret0 = Geometry.LineSegment.GetSide(ExRay0.Location, ExRay0.Location + ExRay0.Direction, p) <= 0;
+            //var ret1 = Geometry.LineSegment.GetSide(ExRay0.Location, ExRay1.Location, p) >= 0;
+            var ret2 = Geometry.LineSegment.GetSide(ExRay1.Location, ExRay1.Location + ExRay1.Direction, p) >= 0;
+
+            return ret0 & ret2;
+        }
+
+        private SKPoint[] GetCorners(SKRect bounds, SKPoint start, SKPoint end) {
+            var lt = new SKPoint(bounds.Left, bounds.Top);
+            var lb = new SKPoint(bounds.Left, bounds.Bottom);
+            var rt = new SKPoint(bounds.Right, bounds.Top);
+            var rb = new SKPoint(bounds.Right, bounds.Bottom);
+
+            var ccw = new CircularList<LineSegment> {
+                new LineSegment() { P0 = lt, P1 = lb },
+                new LineSegment() { P0 = lb, P1 = rb },
+                new LineSegment() { P0 = rb, P1 = rt },
+                new LineSegment() { P0 = lb, P1 = lt },
+            };
+            var cw = new CircularList<LineSegment> {
+                new LineSegment() {P0 = lt, P1 = rt },
+                new LineSegment() {P0 = rt, P1 = rb },
+                new LineSegment() {P0 = rb, P1 = lb },
+                new LineSegment() {P0 = lb, P1 = lt },
+            };
+
+            var it = cw.First;
+            var points = new List<SKPoint>();
+
+            var init = it;
+            do {
+                if (Geometry.LineSegment.IsPointOnLine(start, it.Value.P0, it.Value.P1))
+                    break;
+                else
+                    it = it.Next;
+            } while (it != init);
+
+            init = it;
+            do {
+                if (Geometry.LineSegment.IsPointOnLine(end, it.Value.P0, it.Value.P1))
+                    break;
+                else {
+                    points.Add(it.Value.P1);
+                    it = it.Next;
+                }
+            } while (it != init);
+
+            return points.ToArray();
+        }
+
+        private SKPoint[] Measure(SKRect bounds) {
+            var (t0min, t0max) = ExRay0.Intersect(bounds);
+            var (t1min, t1max) = ExRay1.Intersect(bounds);
+
+            var iPointsExRay0 = new List<SKPoint>();
+            var iPointsExRay1 = new List<SKPoint>();
+            var iPoints = new List<SKPoint>();
+
+            if (!float.IsNaN(t0min) & !float.IsNaN(t0max)) {
+                if (t0min >= 0 & t0max >= 0) {
+                    iPointsExRay0.Add(ExRay0.Location + ExRay0.Direction.Multiply(t0max));
+                    iPointsExRay0.Add(ExRay0.Location + ExRay0.Direction.Multiply(t0min));
+                }
+                else if (t0min < 0 & t0max >= 0) {
+                    iPointsExRay0.Add(ExRay0.Location + ExRay0.Direction.Multiply(t0max));
+                    //iPointsExRay0.Add(ExRay0.Location);
+                }
+                else if (t0min < 0 & t0max < 0) {
+                    // Outside
+                    Console.WriteLine("ExRay0 Outside");
+                    ;
+                }
+                else {
+                    throw new Exception("Unhandled condition.");
+                }
+            }
+
+            if (!float.IsNaN(t1min) & !float.IsNaN(t1max)) {
+                if (t1min >= 0 & t1max >= 0) {
+                    iPointsExRay1.Add(ExRay1.Location + ExRay1.Direction.Multiply(t1min));
+                    iPointsExRay1.Add(ExRay1.Location + ExRay1.Direction.Multiply(t1max));
+                }
+                else if (t1min < 0 & t1max >= 0) {
+                    //iPointsExRay1.Add(ExRay1.Location);
+                    iPointsExRay1.Add(ExRay1.Location + ExRay1.Direction.Multiply(t1max));
+                }
+                else if (t1min < 0 & t1max < 0) {
+                    // Outside
+                    Console.WriteLine("ExRay1 Outside");
+                    ;
+                }
+                else {
+                    throw new Exception("Unhandled condition.");
+                }
+            }
+
+            iPoints.AddRange(iPointsExRay0);
+            //iPoints.Add(ExRay0.Location);
+            iPoints.AddRange(iPointsExRay1);
+
+            var lt = new SKPoint(bounds.Left, bounds.Top);
+            var lb = new SKPoint(bounds.Left, bounds.Bottom);
+            var rt = new SKPoint(bounds.Right, bounds.Top);
+            var rb = new SKPoint(bounds.Right, bounds.Bottom);
+            // Special case 1: no intersection at all
+            if (iPoints.Count == 0) {
+                var ret0 = this.ContainsPoint(lt);
+                var ret1 = this.ContainsPoint(lb);
+                var ret2 = this.ContainsPoint(rt);
+                var ret3 = this.ContainsPoint(rb);
+
+                if (ret0 & ret1 & ret2 & ret3)
+                    iPoints.AddRange(new SKPoint[] { lt, lb, rt, rb });
+            }
+            else {
+                SKPoint first, last;
+                SKPoint[] contains;
+
+                if (iPointsExRay0.Count == 2 & iPointsExRay1.Count == 2) {
+                    first = iPoints[1];
+                    last = iPoints[2];
+                    contains = this.GetCorners(bounds, first, last);
+
+                    iPoints.InsertRange(2, contains);
+                }
+
+                first = iPoints.First();
+                last = iPoints.Last();
+                contains = this.GetCorners(bounds, last, first);
+
+                iPoints.AddRange(contains);
+            }
+
+            if (iPointsExRay0.Count == 1) {
+                iPoints.Insert(1, ExRay0.Location);
+            }
+
+            return iPoints.ToArray();
+        }
+
+        public override void Draw(SKCanvas sKCanvas) {
+            var stroke = new SKPaint() { Color = SKColors.DeepSkyBlue, IsAntialias = true, StrokeWidth = 2.0f, Style = SKPaintStyle.Stroke, StrokeJoin = SKStrokeJoin.Bevel };
+            var fill = new SKPaint() { Color = SKColors.BlueViolet.WithAlpha(0.5f), IsAntialias = true, Style = SKPaintStyle.Fill, };
+            var text = new SKPaint() { Color = SKColors.IndianRed, IsAntialias = true, StrokeWidth = 1.0f, Style = SKPaintStyle.Stroke, StrokeJoin = SKStrokeJoin.Bevel, TextSize = 18.0f };
+            var path = new SKPath();
+
+            SKRectI bounds;
+            sKCanvas.GetDeviceClipBounds(out bounds);
+
+            try {
+                SKPoint[] points;
+
+                points = this.Measure(bounds);
+
+                var idx = 0;
+                foreach (var p in points) {
+                    sKCanvas.DrawCircle(p, 10.0f, stroke);
+                    sKCanvas.DrawText($"{idx + 1}", p, text);
+
+                    if (idx == 0) {
+                        path.MoveTo(p);
+                    }
+                    else {
+                        path.LineTo(p);
+                    }
+
+                    ++idx;
+                }
+
+                path.Close();
+
+                if (ExRay0.Location != ExRay1.Location) {
+                    var colors = new SKColor[] {
+                        SKColors.Blue,
+                        SKColors.Red
+                    };
+                    var dir = ExRay1.Location - ExRay0.Location;
+                    var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(dir);
+                    var shader = SKShader.CreateLinearGradient(
+                        ExRay0.Location + dir.Multiply(0.5f),
+                        ExRay0.Location + dir.Multiply(0.5f) + perp,
+                        colors,
+                        null,
+                        SKShaderTileMode.Clamp);
+
+                    fill.Shader = shader;
+                }
+
+                sKCanvas.DrawPath(path, fill);
+            }
+            catch {
+                ;
+            }
+            finally {
+                ExRay0.Draw(sKCanvas);
+                sKCanvas.DrawText("Ray0", ExRay0.Location, text);
+                ExRay1.Draw(sKCanvas);
+                sKCanvas.DrawText("Ray1", ExRay1.Location, text);
+                stroke.StrokeWidth = 3.0f;
+                sKCanvas.DrawLine(ExRay0.Location, ExRay1.Location, stroke);
+            }
+        }
+    }
+
+    /// <summary>
+    /// VoronoiRegion Type1 : same vertex, no excluded simplex.
+    /// </summary>
+    public class VoronoiRegion_Type2 : VoronoiRegion_Type0 {
+
+        public VoronoiRegion_Type2(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex_v2 triangle) : base(ray0, ray1, triangle) { }
+
+        public override bool ContainsPoint(SKPoint p) {
+            return base.ContainsPoint(p) & !this.Triangle.ContainsPoint(p);
+        }
     }
 
     public class VoronoiRegion : CanvasObject_v2 {
