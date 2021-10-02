@@ -42,6 +42,7 @@ namespace TaskMaker {
         private SKImageInfo imageInfo;
         private Canvas canvas;
         private Modes selectedMode;
+        private Timer timer;
 
         public event EventHandler LayerUpdated;
         public event EventHandler LayerConfigured;
@@ -72,6 +73,14 @@ namespace TaskMaker {
             //this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
             this.canvas = new Canvas(services);
+            this.timer = new Timer();
+            timer.Enabled = true;
+            timer.Interval = 1;
+            timer.Tick += this.Timer_Tick;
+        }
+
+        private void Timer_Tick(object sender, EventArgs e) {
+            skControl.Invalidate();
         }
 
         public void Reset() {
@@ -149,7 +158,7 @@ namespace TaskMaker {
 
             this.LayerUpdated?.Invoke(this, null);
 
-            this.Invalidate(true);
+            //this.Invalidate(true);
         }
 
         public void RemoveSelectedNodes() {
@@ -207,7 +216,7 @@ namespace TaskMaker {
                     break;
             }
 
-            this.Invalidate(true);
+            //this.Invalidate(true);
         }
 
 
@@ -242,7 +251,7 @@ namespace TaskMaker {
                     break;
             }
 
-            this.Invalidate(true);
+            //this.Invalidate(true);
         }
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {
@@ -258,7 +267,7 @@ namespace TaskMaker {
                     break;
             }
 
-            this.Invalidate(true);
+            //this.Invalidate(true);
         }
 
         private void ProcessEditNodeMouseUpEvent(MouseEventArgs ev) {
