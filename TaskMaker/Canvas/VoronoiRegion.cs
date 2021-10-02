@@ -6,180 +6,176 @@ using System.Linq;
 using MathNetExtension;
 
 namespace TaskMaker {
-    public class VoronoiRegion : CanvasObject_v2 {
-        public ExteriorRay_v3 ExteriorRay0 { get; set; }
-        public ExteriorRay_v3 ExteriorRay1 { get; set; }
-        public Entity_v2 ExcludedEntity { get; set; }
+    public abstract class VoronoiRegion {
+        public abstract SKPoint this[int index] { get; }
+        public abstract void Draw(SKCanvas sKCanvas);
+        public abstract void Interpolate(SKPoint p);
+        public abstract bool Contains(SKPoint p);
+    }
 
-        private SKPaint stroke = new SKPaint {
-            IsAntialias = true,
-            Color = SKColors.DeepSkyBlue,
+    public class VoronoiRegion_Rect : VoronoiRegion {
+        public Simplex_v2 Governor { get; set; }
+        public Entity_v2 E0 { get; set; }
+        public Entity_v2 E1 { get; set; }
+
+        private SKPath rect;
+        private SKPaint stroke = new SKPaint() {
+            StrokeWidth = 1.0f,
+            Color = SKColors.DarkGray,
             Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2
+            IsAntialias = true,
+        };
+        private SKPaint fill = new SKPaint() {
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true,
+        };
+        public override SKPoint this[int index] {
+            get { return this.rect[index]; }
+        }
+        public override string ToString() {
+            return $"VRR - {Governor}";
+        }
+
+        public override bool Contains(SKPoint p) {
+            return this.rect.Contains(p.X, p.Y);
+        }
+
+        public VoronoiRegion_Rect(Entity_v2 it, Entity_v2 next, Simplex_v2 governor) {
+            rect = new SKPath();
+            Governor = governor;
+            E0 = it;
+            E1 = next;
+
+            rect.AddPoly(this.GetVerticesFromEdge(E0.Location, E1.Location));
+
+            fill.Shader = SKShader.CreateLinearGradient(
+                rect[1],
+                rect[2],
+                new SKColor[] {
+                    SKColors.ForestGreen.WithAlpha(0.2f),
+                    SKColors.White.WithAlpha(0.5f)
+                },
+                SKShaderTileMode.Clamp);
+
+        }
+
+        private SKPoint[] GetVerticesFromEdge(SKPoint a, SKPoint b) {
+            var factor = 120.0f;
+
+            var dir = b - a;
+            var unitDir = dir.DivideBy(dir.Length);
+            // ccw
+            var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(unitDir);
+            var aP = a + perp.Multiply(factor);
+            var bP = b + perp.Multiply(factor);
+
+            return new SKPoint[] { a, b, bP, aP };
+        }
+
+        public override void Interpolate(SKPoint p) {
+            Console.WriteLine(this);
+            Console.WriteLine(this.Governor.GetLambdasExterior(p));
+            Console.WriteLine("---");
+        }
+
+
+        // 2-------------------3
+        // |                   |
+        // |                   |
+        // 1-------------------0
+
+        public override void Draw(SKCanvas sKCanvas) {
+            //fill.Shader = SKShader.CreateLinearGradient(
+            //            rect[1],
+            //            rect[2],
+            //            new SKColor[] {
+            //                SKColors.ForestGreen.WithAlpha(0.2f),
+            //                SKColors.White.WithAlpha(0.5f)
+            //            },
+            //            SKShaderTileMode.Clamp);
+
+            sKCanvas.DrawPath(rect, fill);
+            sKCanvas.DrawPath(rect, stroke);
+        }
+    }
+
+    public class VoronoiRegion_CircularSector : VoronoiRegion {
+        public Simplex_v2 Governor0 { get; set; }
+        public Simplex_v2 Governor1 { get; set; }
+        public SKPoint Intersection { get; set; }
+        public Entity_v2 E0 { get; set; }
+
+        private SKPath circularSector;
+        private SKPaint stroke = new SKPaint() {
+            StrokeWidth = 1.0f,
+            Color = SKColors.DarkGray,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+        };
+        private SKPaint fill = new SKPaint() {
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true,
         };
 
-        public VoronoiRegion(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Entity_v2 exEntity) {
-            this.ExteriorRay0 = ray0;
-            this.ExteriorRay1 = ray1;
-            this.ExcludedEntity = exEntity;
+        public override SKPoint this[int index] {
+            get { return this.circularSector[index]; }
         }
 
-        public override bool ContainsPoint(SKPoint point) {
-            var lines = new List<LineSegment>();
+        public override string ToString() {
+            return $"VRC - {Governor0}, {Governor1}";
+        }
 
-            lines.Add(new LineSegment() {
-                P0 = ExteriorRay0.E0.Location + ExteriorRay0.Direction,
-                P1 = ExteriorRay0.E0.Location
-            });
+        public override bool Contains(SKPoint p) {
+            return this.circularSector.Contains(p.X, p.Y);
+        }
 
-            if (ExcludedEntity != null) {
-                lines.Add(new LineSegment {
-                    P0 = ExteriorRay0.E0.Location,
-                    P1 = ExcludedEntity.Location
-                });
-                lines.Add(new LineSegment {
-                    P0 = ExcludedEntity.Location,
-                    P1 = ExteriorRay1.E0.Location,
-                });
+        public VoronoiRegion_CircularSector(Entity_v2 o, SKPoint a, SKPoint i, SKPoint b) {
+            circularSector = new SKPath();
+            Intersection = i;
+            E0 = o;
+
+            circularSector.MoveTo(o.Location);
+            circularSector.LineTo(a);
+            circularSector.CubicTo(a, i, b);
+            circularSector.Close();
+
+            fill.Shader = SKShader.CreateRadialGradient(
+                E0.Location,
+                (a - E0.Location).Length,
+                new SKColor[] {
+                    SKColors.ForestGreen.WithAlpha(0.2f),
+                    SKColors.White.WithAlpha(0.5f)},
+                SKShaderTileMode.Clamp);
+        }
+
+        public override void Interpolate(SKPoint p) {
+            if (Governor1 == null) {
+                Console.WriteLine(this);
+                Console.WriteLine(this.Governor0.GetLambdasExterior(p));
+                Console.WriteLine("---");
             }
             else {
-                if (ExteriorRay0.E0 != ExteriorRay1.E0) {
-                    lines.Add(new LineSegment {
-                        P0 = ExteriorRay0.E0.Location,
-                        P1 = ExteriorRay1.E0.Location
-                    });
-                }
+                var o = this[0];
+                var a = this[1];
+                var b = this[2];
+
+                var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
+                var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
+                var theta = theta0 + theta1;
+                var lambdas0 = this.Governor0.GetLambdasExterior(p);
+                var lambdas1 = this.Governor1.GetLambdasExterior(p);
+
+                Console.WriteLine(this);
+                Console.WriteLine(lambdas0);
+                Console.WriteLine(lambdas1);
+                Console.WriteLine(lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta)));
+                Console.WriteLine("---");
             }
-
-            lines.Add(new LineSegment() {
-                P0 = ExteriorRay1.E0.Location,
-                P1 = ExteriorRay1.E0.Location + ExteriorRay1.Direction
-            });
-
-            var results = new List<int>();
-            foreach (var line in lines) {
-                var a = line.P1 - line.P0;
-                var b = point - line.P0;
-                var crossProduct = a.X * b.Y - a.Y * b.X;
-                var theta = Math.Asin(crossProduct / (a.Length * b.Length));
-
-                results.Add(Math.Sign(theta));
-            }
-
-            // left < 0, right > 0 , in = 0
-            if (results.Any(res => res > 0)) {
-                return false; // out
-            }
-            else {
-                return true; // on or in
-            }
-        }
-
-        private int GetSide(SKPoint target) {
-            var lines = new List<LineSegment>();
-
-            lines.Add(new LineSegment() {
-                P0 = ExteriorRay0.E0.Location + ExteriorRay0.Direction,
-                P1 = ExteriorRay0.E0.Location
-            });
-
-            if (ExcludedEntity != null) {
-                lines.Add(new LineSegment {
-                    P0 = ExteriorRay0.E0.Location,
-                    P1 = ExcludedEntity.Location
-                });
-                lines.Add(new LineSegment {
-                    P0 = ExcludedEntity.Location,
-                    P1 = ExteriorRay1.E0.Location,
-                });
-            } else {
-                if (ExteriorRay0.E0 != ExteriorRay1.E0) {
-                    lines.Add(new LineSegment {
-                        P0 = ExteriorRay0.E0.Location,
-                        P1 = ExteriorRay1.E0.Location
-                    });
-                }
-            }
-
-            lines.Add(new LineSegment() {
-                P0 = ExteriorRay1.E0.Location,
-                P1 = ExteriorRay1.E0.Location + ExteriorRay1.Direction
-            });
-
-            var results = new List<int>();
-            foreach(var line in lines) {
-                var a = line.P1 - line.P0;
-                var b = target - line.P0;
-                var crossProduct = a.X * b.Y - a.Y * b.X;
-                var theta = Math.Asin(crossProduct / (a.Length * b.Length));
-
-                results.Add(Math.Sign(theta));
-            }
-
-            // left < 0, right > 0 , in = 0
-            if (results.Any(res => res > 0)) {
-                return -1; // out
-            } else if (results.All(res => res < 0)) {
-                return 1; // in
-            } else {
-                return 0; // on
-            }
-        }
-        
-        private SKPath GetClipPath(SKCanvas sKCanvas) {
-            var path = new SKPath();
-
-            sKCanvas.GetDeviceClipBounds(out var bounds);
-
-            // CCW
-            var corners = new SKPoint[] {
-                new SKPoint(bounds.Left, bounds.Top),
-                new SKPoint(bounds.Left, bounds.Bottom),
-                new SKPoint(bounds.Right, bounds.Bottom),
-                new SKPoint(bounds.Right, bounds.Top),
-            };
-
-            path.MoveTo(ExteriorRay0.E0.Location + ExteriorRay0.Direction.Multiply(10));
-            path.LineTo(ExteriorRay0.E0.Location);
-
-            if (ExcludedEntity != null)
-                path.LineTo(ExcludedEntity.Location);
-
-            if (ExteriorRay0.E0 != ExteriorRay1.E0)
-                path.LineTo(ExteriorRay1.E0.Location);
-
-            path.LineTo(ExteriorRay1.E0.Location + ExteriorRay1.Direction.Multiply(10));
-
-            foreach(var corner in corners) {
-                if (this.ContainsPoint(corner))
-                    path.LineTo(corner);
-            }
-
-            path.Close();
-
-
-            return path;
         }
 
         public override void Draw(SKCanvas sKCanvas) {
-            var path = this.GetClipPath(sKCanvas);
-
-            //sKCanvas.DrawPath(path, stroke);
-            sKCanvas.GetDeviceClipBounds(out var bounds);
-
-            var region = new SKRegion(bounds);
-            region.SetPath(path);
-            sKCanvas.DrawRegion(region, stroke);
-            //this.ExteriorRay0.Draw(sKCanvas);
-
-            //if (this.ExcludedEntity != null) {
-            //    sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExcludedEntity.Location, stroke);
-            //    sKCanvas.DrawLine(this.ExcludedEntity.Location, this.ExteriorRay1.E0.Location, stroke);
-            //} else if (this.ExcludedEntity == null & this.ExteriorRay0.E0 != this.ExteriorRay1.E0) {
-            //    sKCanvas.DrawLine(this.ExteriorRay0.E0.Location, this.ExteriorRay1.E0.Location, stroke);
-            //}
-
-            //this.ExteriorRay1.Draw(sKCanvas);
+            sKCanvas.DrawPath(circularSector, fill);
+            sKCanvas.DrawPath(circularSector, stroke);
         }
     }
 

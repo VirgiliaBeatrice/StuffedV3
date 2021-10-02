@@ -633,6 +633,10 @@ namespace TaskMaker {
             StrokeWidth = 2
         };
 
+        public override string ToString() {
+            return $"Simplex - {string.Join(",", Vertices.Select(v => v.Index))}";
+        }
+
         public Simplex_v2(ICollection<Entity_v2> entities) {
             this.Vertices.AddRange(entities);
             this.Pairs.AddRange(entities.Select(e => e.Pair).ToArray());
@@ -647,6 +651,10 @@ namespace TaskMaker {
 
         public Vector<float> GetLambdas(SKPoint point) {
             return this.Pairs.TaskBary.GetLambdasOnlyInterior(point.ToVector());
+        }
+
+        public Vector<float> GetLambdasExterior(SKPoint p) {
+            return this.Pairs.TaskBary.GetLambdas(p.ToVector());
         }
 
         public bool IsVertex(Entity_v2 e) {
@@ -676,6 +684,7 @@ namespace TaskMaker {
         private CircularList<Entity_v2> extremes = new CircularList<Entity_v2>();
         private VoronoiRegions voronoiRegions = new VoronoiRegions();
         private Bend bend;
+        private Exterior exterior;
 
         public new void Add(Simplex_v2 simplex) {
 
@@ -789,14 +798,21 @@ namespace TaskMaker {
                 }
             }
 
+
             // Set bend
-            this.bend = Bend.GenerateBend(this.extremes.Select(e => e.Value.Location).ToArray());
+            //this.bend = Bend.GenerateBend(this.extremes.Select(e => e.Value.Location).ToArray());
+            this.exterior = Exterior.CreateExterior(this.extremes.Select(e => e.Value).ToArray(), this.ToArray());
         }
 
         public Vector<float> GetLambdas(SKPoint point) {
             var result = new List<float>();
 
             this.ForEach(s => result.AddRange(s.GetLambdas(point).ToArray()));
+            this.exterior?.Regions.ForEach(r => {
+                if (r.Contains(point)) {
+                    r.Interpolate(point);
+                } 
+                });
 
             return Vector<float>.Build.Dense(result.ToArray());
         }
@@ -819,7 +835,8 @@ namespace TaskMaker {
         public void Draw(SKCanvas sKCanvas) {
             this.ForEach(sim => sim.DrawThis(sKCanvas));
             this.complexEdges.ForEach(edge => edge.Draw(sKCanvas));
-            this.bend?.Draw(sKCanvas);
+            //this.bend?.Draw(sKCanvas);
+            this.exterior?.Draw(sKCanvas);
 
             // Test
             //if (this.voronoiRegions.Count != 0) {
