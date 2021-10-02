@@ -684,6 +684,8 @@ namespace TaskMaker {
 
 
     public class SimplicialComplex_v2 : List<Simplex_v2> {
+        public bool IsPaired => this.TrueForAll(sim => sim.IsPaired);
+
         private List<Edge_v2> edges = new List<Edge_v2>();
         private List<Edge_v2> complexEdges = new List<Edge_v2>();
         private CircularList<Entity_v2> extremes = new CircularList<Entity_v2>();
