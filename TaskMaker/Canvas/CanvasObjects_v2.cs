@@ -185,6 +185,12 @@ namespace TaskMaker {
             pointer.Location = pointerLocation;
 
             var lambdas = layer.Complex.GetLambdas(pointer.Location);
+            
+            // no return zero
+            if (lambdas.All(lambda => lambda == 0)) {
+                return;
+            }
+
             var configVector = layer.Complex.GetConfigVectors(pointer.Location);
 
             if (layer.LayerStatus == LayerStatus.WithMotor) {
@@ -267,20 +273,33 @@ namespace TaskMaker {
         public void ShowMotorControllers() {
             var form = new Form();
             var panel = new FlowLayoutPanel();
+            var btn = new Button();
 
             form.Text = $"Motor Position - {this.Text}";
             form.Size = new Size(600, 600);
+            form.AutoSize = true;
             panel.Dock = DockStyle.Fill;
+            btn.Text = "All Return Zero";
+            btn.AutoSize = true;
+            
 
             foreach(var motor in this.MotorConfigs) {
                 var motorController = new MotorController(motor);
                 motorController.MotorName = $"Motor{this.MotorConfigs.IndexOf(motor) + 1}";
+                btn.Click += (sender, e) => {
+                    motorController.ReturnZero();
+                };
 
                 panel.Controls.Add(motorController);
             }
 
+            panel.Controls.Add(btn);
             form.Controls.Add(panel);
             form.Show();
+        }
+
+        private void Btn_Click(object sender, EventArgs e) {
+            throw new NotImplementedException();
         }
 
         public void InitializeMotorConfigs() {
@@ -319,31 +338,15 @@ namespace TaskMaker {
         }
 
         public void Interpolate(SKPoint pointerLocation) {
-            Layer.Interpolate(pointerLocation, this);
-            //var layer = this;
-            //var pointer = layer.Pointer;
-            //pointer.Location = pointerLocation;
+            if (this.Complex.IsPaired) {
+                Interpolate(pointerLocation, this);
+            }
+        }
 
-            //var lambdas = layer.Complex.GetLambdas(pointer.Location);
-            //var configVector = layer.Complex.GetConfigVectors(pointer.Location);
-
-            //if (layer.LayerStatus == LayerStatus.WithMotor) {
-            //    var configs = layer.MotorConfigs;
-
-            //    configs.FromVector(configs, configVector);
-            //}
-
-
-            //if (layer.LayerStatus == LayerStatus.WithLayer) {
-            //    var configs = layer.LayerConfigs;
-
-            //    configs.FromVector(configs, configVector);
-
-            //    foreach (var l in configs) {
-            //        this.Interpolate(l.Pointer.Location);
-            //    }
-
-            //}
+        public void Invalidate() {
+            foreach(var simplex in this.Complex) {
+                simplex.Pairs.UpdateBary();
+            }
         }
 
         public void Draw(SKCanvas sKCanvas) {
@@ -530,9 +533,9 @@ namespace TaskMaker {
                 this.isSelected = value;
                 
                 if (this.isSelected) {
-                    this._radius = 7.0f;
+                    this._radius = 12.0f;
                 } else {
-                    this._radius = 5.0f;
+                    this._radius = 10.0f;
                 }
             }
         }
@@ -563,7 +566,7 @@ namespace TaskMaker {
             StrokeWidth = 2
         };
         private SKPoint location;
-        private float _radius = 5.0f;
+        private float _radius = 10.0f;
         private bool isSelected = false;
 
         public Entity_v2(SKPoint point) {
@@ -619,6 +622,8 @@ namespace TaskMaker {
     public class Simplex_v2 {
         public SKPoint Location { get; set; }
         public List<Entity_v2> Vertices { get; set; } = new List<Entity_v2>();
+
+        public bool IsPaired => this.Pairs.IsFullyPaired;
         public Pairs Pairs { get; set; } = new Pairs();
 
         private SKPaint fillPaint = new SKPaint {
@@ -628,7 +633,7 @@ namespace TaskMaker {
         };
         private SKPaint strokePaint = new SKPaint {
             IsAntialias = true,
-            Color = SKColors.Black,
+            Color = SKColors.Gray,
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 2
         };
@@ -945,20 +950,26 @@ namespace TaskMaker {
 
         public new void AddRange(IEnumerable<Pair> pairs) {
             base.AddRange(pairs);
-            this.TaskBary.AddRange(this.Select(p => p.Task.Vector).ToArray());
-            this.ForEach(p => p.PairUpdated += this.P_PairUpdated);
-            this.ForEach(p => p.Task.LocationUpdated += this.Task_LocationUpdated);
+
+            UpdateConfigBary();
+            UpdateTaskBary();
+            //this.TaskBary.AddRange(this.Select(p => p.Task.Vector).ToArray());
         }
 
-        private void Task_LocationUpdated(object sender, EventArgs e) {
+        public void UpdateBary() {
+            UpdateConfigBary();
+            UpdateTaskBary();
+        }
+
+        public void UpdateTaskBary() {
             if (this.IsFullyPaired) {
                 this.TaskBary.UpdateVertices(this.Select(p => p.Task.Vector).ToArray());
             }
         }
 
-        private void P_PairUpdated(object sender, EventArgs e) {
+        public void UpdateConfigBary() {
             if (this.IsFullyPaired) {
-                this.ConfigBary.AddRange(this.Select(p => p.Config).ToArray());
+                this.ConfigBary.UpdateVertices(this.Select(p => p.Config).ToArray());
             }
         }
 

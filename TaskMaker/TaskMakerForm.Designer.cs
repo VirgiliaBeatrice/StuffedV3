@@ -33,6 +33,7 @@ namespace TaskMaker {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.toolbox = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.button15 = new System.Windows.Forms.Button();
             this.button14 = new System.Windows.Forms.Button();
             this.button13 = new System.Windows.Forms.Button();
             this.button12 = new System.Windows.Forms.Button();
@@ -56,7 +57,6 @@ namespace TaskMaker {
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.propertyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.layerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.button15 = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
@@ -180,6 +180,16 @@ namespace TaskMaker {
             this.tableLayoutPanel2.Size = new System.Drawing.Size(104, 561);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
+            // button15
+            // 
+            this.button15.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button15.Location = new System.Drawing.Point(3, 411);
+            this.button15.Name = "button15";
+            this.button15.Size = new System.Drawing.Size(98, 23);
+            this.button15.TabIndex = 14;
+            this.button15.Text = "NULL";
+            this.button15.UseVisualStyleBackColor = true;
+            // 
             // button14
             // 
             this.button14.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -255,6 +265,7 @@ namespace TaskMaker {
             this.button8.TabIndex = 7;
             this.button8.Text = "Save Canvas";
             this.button8.UseVisualStyleBackColor = true;
+            this.button8.Click += new System.EventHandler(this.button8_Click);
             // 
             // button7
             // 
@@ -355,10 +366,12 @@ namespace TaskMaker {
             this.treeView1.LabelEdit = true;
             this.treeView1.Location = new System.Drawing.Point(4, 17);
             this.treeView1.Name = "treeView1";
+            this.treeView1.ShowLines = false;
+            this.treeView1.ShowRootLines = false;
             this.treeView1.Size = new System.Drawing.Size(234, 561);
             this.treeView1.TabIndex = 1;
-            this.treeView1.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeView1_AfterSelect);
-            this.treeView1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.treeView1_MouseDoubleClick);
+            this.treeView1.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.treeView1_AfterLabelEdit);
+            this.treeView1.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.treeView1_NodeMouseClick);
             // 
             // groupBox2
             // 
@@ -395,7 +408,7 @@ namespace TaskMaker {
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+,";
             this.settingsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Oemcomma)));
-            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(159, 22);
             this.settingsToolStripMenuItem.Text = "ComPort";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
             // 
@@ -420,16 +433,6 @@ namespace TaskMaker {
             this.layerToolStripMenuItem.Size = new System.Drawing.Size(102, 22);
             this.layerToolStripMenuItem.Text = "Layer";
             this.layerToolStripMenuItem.Click += new System.EventHandler(this.layerToolStripMenuItem_Click);
-            // 
-            // button15
-            // 
-            this.button15.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button15.Location = new System.Drawing.Point(3, 411);
-            this.button15.Name = "button15";
-            this.button15.Size = new System.Drawing.Size(98, 23);
-            this.button15.TabIndex = 14;
-            this.button15.Text = "NULL";
-            this.button15.UseVisualStyleBackColor = true;
             // 
             // TaskMakerForm
             // 
