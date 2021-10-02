@@ -99,7 +99,12 @@ namespace TaskMaker {
                 var tri = selectedEntities.ToArray();
 
                 this.SelectedLayer.Complex.Add(new Simplex_v2(tri));
-                //this.SelectedLayer.Complex.
+
+                foreach (var e in tri) {
+                    this.SelectedLayer.Complex.AddExtreme(e);
+                }
+               
+                this.SelectedLayer.Complex.CreateExterior();
             }
             else {
                 // Case: amount larger than 3
@@ -150,7 +155,8 @@ namespace TaskMaker {
                     this.SelectedLayer.Complex.AddComplexEdge(edge.First());
                 }
 
-                this.SelectedLayer.Complex.SetVoronoiRegions();
+                //this.SelectedLayer.Complex.SetVoronoiRegions();
+                this.SelectedLayer.Complex.CreateExterior();
             }
 
             // Reset entities' states
@@ -688,7 +694,7 @@ namespace TaskMaker {
 
         private List<Edge_v2> edges = new List<Edge_v2>();
         private List<Edge_v2> complexEdges = new List<Edge_v2>();
-        private CircularList<Entity_v2> extremes = new CircularList<Entity_v2>();
+        private CircularList<Entity_v2> _extremes = new CircularList<Entity_v2>();
         private VoronoiRegions voronoiRegions = new VoronoiRegions();
         private Bend bend;
         private Exterior exterior;
@@ -717,12 +723,8 @@ namespace TaskMaker {
             base.Add(simplex);
         }
 
-        //public void SetExtremes(List<Entity_v2> extremes) {
-        //    this.extremes = new CircularList<Entity_v2>(extremes);
-        //}
-
         public void AddExtreme(Entity_v2 extreme) {
-            this.extremes.Add(extreme);
+            _extremes.Add(extreme);
         }
 
         public void AddComplexEdge(Edge_v2 edge) {
@@ -750,8 +752,8 @@ namespace TaskMaker {
             var traces = new List<ExteriorRay_v3>();
             //var voronoiRegions = new VoronoiRegions();
 
-            // extremesa order: cw
-            foreach(var node in extremes) { 
+            // extremes order: cw
+            foreach(var node in _extremes) { 
                 var it = node.Value;
                 var prev = node.Prev.Value;
                 var next = node.Next.Value;
@@ -789,7 +791,7 @@ namespace TaskMaker {
                     //var region = new VoronoiRegion(it, next, null);
 
                     if (this.FindInComplexEdges(it.E0, next.E0).Count == 0) {
-                        var target = this.extremes.Where(e => e.Value == it.E0).FirstOrDefault();
+                        var target = this._extremes.Where(e => e.Value == it.E0).FirstOrDefault();
 
                         //region.ExcludedEntity = target.Next.Value;
                         var region = new VoronoiRegion_Type2(it, next, null);
@@ -808,7 +810,10 @@ namespace TaskMaker {
 
             // Set bend
             //this.bend = Bend.GenerateBend(this.extremes.Select(e => e.Value.Location).ToArray());
-            this.exterior = Exterior.CreateExterior(this.extremes.Select(e => e.Value).ToArray(), this.ToArray());
+        }
+
+        public void CreateExterior() {
+            this.exterior = Exterior.CreateExterior(this._extremes.Select(e => e.Value).ToArray(), this.ToArray());
         }
 
         public Vector<float> GetLambdas(SKPoint point) {
