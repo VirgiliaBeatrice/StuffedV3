@@ -136,6 +136,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Canvas\Bend.cs" />
     <Compile Include="Canvas\CanvasControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

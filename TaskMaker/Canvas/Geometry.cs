@@ -19,6 +19,24 @@ namespace TaskMaker.Geometry {
             return Math.Sign(ret);
         }
 
+        public static (float, float) Intersect(SKPoint a, SKPoint b, SKPoint c, SKPoint d) {
+            var dir0 = b - a;
+            var dir1 = d - c;
+
+            // Parellel
+            if (dir0.Cross(dir1) == 0) {
+                return (float.NaN, float.NaN);
+            }
+
+            // p = a + dir0 * t1 = c + dir1 * t2
+            // A * T = B
+            var A = Matrix<float>.Build.DenseOfRowMajor(2, 2, new float[] { dir0.X, dir1.X, dir0.Y, dir1.Y });
+            var B = (c - a).ToVector();
+            var T = A.Solve(B);
+
+            return (T[0], T[1]);
+        }
+
         public static (float, float) IntersectWithBox(SKPoint a, SKPoint b, SKRect rect) {
             float t0x, t1x, t0y, t1y;
 
@@ -71,9 +89,9 @@ namespace TaskMaker.Geometry {
             return GetIncludedAngle(a - o, b - o);
         }
 
-        public SKPoint E0 { get; set; }
-        public SKPoint E1 { get; set; }
-        public SKPoint Direction => E1 - E0;
+        public SKPoint P0 { get; set; }
+        public SKPoint P1 { get; set; }
+        public SKPoint Direction => P1 - P0;
     }
 
     public class BezierCurve {

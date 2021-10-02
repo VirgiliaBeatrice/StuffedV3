@@ -188,6 +188,8 @@ namespace TaskMaker {
     public struct LineSegment {
         public SKPoint P0 { get; set; }
         public SKPoint P1 { get; set; }
+
+        public SKPoint Direction => P1 - P0;
     }
 
     public interface IVoronoiRegion {
@@ -418,25 +420,25 @@ namespace TaskMaker {
 
                 path.Close();
 
-                if (ExRay0.Location != ExRay1.Location) {
-                    var colors = new SKColor[] {
-                        SKColors.Blue.WithAlpha(0.5f),
-                        SKColors.White.WithAlpha(0.5f)
-                    };
-                    var dir = ExRay1.Location - ExRay0.Location;
-                    var uDir = dir.DivideBy(dir.Length).Multiply(100.0f);
-                    var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(uDir);
-                    var shader = SKShader.CreateLinearGradient(
-                        ExRay0.Location,
-                        ExRay0.Location + perp,
-                        colors,
-                        null,
-                        SKShaderTileMode.Clamp);
+                //if (ExRay0.Location != ExRay1.Location) {
+                //    var colors = new SKColor[] {
+                //        SKColors.Blue.WithAlpha(0.5f),
+                //        SKColors.White.WithAlpha(0.5f)
+                //    };
+                //    var dir = ExRay1.Location - ExRay0.Location;
+                //    var uDir = dir.DivideBy(dir.Length).Multiply(100.0f);
+                //    var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(uDir);
+                //    var shader = SKShader.CreateLinearGradient(
+                //        ExRay0.Location,
+                //        ExRay0.Location + perp,
+                //        colors,
+                //        null,
+                //        SKShaderTileMode.Clamp);
 
-                    fill.Shader = shader;
-                }
+                //    fill.Shader = shader;
+                //}
 
-                sKCanvas.DrawPath(path, fill);
+                //sKCanvas.DrawPath(path, fill);
             }
             catch {
                 ;
@@ -647,25 +649,25 @@ namespace TaskMaker {
 
                 path.Close();
 
-                if (ExRay0.Location != ExRay1.Location) {
-                    var colors = new SKColor[] {
-                        SKColors.Blue.WithAlpha(0.5f),
-                        SKColors.White.WithAlpha(0.5f)
-                    };
-                    var dir = ExRay1.Location - ExRay0.Location;
-                    var uDir = dir.DivideBy(dir.Length).Multiply(20.0f);
-                    var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(uDir);
-                    var shader = SKShader.CreateLinearGradient(
-                        ExRay0.Location,
-                        ExRay0.Location + perp,
-                        colors,
-                        null,
-                        SKShaderTileMode.Clamp);
+                //if (ExRay0.Location != ExRay1.Location) {
+                //    var colors = new SKColor[] {
+                //        SKColors.Blue.WithAlpha(0.5f),
+                //        SKColors.White.WithAlpha(0.5f)
+                //    };
+                //    var dir = ExRay1.Location - ExRay0.Location;
+                //    var uDir = dir.DivideBy(dir.Length).Multiply(20.0f);
+                //    var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(uDir);
+                //    var shader = SKShader.CreateLinearGradient(
+                //        ExRay0.Location,
+                //        ExRay0.Location + perp,
+                //        colors,
+                //        null,
+                //        SKShaderTileMode.Clamp);
 
-                    fill.Shader = shader;
-                }
+                //    fill.Shader = shader;
+                //}
 
-                sKCanvas.DrawPath(path, fill);
+                //sKCanvas.DrawPath(path, fill);
             }
             catch {
                 ;

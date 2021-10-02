@@ -675,6 +675,7 @@ namespace TaskMaker {
         private List<Edge_v2> complexEdges = new List<Edge_v2>();
         private CircularList<Entity_v2> extremes = new CircularList<Entity_v2>();
         private VoronoiRegions voronoiRegions = new VoronoiRegions();
+        private Bend bend;
 
         public new void Add(Simplex_v2 simplex) {
 
@@ -787,6 +788,9 @@ namespace TaskMaker {
 
                 }
             }
+
+            // Set bend
+            this.bend = Bend.GenerateBend(this.extremes.Select(e => e.Value.Location).ToArray());
         }
 
         public Vector<float> GetLambdas(SKPoint point) {
@@ -815,6 +819,7 @@ namespace TaskMaker {
         public void Draw(SKCanvas sKCanvas) {
             this.ForEach(sim => sim.DrawThis(sKCanvas));
             this.complexEdges.ForEach(edge => edge.Draw(sKCanvas));
+            this.bend?.Draw(sKCanvas);
 
             // Test
             //if (this.voronoiRegions.Count != 0) {
