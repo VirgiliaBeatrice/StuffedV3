@@ -4,15 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TaskMaker.Memento {
+namespace TaskMaker.MementoPattern {
     public class Memento {
-        private object _state;
+        private object _states;
 
-        public Memento(object state) {
-            _state = state;
+        public Memento(object states) {
+            _states = states;
         }
 
-        public object GetState() { return _state; }
+        public object GetStates() { return _states; }
     }
 
     public class Originator {
@@ -22,11 +22,16 @@ namespace TaskMaker.Memento {
         public void Restore(Memento m) { }
     }
 
+    public interface IOriginator {
+        Memento Save();
+        void Restore(Memento m);
+    }
+
     public class Caretaker {
-        private Originator _originator;
+        private IOriginator _originator;
         private Stack<Memento> _history = new Stack<Memento>(10);
 
-        public Caretaker(Originator originator) {
+        public Caretaker(IOriginator originator) {
             _originator = originator;
         }
 
@@ -36,9 +41,11 @@ namespace TaskMaker.Memento {
             _history.Push(m);
         }
         public void Undo() {
-            var m = _history.Pop();
+            if (_history.Count != 0) {
+                var m = _history.Pop();
 
-            _originator.Restore(m);
+                _originator.Restore(m);
+            }
         }
     }
 }

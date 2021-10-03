@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using MathNet.Numerics.LinearAlgebra;
 using PCController;
+using TaskMaker.MementoPattern;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -18,6 +19,7 @@ namespace TaskMaker {
         private ToolTip tooltipBtnAddLayer = new ToolTip();
         private ToolTip tooltipBtnDeleteLayer = new ToolTip();
         private ToolTip tooltipBtnTargetSelection = new ToolTip();
+        private Caretaker _caretaker;
 
         public delegate void InvalidateDelgate(bool invalidateChildren);
 
@@ -216,6 +218,9 @@ namespace TaskMaker {
             this.canvasControl1.TabIndex = 0;
 
             this.groupBox2.Controls.Add(this.canvasControl1);
+
+            _caretaker = new Caretaker(canvasControl1.Canvas);
+            Services.Caretaker = _caretaker;
         }
 
         private void UpdateTreeview() {
@@ -237,7 +242,7 @@ namespace TaskMaker {
                     e.Handled = true;
                     break;
                 case Keys.P:
-                    this.canvasControl1.PairNew();
+                    this.canvasControl1.Pair();
                     e.Handled = true;
                     break;
             }
@@ -322,7 +327,7 @@ namespace TaskMaker {
         }
 
         private void button12_Click(object sender, EventArgs e) {
-            this.canvasControl1.PairNew();
+            this.canvasControl1.Pair();
         }
 
         private void layerToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -360,6 +365,10 @@ namespace TaskMaker {
             this.canvasControl1.SaveAsImage();
         }
 
+        private void button15_Click(object sender, EventArgs e) {
+            _caretaker.Undo();
+        }
+
         //private void treeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) {
         //    var target = (e.Node as Layer);
 
@@ -387,5 +396,7 @@ namespace TaskMaker {
         public Layer RootLayer { get; set; }
         public Layer SelectedLayer { get; set; }
         public Timer Timer { get; set; }
+
+        static public Caretaker Caretaker { get; set; }
     }
 }

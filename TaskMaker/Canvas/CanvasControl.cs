@@ -188,31 +188,7 @@ namespace TaskMaker {
             this.SelectedLayer.Invalidate();
         }
 
-        //public void Pair() {
-        //    var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
-
-        //    if (this.canvas.SelectedLayer.MotorConfigs != null) {
-        //        if (selectedEnities.Count == 1) {
-        //            selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
-        //            this.SelectedLayer.Invalidate();
-        //        }
-
-        //        return;
-        //    }
-
-        //    if (this.canvas.SelectedLayer.LayerConfigs != null) {
-        //        if (selectedEnities.Count == 1) {
-        //            selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.LayerConfigs.ToVector(this.canvas.SelectedLayer.LayerConfigs));
-        //            this.SelectedLayer.Invalidate();
-        //        }
-
-        //        return;
-        //    }
-
-        //    MessageBox.Show("This layer did not bind with any configuration.");
-        //}
-
-        public void PairNew() {
+        public void Pair() {
             if (SelectedLayer.BindedTarget == null) {
                 MessageBox.Show("Layer without target.",
                     "Error",
@@ -502,6 +478,8 @@ namespace TaskMaker {
                 this.canvas.SelectedLayer.Entities.Add(new Entity_v2(e.Location.ToSKPoint()) {
                     Index = this.canvas.SelectedLayer.Entities.Count,
                 });
+                
+                Services.Caretaker.Do();
             }
 
             // Quit from current mode after adding one entity

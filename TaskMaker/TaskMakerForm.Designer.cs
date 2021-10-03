@@ -57,6 +57,7 @@ namespace TaskMaker {
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.propertyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.layerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.button16 = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
@@ -141,6 +142,7 @@ namespace TaskMaker {
             // 
             this.tableLayoutPanel2.ColumnCount = 1;
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel2.Controls.Add(this.button16, 0, 15);
             this.tableLayoutPanel2.Controls.Add(this.button15, 0, 14);
             this.tableLayoutPanel2.Controls.Add(this.button14, 0, 13);
             this.tableLayoutPanel2.Controls.Add(this.button13, 0, 12);
@@ -175,7 +177,7 @@ namespace TaskMaker {
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(104, 561);
             this.tableLayoutPanel2.TabIndex = 0;
@@ -187,8 +189,9 @@ namespace TaskMaker {
             this.button15.Name = "button15";
             this.button15.Size = new System.Drawing.Size(98, 23);
             this.button15.TabIndex = 14;
-            this.button15.Text = "NULL";
+            this.button15.Text = "Undo";
             this.button15.UseVisualStyleBackColor = true;
+            this.button15.Click += new System.EventHandler(this.button15_Click);
             // 
             // button14
             // 
@@ -434,6 +437,16 @@ namespace TaskMaker {
             this.layerToolStripMenuItem.Text = "Layer";
             this.layerToolStripMenuItem.Click += new System.EventHandler(this.layerToolStripMenuItem_Click);
             // 
+            // button16
+            // 
+            this.button16.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button16.Location = new System.Drawing.Point(3, 440);
+            this.button16.Name = "button16";
+            this.button16.Size = new System.Drawing.Size(98, 23);
+            this.button16.TabIndex = 15;
+            this.button16.Text = "NULL";
+            this.button16.UseVisualStyleBackColor = true;
+            // 
             // TaskMakerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -492,5 +505,6 @@ namespace TaskMaker {
         private System.Windows.Forms.ToolStripMenuItem propertyToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem layerToolStripMenuItem;
         private System.Windows.Forms.Button button15;
+        private System.Windows.Forms.Button button16;
     }
 }

@@ -12,10 +12,11 @@ using PCController;
 using System.Text.Json;
 using System.Drawing;
 using TaskMaker.Geometry;
+using TaskMaker.MementoPattern;
 
 namespace TaskMaker {
 
-    public class Canvas {
+    public class Canvas : IOriginator {
         public Services Services { get; set; }
         public bool IsShownPointer { get; set; } = false;
         public bool IsShownPointerTrace { get; set; } = false;
@@ -24,6 +25,8 @@ namespace TaskMaker {
         public ISelectionTool SelectionTool { get; set; }
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
+
+        private List<object> _states = new List<object>();
 
         private Mapping.Triangulation triangulation;
 
@@ -35,6 +38,27 @@ namespace TaskMaker {
             this.SelectedLayer = this.RootLayer.FirstNode as Layer;
 
             this.Pointer = new CrossPointer();
+
+            this.BindStates();
+        }
+
+        private void BindStates() {
+            _states.AddRange(new object[] {
+                RootLayer,
+                SelectedLayer
+            });
+        }
+
+        public Memento Save() => new Memento(_states);
+
+        public void Restore(Memento m) {
+            _states = m.GetStates() as List<object>;
+            var rootLayer = _states[0] as Layer;
+            var selectedLayer = _states[1] as Layer;
+            RootLayer = rootLayer;
+            SelectedLayer = selectedLayer;
+
+            Reset();
         }
 
         public void Reset() {
