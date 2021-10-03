@@ -15,14 +15,26 @@ namespace TaskMaker {
             this.Regions.ForEach(r => r.Draw(sKCanvas));
         }
 
-        public Vector<float> Interpolate(SKPoint p) {
-            var ret = Vector<float>.Build.Random(0);
+        //public Vector<float> Interpolate(SKPoint p) {
+        //    var ret = Vector<float>.Build.Random(0);
 
-            foreach (var v in Regions.Select(r => r.Interpolate(p))) {
-                ret.Concatenate(v);
+        //    foreach (var v in Regions.Select(r => r.Interpolate(p))) {
+        //        ret.Concatenate(v);
+        //    }
+
+        //    return ret;
+        //}
+
+        public Vector<float> GetInterpolatedConfigs(SKPoint p) {
+            var values = new List<Vector<float>>();
+
+            foreach (var r in Regions) {
+                var target = r.Contains(p) ? r.GetInterpolatedTargetVector(p) : r.GetZeroTargetVector();
+
+                values.Add(target);
             }
 
-            return ret;
+            return values.Sum();
         }
 
         public static Exterior CreateExterior(Entity_v2[] extremes, Simplex_v2[] simplices) {

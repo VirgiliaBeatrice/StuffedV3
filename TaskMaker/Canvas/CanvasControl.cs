@@ -382,7 +382,7 @@ namespace TaskMaker {
         private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
-                canvas.SelectedLayer.Interpolate_v1(e.Location.ToSKPoint());
+                canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
                 this.canvas.PointerTrace.Update(e.Location.ToSKPoint());
             }
         }

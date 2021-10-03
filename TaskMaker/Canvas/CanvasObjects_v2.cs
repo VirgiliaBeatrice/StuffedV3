@@ -88,7 +88,7 @@ namespace TaskMaker {
                     this.SelectedLayer.Complex.AddExtreme(e);
                 }
 
-                this.SelectedLayer.Complex.CreateExterior();
+                this.SelectedLayer.CreateExterior();
             }
             else {
                 // Case: amount larger than 3
@@ -102,8 +102,8 @@ namespace TaskMaker {
                 var input = flattern.ToArray();
                 var output = this.triangulation.RunDelaunay_v1(2, input.Length / 2, ref input);
 
-                // ccw => cw
                 var outputConvexList = this.triangulation.RunConvexHull_v1(2, input.Length / 2, ref input);
+                // cw => ccw
                 outputConvexList.Reverse();
                 var outputConvex = new LinkedList<int>(outputConvexList);
 
@@ -140,7 +140,7 @@ namespace TaskMaker {
                 }
 
                 //this.SelectedLayer.Complex.SetVoronoiRegions();
-                this.SelectedLayer.Complex.CreateExterior();
+                this.SelectedLayer.CreateExterior();
             }
 
             // Reset entities' states
@@ -155,24 +155,10 @@ namespace TaskMaker {
         public Point_v2 Pointer { get; set; } = new Point_v2();
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public SimplicialComplex_v2 Complex { get; set; } = new SimplicialComplex_v2();
+        public Exterior Exterior { get; set; }
         public Layer NextLayer => (Layer)this.NextNode;
-        //public Configs<Motor> MotorConfigs { get; set; }
-        //public Configs<Layer> LayerConfigs { get; set; }
-
         public SKPoint Input { get; set; }
         public Target BindedTarget { get; set; }
-
-        //public LayerStatus LayerStatus {
-        //    get {
-        //        if (this.MotorConfigs != null)
-        //            return LayerStatus.WithMotor;
-        //        if (this.LayerConfigs != null)
-        //            return LayerStatus.WithLayer;
-
-        //        return LayerStatus.None;
-        //    }
-        //}
-
         public LayerStatus LayerStatus {
             get {
                 if (BindedTarget == null)
@@ -186,26 +172,23 @@ namespace TaskMaker {
             }
         }
 
-        public Layer() {
-            this.Text = "New Layer";
-        }
-
         public Layer(string name) {
             this.Text = name;
         }
 
-        public void Bind(Target target) {
-            BindedTarget = target;
+        public void CreateExterior() {
+            Exterior = Complex.CreateExterior();
         }
 
-        public void Interpolate_v1(SKPoint p) {
+        public void Interpolate(SKPoint p) {
             if (BindedTarget == null)
                 return;
 
             // Input ==InputBary.==> Lambdas ==OutputBary.==> Output
-            var configs = Complex.GetInterpolatedConfigs(p);
+            var complexConfigs = Complex.GetInterpolatedConfigs(p);
+            var exteriorConfigs = Exterior.GetInterpolatedConfigs(p);
 
-            BindedTarget.FromVector(configs);
+            BindedTarget.FromVector(complexConfigs + exteriorConfigs);
         }
 
         public void ShowTargetSelectionForm(Services info) {
@@ -227,20 +210,24 @@ namespace TaskMaker {
         }
 
         public bool ShowTargetControlForm() {
+            if (BindedTarget == null) {
+                MessageBox.Show("No config has been set. Abort.");
+                return false;
+            }
+
+
             if (BindedTarget.GetType() == typeof(LayerTarget)) {
                 this.ShowTinyCanvases();
 
                 return true;
             }
 
-            if (BindedTarget.GetType() == typeof(MotorTarget)) {
+            else if (BindedTarget.GetType() == typeof(MotorTarget)) {
                 this.ShowMotorControllers();
              
                 return true;
             }
-
-            MessageBox.Show("No config has been set. Abort.");
-            return false;
+            else { return false; }
         }
 
         public void ShowTinyCanvases() {
@@ -294,7 +281,8 @@ namespace TaskMaker {
         }
 
         public void Draw(SKCanvas sKCanvas) {
-            this.Complex.Draw(sKCanvas);
+            Complex.Draw(sKCanvas);
+            Exterior?.Draw(sKCanvas);
 
             var reverse = new List<Entity_v2>(this.Entities);
             reverse.Reverse();
@@ -480,8 +468,6 @@ namespace TaskMaker {
             }
         }
         public int Index { get; set; }
-        //public Pair Pair { get; set; }
-        //public Target Target { get; set; }
         public TargetState TargetState { get; set; }
         public Vector<float> Vector => SkiaExtension.SkiaHelper.ToVector(this.location);
 
@@ -513,7 +499,6 @@ namespace TaskMaker {
 
         public Entity_v2(SKPoint point) {
             this.Location = point;
-            //this.Pair = new Pair(this);
         }
 
         public override string ToString() {
@@ -644,17 +629,14 @@ namespace TaskMaker {
 
 
     public class SimplicialComplex_v2 : List<Simplex_v2> {
-        //public bool IsPaired => this.TrueForAll(sim => sim.IsPaired);
-
         private List<Edge_v2> edges = new List<Edge_v2>();
         private List<Edge_v2> complexEdges = new List<Edge_v2>();
         private CircularList<Entity_v2> _extremes = new CircularList<Entity_v2>();
         private VoronoiRegions voronoiRegions = new VoronoiRegions();
         private Bend bend;
-        private Exterior exterior;
+        //private Exterior exterior;
 
         public new void Add(Simplex_v2 simplex) {
-
             var edge0 = new Edge_v2();
             var edge1 = new Edge_v2();
             var edge2 = new Edge_v2();
@@ -768,9 +750,11 @@ namespace TaskMaker {
         }
         #endregion
 
-        public void CreateExterior() {
-            this.exterior = Exterior.CreateExterior(this._extremes.Select(e => e.Value).ToArray(), this.ToArray());
-        }
+        //public void CreateExterior() {
+        //    this.exterior = Exterior.CreateExterior(this._extremes.Select(e => e.Value).ToArray(), this.ToArray());
+        //}
+
+        public Exterior CreateExterior() => Exterior.CreateExterior(this._extremes.Select(e => e.Value).ToArray(), this.ToArray());
 
         //public Vector<float> GetLambdas(SKPoint point) {
         //    var result = new List<float>();
@@ -809,26 +793,20 @@ namespace TaskMaker {
                 values.Add(target);
             }
 
-            foreach(var r in exterior.Regions) {
-                var target = r.Contains(p) ? r.GetInterpolatedTargetVector(p) : r.GetZeroTargetVector();
-
-                values.Add(target);
-            }
-
             return values.Sum();
         }
 
         public void Draw(SKCanvas sKCanvas) {
-            this.ForEach(sim => sim.DrawThis(sKCanvas));
-            this.complexEdges.ForEach(edge => edge.Draw(sKCanvas));
+            this.ForEach(s => s.DrawThis(sKCanvas));
+            //this.complexEdges.ForEach(edge => edge.Draw(sKCanvas));
             //this.bend?.Draw(sKCanvas);
-            this.exterior?.Draw(sKCanvas);
+            //this.exterior?.Draw(sKCanvas);
 
             // Test
             //if (this.voronoiRegions.Count != 0) {
             //    this.voronoiRegions[5].Draw(sKCanvas);
             //}
-            this.voronoiRegions.ForEach(v => v.Draw(sKCanvas));
+            //this.voronoiRegions.ForEach(v => v.Draw(sKCanvas));
         }
     }
 
@@ -897,68 +875,6 @@ namespace TaskMaker {
 
             cap = new ArrowCap(this.Location, this.Direction);
             cap.Draw(sKCanvas);
-        }
-    }
-
-
-
-    public class Pair {
-        public bool IsPaired => this.Config != null;
-
-        public Entity_v2 Task { get; set; }
-        public Vector<float> Config { get; set; }
-        public event EventHandler PairUpdated;
-
-        public Pair(Entity_v2 task) {
-            this.Task = task;
-        }
-
-        public void AddPair(Vector<float> target) {
-            this.Config = target;
-            this.PairUpdated?.Invoke(this, null);
-        }
-
-        public void RemovePair() {
-            this.Config = null;
-            this.PairUpdated?.Invoke(this, null);
-        }
-    }
-
-    public class Pairs : List<Pair> {
-        public bool IsFullyPaired => this.All(e => e.IsPaired);
-        public BarycentricCoordinates TaskBary { get; set; } = new BarycentricCoordinates(3);
-        public BarycentricCoordinates ConfigBary { get; set; } = new BarycentricCoordinates(3);
-
-        public new void AddRange(IEnumerable<Pair> pairs) {
-            base.AddRange(pairs);
-
-            UpdateConfigBary();
-            UpdateTaskBary();
-            //this.TaskBary.AddRange(this.Select(p => p.Task.Vector).ToArray());
-        }
-
-        public void UpdateBary() {
-            UpdateConfigBary();
-            UpdateTaskBary();
-        }
-
-        public void UpdateTaskBary() {
-            if (this.IsFullyPaired) {
-                this.TaskBary.UpdateVertices(this.Select(p => p.Task.Vector).ToArray());
-            }
-        }
-
-        public void UpdateConfigBary() {
-            if (this.IsFullyPaired) {
-                this.ConfigBary.UpdateVertices(this.Select(p => p.Config).ToArray());
-            }
-        }
-
-        public Vector<float> GetConfig(SKPoint taskPoint) {
-            var lambda = this.TaskBary.GetLambdasOnlyInterior(taskPoint.ToVector());
-            var config = this.ConfigBary.GetB(lambda);
-
-            return config;
         }
     }
 }
