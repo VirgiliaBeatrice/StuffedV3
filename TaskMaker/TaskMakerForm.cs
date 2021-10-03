@@ -237,7 +237,7 @@ namespace TaskMaker {
                     e.Handled = true;
                     break;
                 case Keys.P:
-                    this.canvasControl1.Pair();
+                    this.canvasControl1.PairNew();
                     e.Handled = true;
                     break;
             }
@@ -322,7 +322,7 @@ namespace TaskMaker {
         }
 
         private void button12_Click(object sender, EventArgs e) {
-            this.canvasControl1.Pair();
+            this.canvasControl1.PairNew();
         }
 
         private void layerToolStripMenuItem_Click(object sender, EventArgs e) {

@@ -30,6 +30,16 @@ namespace MathNetExtension {
             return Vector<float>.Build.Dense(resultList.ToArray());
         }
 
+        public static Vector<float> Concatenate(IEnumerable<Vector<float>> vs) {
+            var ret = Vector<float>.Build.Dense(0);
+
+            foreach(var v in vs) {
+                ret = ret.Concatenate(v);
+            }
+
+            return ret;
+        }
+
         public static SKPoint Multiply(this SKPoint point, float factor) {
             return new SKPoint(factor * point.X, factor * point.Y);
         }
@@ -50,6 +60,15 @@ namespace MathNetExtension {
 
         public static SKColor WithAlpha(this SKColor color, float percentage) {
             return color.WithAlpha((byte)(int)(percentage * 256));
+        }
+
+        public static Vector<float> Sum(this List<Vector<float>> values) {
+            var ret = values[0] * 0;
+
+            foreach (var v in values)
+                ret += v;
+
+            return ret;
         }
     }
 }

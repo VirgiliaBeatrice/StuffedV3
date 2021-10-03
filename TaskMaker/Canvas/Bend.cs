@@ -3,6 +3,7 @@ using System.Collections.Generic;
 //using Reparameterization;
 using MathNetExtension;
 using System.Linq;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace TaskMaker {
     public class Exterior {
@@ -12,6 +13,16 @@ namespace TaskMaker {
 
         public void Draw(SKCanvas sKCanvas) {
             this.Regions.ForEach(r => r.Draw(sKCanvas));
+        }
+
+        public Vector<float> Interpolate(SKPoint p) {
+            var ret = Vector<float>.Build.Random(0);
+
+            foreach (var v in Regions.Select(r => r.Interpolate(p))) {
+                ret.Concatenate(v);
+            }
+
+            return ret;
         }
 
         public static Exterior CreateExterior(Entity_v2[] extremes, Simplex_v2[] simplices) {

@@ -188,35 +188,59 @@ namespace TaskMaker {
             this.SelectedLayer.Invalidate();
         }
 
-        public void Pair() {
-            var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+        //public void Pair() {
+        //    var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
-            if (this.canvas.SelectedLayer.MotorConfigs != null) {
-                if (selectedEnities.Count == 1) {
-                    selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
-                    this.SelectedLayer.Invalidate();
-                }
+        //    if (this.canvas.SelectedLayer.MotorConfigs != null) {
+        //        if (selectedEnities.Count == 1) {
+        //            selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.MotorConfigs.ToVector(this.canvas.SelectedLayer.MotorConfigs));
+        //            this.SelectedLayer.Invalidate();
+        //        }
 
+        //        return;
+        //    }
+
+        //    if (this.canvas.SelectedLayer.LayerConfigs != null) {
+        //        if (selectedEnities.Count == 1) {
+        //            selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.LayerConfigs.ToVector(this.canvas.SelectedLayer.LayerConfigs));
+        //            this.SelectedLayer.Invalidate();
+        //        }
+
+        //        return;
+        //    }
+
+        //    MessageBox.Show("This layer did not bind with any configuration.");
+        //}
+
+        public void PairNew() {
+            if (SelectedLayer.BindedTarget == null) {
+                MessageBox.Show("Layer without target.",
+                    "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (this.canvas.SelectedLayer.LayerConfigs != null) {
-                if (selectedEnities.Count == 1) {
-                    selectedEnities[0].Pair.AddPair(this.canvas.SelectedLayer.LayerConfigs.ToVector(this.canvas.SelectedLayer.LayerConfigs));
-                    this.SelectedLayer.Invalidate();
-                }
+            var selectedEntities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
-                return;
+            if (selectedEntities.Count > 1) {
+                MessageBox.Show("More than one entity are selected.",
+                    "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            else if (selectedEntities.Count == 1) {
+                selectedEntities[0].TargetState = SelectedLayer.BindedTarget.CreateTargetState();
 
-            MessageBox.Show("This layer did not bind with any configuration.");
+                SelectedLayer.Invalidate();
+            }
+            else { }
         }
 
 
         public void Unpair() {
             var selectedEnities = this.canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
-            selectedEnities.ForEach(e => e.Pair.RemovePair());
+            selectedEnities.ForEach(e => e.TargetState = null);
+            //selectedEnities.ForEach(e => e.Pair.RemovePair());
             this.SelectedLayer.Invalidate();
         }
 
@@ -357,7 +381,8 @@ namespace TaskMaker {
 
         private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
+                //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
+                canvas.SelectedLayer.Interpolate_v1(e.Location.ToSKPoint());
                 this.canvas.PointerTrace.Update(e.Location.ToSKPoint());
             }
         }

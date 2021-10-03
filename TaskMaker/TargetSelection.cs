@@ -12,6 +12,7 @@ using PCController;
 using System.IO.Ports;
 using MathNet.Numerics.LinearAlgebra;
 using MathNetExtension;
+using SkiaSharp;
 
 namespace TaskMaker {
     public partial class TargetSelection : UserControl {
@@ -143,11 +144,14 @@ namespace TaskMaker {
 
         private void button1_Click(object sender, EventArgs e) {
             if (this.radioButton1.Checked) {
-                this.ProgramInfo.SelectedLayer.InitializeMotorConfigs();
+                //this.ProgramInfo.SelectedLayer.InitializeMotorConfigs();
+                var target = new MotorTarget();
+                this.ProgramInfo.SelectedLayer.BindedTarget = target;
 
                 foreach (SelectableMotor m in this.treeView1.Nodes) {
                     if (m.Checked) {
-                        this.ProgramInfo.SelectedLayer.MotorConfigs.Add(m.Target);
+                        //this.ProgramInfo.SelectedLayer.MotorConfigs.Add(m.Target);
+                        target.Motors.Add(m.Target);
                     }
                 }
 
@@ -156,11 +160,15 @@ namespace TaskMaker {
             }
 
             if (this.radioButton2.Checked) {
-                this.ProgramInfo.SelectedLayer.InitializeLayerConfigs();
+                //this.ProgramInfo.SelectedLayer.InitializeLayerConfigs();
+                var target = new LayerTarget();
+                this.ProgramInfo.SelectedLayer.BindedTarget = target;
+
                 var checkedLayers = this.GetAllLayers(this.treeView2.Nodes[0] as SelectableLayer);
 
                 foreach(SelectableLayer l in checkedLayers) {
-                    this.ProgramInfo.SelectedLayer.LayerConfigs.Add(l.Target);
+                    //this.ProgramInfo.SelectedLayer.LayerConfigs.Add(l.Target);
+                    target.Layers.Add(l.Target);
                 }
             }
 
@@ -235,15 +243,4 @@ namespace TaskMaker {
             this.FromVector += funcFrom;
         }
     }
-
-    //public class MotorConfigs : Configs<Motor> {
-    //    public MotorConfigs(Action<MotorConfigs> funcTo, Action<MotorConfigs, Vector<float>> funcFrom) : base(funcTo, funcFrom) {
-    //    }
-    //}
-
-    //public class LayerConfigs : Configs<Layer> {
-    //    public LayerConfigs(Action<LayerConfigs> funcTo, Action<LayerConfigs, Vector<float>> funcFrom) : base(funcTo, funcFrom) {
-    //    }
-    //}
-
 }

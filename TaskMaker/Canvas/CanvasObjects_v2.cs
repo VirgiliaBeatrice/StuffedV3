@@ -61,32 +61,6 @@ namespace TaskMaker {
             }
         }
 
-        //public void Interpolate(SKPoint pointerLocation, Layer layer) {
-        //    var pointer = layer.Pointer;
-        //    pointer.Location = pointerLocation;
-
-        //    var lambdas = layer.Complex.GetLambdas(pointer.Location);
-        //    var configVector = layer.Complex.GetConfigVectors(pointer.Location);
-
-        //    if (layer.LayerStatus == LayerStatus.WithMotor) {
-        //        var configs = layer.MotorConfigs;
-
-        //        configs.FromVector(configs, configVector);
-        //    }
-
-
-        //    if (layer.LayerStatus == LayerStatus.WithLayer) {
-        //        var configs = layer.LayerConfigs;
-
-        //        configs.FromVector(configs, configVector);
-                
-        //        foreach(var l in configs) {
-        //            this.Interpolate(l.Pointer.Location, l);
-        //        }
-
-        //    }
-        //}
-
         public bool Triangulate() {
             var selectedEntities = this.SelectedLayer.Entities.Where(e => e.IsSelected);
             this.SelectedLayer.Complex = new SimplicialComplex_v2();
@@ -172,51 +146,67 @@ namespace TaskMaker {
         public List<Entity_v2> Entities { get; set; } = new List<Entity_v2>();
         public SimplicialComplex_v2 Complex { get; set; } = new SimplicialComplex_v2();
         public Layer NextLayer => (Layer)this.NextNode;
-        public Configs<Motor> MotorConfigs { get; set; }
-        public Configs<Layer> LayerConfigs { get; set; }
+        //public Configs<Motor> MotorConfigs { get; set; }
+        //public Configs<Layer> LayerConfigs { get; set; }
+
+        public SKPoint Input { get; set; }
+        public Target BindedTarget { get; set; }
+
+        //public LayerStatus LayerStatus {
+        //    get {
+        //        if (this.MotorConfigs != null)
+        //            return LayerStatus.WithMotor;
+        //        if (this.LayerConfigs != null)
+        //            return LayerStatus.WithLayer;
+
+        //        return LayerStatus.None;
+        //    }
+        //}
 
         public LayerStatus LayerStatus {
             get {
-                if (this.MotorConfigs != null)
+                if (BindedTarget == null)
+                    return LayerStatus.None;
+                if (BindedTarget.GetType() == typeof(MotorTarget))
                     return LayerStatus.WithMotor;
-                if (this.LayerConfigs != null)
+                else if (BindedTarget.GetType() == typeof(LayerTarget))
                     return LayerStatus.WithLayer;
-
-                return LayerStatus.None;
+                else
+                    return LayerStatus.None;
             }
         }
 
-        static public void Interpolate(SKPoint pointerLocation, Layer layer) {
-            var pointer = layer.Pointer;
-            pointer.Location = pointerLocation;
+        //static public void Interpolate(SKPoint pointerLocation, Layer layer) {
+        //    var pointer = layer.Pointer;
+        //    pointer.Location = pointerLocation;
 
-            var lambdas = layer.Complex.GetLambdas(pointer.Location);
+        //    var lambdas = layer.Complex.GetLambdas(pointer.Location);
             
-            // no return zero
-            if (lambdas.All(lambda => lambda == 0)) {
-                return;
-            }
+        //    // no return zero
+        //    if (lambdas.All(lambda => lambda == 0)) {
+        //        return;
+        //    }
 
-            var configVector = layer.Complex.GetConfigVectors(pointer.Location);
+        //    var configVector = layer.Complex.GetConfigVectors(pointer.Location);
 
-            if (layer.LayerStatus == LayerStatus.WithMotor) {
-                var configs = layer.MotorConfigs;
+        //    if (layer.LayerStatus == LayerStatus.WithMotor) {
+        //        var configs = layer.MotorConfigs;
 
-                configs.FromVector(configs, configVector);
-            }
+        //        configs.FromVector(configs, configVector);
+        //    }
 
 
-            if (layer.LayerStatus == LayerStatus.WithLayer) {
-                var configs = layer.LayerConfigs;
+        //    if (layer.LayerStatus == LayerStatus.WithLayer) {
+        //        var configs = layer.LayerConfigs;
 
-                configs.FromVector(configs, configVector);
+        //        configs.FromVector(configs, configVector);
 
-                foreach (var l in configs) {
-                    Interpolate(l.Pointer.Location, l);
-                }
+        //        foreach (var l in configs) {
+        //            Interpolate(l.Pointer.Location, l);
+        //        }
 
-            }
-        }
+        //    }
+        //}
 
         public Layer() {
             this.Text = "New Layer";
@@ -224,6 +214,20 @@ namespace TaskMaker {
 
         public Layer(string name) {
             this.Text = name;
+        }
+
+        public void Bind(Target target) {
+            BindedTarget = target;
+        }
+
+        public void Interpolate_v1(SKPoint p) {
+            if (BindedTarget == null)
+                return;
+
+            // Input ==InputBary.==> Lambdas ==OutputBary.==> Output
+            var configs = Complex.GetInterpolatedConfigs(p);
+
+            BindedTarget.FromVector(configs);
         }
 
         public void ShowTargetSelectionForm(Services info) {
@@ -245,13 +249,13 @@ namespace TaskMaker {
         }
 
         public bool ShowTargetControlForm() {
-            if (this.LayerConfigs != null) {
+            if (BindedTarget.GetType() == typeof(LayerTarget)) {
                 this.ShowTinyCanvases();
 
                 return true;
             }
 
-            if (this.MotorConfigs != null) {
+            if (BindedTarget.GetType() == typeof(MotorTarget)) {
                 this.ShowMotorControllers();
              
                 return true;
@@ -262,7 +266,7 @@ namespace TaskMaker {
         }
 
         public void ShowTinyCanvases() {
-            foreach(var layer in this.LayerConfigs) {
+            foreach(var layer in (BindedTarget as LayerTarget).Layers) {
                 var form = new TinyCanvasForm(layer);
 
                 form.Text = $"Tiny Canvas - {this.Text}";
@@ -280,6 +284,7 @@ namespace TaskMaker {
             var form = new Form();
             var panel = new FlowLayoutPanel();
             var btn = new Button();
+            var target = BindedTarget as MotorTarget;
 
             form.Text = $"Motor Position - {this.Text}";
             form.Size = new Size(600, 600);
@@ -289,9 +294,9 @@ namespace TaskMaker {
             btn.AutoSize = true;
             
 
-            foreach(var motor in this.MotorConfigs) {
+            foreach(var motor in target.Motors) {
                 var motorController = new MotorController(motor);
-                motorController.MotorName = $"Motor{this.MotorConfigs.IndexOf(motor) + 1}";
+                motorController.MotorName = $"Motor{target.Motors.IndexOf(motor) + 1}";
                 btn.Click += (sender, e) => {
                     motorController.ReturnZero();
                 };
@@ -308,50 +313,54 @@ namespace TaskMaker {
             throw new NotImplementedException();
         }
 
-        public void InitializeMotorConfigs() {
-            this.MotorConfigs = new Configs<Motor>(
-                (me) => {
-                    var newConfigVector = me.Select(e => (float)e.position.Value).ToArray();
+        //public void InitializeMotorConfigs() {
+        //    this.MotorConfigs = new Configs<Motor>(
+        //        (me) => {
+        //            var newConfigVector = me.Select(e => (float)e.position.Value).ToArray();
 
-                    return Vector<float>.Build.Dense(newConfigVector);
-                },
-                (me, input) => {
-                    for(int i = 0; i < input.Count; ++i) {
-                        me[i].position.Value = (int)input[i];
-                    }
-                }
-            );
+        //            return Vector<float>.Build.Dense(newConfigVector);
+        //        },
+        //        (me, input) => {
+        //            for(int i = 0; i < input.Count; ++i) {
+        //                me[i].position.Value = (int)input[i];
+        //            }
+        //        }
+        //    );
 
-            this.LayerConfigs = null;
-        }
+        //    this.LayerConfigs = null;
+        //}
 
-        public void InitializeLayerConfigs() {
-            this.LayerConfigs = new Configs<Layer>(
-                (me) => {
-                    var newConfigVector = me.Select(e => e.Pointer.Location.ToVector()).ToList();
-                    var flattern = new List<float>();
-                    newConfigVector.ForEach(v => flattern.AddRange(v));
+        //public void InitializeLayerConfigs() {
+        //    this.LayerConfigs = new Configs<Layer>(
+        //        (me) => {
+        //            var newConfigVector = me.Select(e => e.Pointer.Location.ToVector()).ToList();
+        //            var flattern = new List<float>();
+        //            newConfigVector.ForEach(v => flattern.AddRange(v));
 
-                    return Vector<float>.Build.Dense(flattern.ToArray());
-                },
-                (me, input) => {
-                    for(int i = 0; i < input.Count / 2; ++i) {
-                        me[i].Pointer.Location = new SKPoint(input[i * 2], input[i * 2 + 1]);
-                    }
-                });
+        //            return Vector<float>.Build.Dense(flattern.ToArray());
+        //        },
+        //        (me, input) => {
+        //            for(int i = 0; i < input.Count / 2; ++i) {
+        //                me[i].Pointer.Location = new SKPoint(input[i * 2], input[i * 2 + 1]);
+        //            }
+        //        });
 
-            this.MotorConfigs = null;
-        }
+        //    this.MotorConfigs = null;
+        //}
 
-        public void Interpolate(SKPoint pointerLocation) {
-            if (this.Complex.IsPaired) {
-                Interpolate(pointerLocation, this);
-            }
-        }
+        //public void Interpolate(SKPoint pointerLocation) {
+        //    if (this.Complex.IsPaired) {
+        //        Interpolate(pointerLocation, this);
+        //    }
+        //}
 
         public void Invalidate() {
-            foreach(var simplex in this.Complex) {
-                simplex.Pairs.UpdateBary();
+            //foreach(var simplex in this.Complex) {
+            //    simplex.Pairs.UpdateBary();
+            //}
+
+            foreach(var s in Complex) {
+                s.Invalidate();
             }
         }
 
@@ -532,7 +541,7 @@ namespace TaskMaker {
     }
 
 
-    public class Entity_v2 : CanvasObject_v2 {
+    public class Entity_v2 : CanvasObject_v2, IVectorizable {
         public bool IsSelected {
             get => this.isSelected;
             set {
@@ -546,7 +555,9 @@ namespace TaskMaker {
             }
         }
         public int Index { get; set; }
-        public Pair Pair { get; set; }
+        //public Pair Pair { get; set; }
+        //public Target Target { get; set; }
+        public TargetState TargetState { get; set; }
         public Vector<float> Vector => SkiaExtension.SkiaHelper.ToVector(this.location);
 
         override public SKPoint Location {
@@ -577,7 +588,7 @@ namespace TaskMaker {
 
         public Entity_v2(SKPoint point) {
             this.Location = point;
-            this.Pair = new Pair(this);
+            //this.Pair = new Pair(this);
         }
 
         public override string ToString() {
@@ -586,6 +597,8 @@ namespace TaskMaker {
             str.Append($"[Entity {this.Index}] - {this.Location}");
             return str.ToString();
         }
+
+        public Vector<float> ToVector() => Location.ToVector();
 
         public override bool ContainsPoint(SKPoint point) {
             return SKPoint.Distance(point, this.Location) <= this._radius;
@@ -598,9 +611,11 @@ namespace TaskMaker {
             if (this.IsSelected) {
                 this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
             } else {
-                if (this.Pair.IsPaired) {
-                    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Red, 0.8f);
-                }
+                if (TargetState != null)
+                    fillPaint.Color = SKColors.Gold.WithAlpha(0.8f);
+                //if (this.Pair.IsPaired) {
+                //    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Red, 0.8f);
+                //}
                 else {
                     this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f);
                 }
@@ -621,7 +636,7 @@ namespace TaskMaker {
                 TextSize = 12.0f,
                 Color = SKColors.Black,
             };
-            canvas.DrawText($"Enitity-{this.Index}", this.location, text);
+            canvas.DrawText($"Entity - {this.Index}", this.location, text);
         }
     }
 
@@ -629,8 +644,9 @@ namespace TaskMaker {
         public SKPoint Location { get; set; }
         public List<Entity_v2> Vertices { get; set; } = new List<Entity_v2>();
 
-        public bool IsPaired => this.Pairs.IsFullyPaired;
-        public Pairs Pairs { get; set; } = new Pairs();
+        //public bool IsPaired => this.Pairs.IsFullyPaired;
+        //public Pairs Pairs { get; set; } = new Pairs();
+        public SimplicalMap Map { get; set; } = new SimplicalMap();
 
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
@@ -650,29 +666,42 @@ namespace TaskMaker {
 
         public Simplex_v2(ICollection<Entity_v2> entities) {
             this.Vertices.AddRange(entities);
-            this.Pairs.AddRange(entities.Select(e => e.Pair).ToArray());
+            //this.Pairs.AddRange(entities.Select(e => e.Pair).ToArray());
             //this.Pairs.TaskBary.AddRange(this.Vertices.Select(v => v.Vector).ToArray());
         }
 
         public bool ContainsPoint(SKPoint p) {
-            var ret = this.GetLambdas(p);
+            var ret = this.GetLambdas_v1(p);
 
-            return ret != null;
+            return ret.All(e => e >= 0);
         }
 
-        public Vector<float> GetLambdas(SKPoint point) {
-            return this.Pairs.TaskBary.GetLambdasOnlyInterior(point.ToVector());
-        }
+        //public Vector<float> GetLambdas(SKPoint point) {
+        //    return this.Pairs.TaskBary.GetLambdasOnlyInterior(point.ToVector());
+        //}
 
-        public Vector<float> GetLambdasExterior(SKPoint p) {
-            return this.Pairs.TaskBary.GetLambdas(p.ToVector());
-        }
+        //public Vector<float> GetLambdasExterior(SKPoint p) {
+        //    return this.Pairs.TaskBary.GetLambdas(p.ToVector());
+        //}
+
+        public Vector<float> GetLambdas_v1(SKPoint p) => Map.GetLambdas(p.ToVector());
+
+        public Vector<float> GetInterpolatedTargetVector(SKPoint p) => Map.Map(p.ToVector());
+
+        public Vector<float> GetZeroTargetVector() => Map.MapToZero();
 
         public bool IsVertex(Entity_v2 e) {
             return this.Vertices.Contains(e);
         }
 
-        public void Invalidate() { }
+        public void Invalidate() {
+            Map.Reset();
+
+            // Invalidate all vertices pair
+            foreach(var v in Vertices) {
+                Map.SetPair(v, v.TargetState);
+            }
+        }
 
         public void DrawThis(SKCanvas sKCanvas) {
             var path = new SKPath();
@@ -690,7 +719,7 @@ namespace TaskMaker {
 
 
     public class SimplicialComplex_v2 : List<Simplex_v2> {
-        public bool IsPaired => this.TrueForAll(sim => sim.IsPaired);
+        //public bool IsPaired => this.TrueForAll(sim => sim.IsPaired);
 
         private List<Edge_v2> edges = new List<Edge_v2>();
         private List<Edge_v2> complexEdges = new List<Edge_v2>();
@@ -748,6 +777,7 @@ namespace TaskMaker {
             return this.complexEdges.FindAll(e => e.Contains(target));
         }
 
+        #region Voronoi_Outdate
         public void SetVoronoiRegions() {
             var traces = new List<ExteriorRay_v3>();
             //var voronoiRegions = new VoronoiRegions();
@@ -811,37 +841,56 @@ namespace TaskMaker {
             // Set bend
             //this.bend = Bend.GenerateBend(this.extremes.Select(e => e.Value.Location).ToArray());
         }
+        #endregion
 
         public void CreateExterior() {
             this.exterior = Exterior.CreateExterior(this._extremes.Select(e => e.Value).ToArray(), this.ToArray());
         }
 
-        public Vector<float> GetLambdas(SKPoint point) {
-            var result = new List<float>();
+        //public Vector<float> GetLambdas(SKPoint point) {
+        //    var result = new List<float>();
 
-            this.ForEach(s => result.AddRange(s.GetLambdas(point).ToArray()));
-            this.exterior?.Regions.ForEach(r => {
-                if (r.Contains(point)) {
-                    r.Interpolate(point);
-                } 
-                });
+        //    this.ForEach(s => result.AddRange(s.GetLambdas(point).ToArray()));
+        //    this.exterior?.Regions.ForEach(r => {
+        //        if (r.Contains(point)) {
+        //            r.Interpolate(point);
+        //        } 
+        //        });
 
-            return Vector<float>.Build.Dense(result.ToArray());
-        }
+        //    return Vector<float>.Build.Dense(result.ToArray());
+        //}
 
-        public Vector<float> GetConfigVectors(SKPoint point) {
-            Vector<float> result = null;
+        //public Vector<float> GetConfigVectors(SKPoint point) {
+        //    Vector<float> result = null;
 
-            foreach(var simplex in this) {
-                if (result == null) {
-                    result = simplex.Pairs.GetConfig(point);
-                }
-                else {
-                    result += simplex.Pairs.GetConfig(point);
-                }
+        //    foreach(var simplex in this) {
+        //        if (result == null) {
+        //            result = simplex.Pairs.GetConfig(point);
+        //        }
+        //        else {
+        //            result += simplex.Pairs.GetConfig(point);
+        //        }
+        //    }
+
+        //    return result;
+        //}
+
+        public Vector<float> GetInterpolatedConfigs(SKPoint p) {
+            var values = new List<Vector<float>>();
+
+            foreach(var s in this) {
+                var target = s.ContainsPoint(p) ? s.GetInterpolatedTargetVector(p) : s.GetZeroTargetVector();
+
+                values.Add(target);
             }
 
-            return result;
+            foreach(var r in exterior.Regions) {
+                var target = r.Contains(p) ? r.GetInterpolatedTargetVector(p) : r.GetZeroTargetVector();
+
+                values.Add(target);
+            }
+
+            return values.Sum();
         }
 
         public void Draw(SKCanvas sKCanvas) {

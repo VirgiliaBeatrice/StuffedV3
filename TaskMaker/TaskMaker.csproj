@@ -192,6 +192,7 @@
     <Compile Include="SkiaExtension.cs" />
     <Compile Include="SkiaHelper.cs" />
     <Compile Include="SimplicialMapping\Triangulation.cs" />
+    <Compile Include="Target.cs" />
     <Compile Include="TargetSelection.cs">
       <SubType>UserControl</SubType>
     </Compile>

@@ -4,13 +4,18 @@ using System.Collections.Generic;
 //using Reparameterization;
 using System.Linq;
 using MathNetExtension;
+using TaskMaker.SimplicialMapping;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace TaskMaker {
     public abstract class VoronoiRegion {
         public abstract SKPoint this[int index] { get; }
         public abstract void Draw(SKCanvas sKCanvas);
-        public abstract void Interpolate(SKPoint p);
+        //public abstract void Interpolate(SKPoint p);
+        public abstract Vector<float> Interpolate(SKPoint p);
         public abstract bool Contains(SKPoint p);
+        public abstract Vector<float> GetZeroTargetVector();
+        public abstract Vector<float> GetInterpolatedTargetVector(SKPoint p);
     }
 
     public class VoronoiRegion_Rect : VoronoiRegion {
@@ -72,10 +77,11 @@ namespace TaskMaker {
             return new SKPoint[] { a, b, bP, aP };
         }
 
-        public override void Interpolate(SKPoint p) {
-            Console.WriteLine(this);
-            Console.WriteLine(this.Governor.GetLambdasExterior(p));
-            Console.WriteLine("---");
+        public override Vector<float> Interpolate(SKPoint p) {
+            if (Contains(p))
+                return Governor.GetInterpolatedTargetVector(p);
+            else
+                return Governor.GetZeroTargetVector();
         }
 
 
@@ -97,6 +103,10 @@ namespace TaskMaker {
             sKCanvas.DrawPath(rect, fill);
             sKCanvas.DrawPath(rect, stroke);
         }
+
+        public override Vector<float> GetZeroTargetVector() => Governor.GetZeroTargetVector();
+
+        public override Vector<float> GetInterpolatedTargetVector(SKPoint p) => Governor.GetInterpolatedTargetVector(p);
     }
 
     public class VoronoiRegion_CircularSector : VoronoiRegion {
@@ -148,11 +158,49 @@ namespace TaskMaker {
                 SKShaderTileMode.Clamp);
         }
 
-        public override void Interpolate(SKPoint p) {
+        public override Vector<float> Interpolate(SKPoint p) {
+            if (Contains(p)) {
+                if (Governor1 == null) {
+                    return Governor0.GetLambdas_v1(p);
+                    //Console.WriteLine(this);
+                    //Console.WriteLine(this.Governor0.GetLambdasExterior(p));
+                    //Console.WriteLine("---");
+                }
+                else {
+                    var o = this[0];
+                    var a = this[1];
+                    var b = this[2];
+
+                    var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
+                    var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
+                    var theta = theta0 + theta1;
+                    var lambdas0 = Governor0.GetLambdas_v1(p);
+                    var lambdas1 = Governor1.GetLambdas_v1(p);
+
+                    //Console.WriteLine(this);
+                    //Console.WriteLine(lambdas0);
+                    //Console.WriteLine(lambdas1);
+                    //Console.WriteLine(lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta)));
+                    //Console.WriteLine("---");
+                    return lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta));
+                }
+            }
+            else {
+                return Governor0.Map.MapToZero();
+            }
+
+        }
+
+        public override void Draw(SKCanvas sKCanvas) {
+            sKCanvas.DrawPath(circularSector, fill);
+            sKCanvas.DrawPath(circularSector, stroke);
+        }
+
+        public override Vector<float> GetZeroTargetVector() => Governor0.GetZeroTargetVector();
+
+        public override Vector<float> GetInterpolatedTargetVector(SKPoint p) {
             if (Governor1 == null) {
-                Console.WriteLine(this);
-                Console.WriteLine(this.Governor0.GetLambdasExterior(p));
-                Console.WriteLine("---");
+                return Governor0.GetInterpolatedTargetVector(p);
             }
             else {
                 var o = this[0];
@@ -162,20 +210,11 @@ namespace TaskMaker {
                 var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
                 var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
                 var theta = theta0 + theta1;
-                var lambdas0 = this.Governor0.GetLambdasExterior(p);
-                var lambdas1 = this.Governor1.GetLambdasExterior(p);
+                var target0 = Governor0.GetInterpolatedTargetVector(p);
+                var target1 = Governor1.GetInterpolatedTargetVector(p);
 
-                Console.WriteLine(this);
-                Console.WriteLine(lambdas0);
-                Console.WriteLine(lambdas1);
-                Console.WriteLine(lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta)));
-                Console.WriteLine("---");
+                return target0 * (float)(theta1 / theta) + target1 * (float)(theta0 / theta);
             }
-        }
-
-        public override void Draw(SKCanvas sKCanvas) {
-            sKCanvas.DrawPath(circularSector, fill);
-            sKCanvas.DrawPath(circularSector, stroke);
         }
     }
 

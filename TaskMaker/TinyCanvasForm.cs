@@ -78,7 +78,8 @@ namespace TaskMaker {
                 this.parentLayer.Pointer.Location = pointer.Location;
 
                 // Interpolation
-                this.parentLayer.Interpolate(e.Location.ToSKPoint());
+                parentLayer.Interpolate_v1(e.Location.ToSKPoint());
+                //this.parentLayer.Interpolate(e.Location.ToSKPoint());
             }
 
             this.Invalidate(true);

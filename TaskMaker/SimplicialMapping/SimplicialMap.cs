@@ -90,11 +90,66 @@ namespace TaskMaker.SimplicialMapping {
         }
     }
 
-    public class ConfigurationVector {
-        public List<object> Elements { get; set; }
+    public class SimplicalMap {
+        public BarycentricCoordinates InputBary { get; set; }
+        public BarycentricCoordinates OutputBary { get; set; }
+        public List<IVectorizable> Inputs { get; set; } = new List<IVectorizable>();
+        public List<IVectorizable> Outputs { get; set; } = new List<IVectorizable>();
 
+        private int _dimension = 3;
+
+        public SimplicalMap() {
+            InputBary = new BarycentricCoordinates(_dimension);
+            OutputBary = new BarycentricCoordinates(_dimension);
+        }
+
+        private void SetInputBary() {
+            InputBary.UpdateVertices(Inputs.Select(i => i.ToVector()).ToArray());
+        }
+
+        private void SetOutputBary() {
+            OutputBary.UpdateVertices(Outputs.Select(o => o.ToVector()).ToArray());
+        }
+
+        public void Invalidate() {
+            SetInputBary();
+            SetOutputBary();
+        }
+
+        public void Reset() {
+            Inputs.Clear();
+            Outputs.Clear();
+        }
+
+        public void SetPair(IVectorizable input, IVectorizable output) {
+            if (Inputs.Count >= _dimension) {
+                throw new Exception("Map is fully configed.");
+            }
+            else {
+                Inputs.Add(input);
+
+                if (output != null)
+                    Outputs.Add(output);
+
+                Invalidate();
+            }
+        }
+
+        public Vector<float> GetLambdas(Vector<float> input) => InputBary.GetLambdas(input);
+
+        public Vector<float> Map(Vector<float> input) => OutputBary.GetB(GetLambdas(input));
+
+        public Vector<float> MapToZero() {
+            return Vector<float>.Build.Dense(OutputBary.Vertices.First().Count, 0.0f);
+        }
     }
 
-    class SimplicialMap {
+    public interface IVectorizable {
+        Vector<float> ToVector();
+        //void FromVector(Vector<float> vector);
+    }
+
+    public interface IReflectable {
+        void FromVector(Vector<float> vector);
     }
 }
