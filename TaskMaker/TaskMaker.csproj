@@ -148,6 +148,7 @@
     <Compile Include="Canvas\Geometry.cs" />
     <Compile Include="Canvas\VoronoiRegion.cs" />
     <Compile Include="MathNetExtension.cs" />
+    <Compile Include="Memento\Memento.cs" />
     <Compile Include="MotorController.cs">
       <SubType>UserControl</SubType>
     </Compile>

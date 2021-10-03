@@ -74,10 +74,20 @@ namespace TaskMaker {
 
                 this.SelectedLayer.Complex.Add(new Simplex_v2(tri));
 
-                foreach (var e in tri) {
+                var a = tri[0].Location;
+                var b = tri[1].Location;
+                var c = tri[2].Location;
+
+                var centroid = (a + b + c).DivideBy(3.0f);
+                var theta0 = Math.Asin((a - centroid).Cross(b - centroid) / ((a - centroid).Length * (b - centroid).Length));
+                var theta1 = Math.Asin((a - centroid).Cross(b - centroid) / ((a - centroid).Length * (b - centroid).Length));
+
+                var ccw = theta0 > theta1 ? new Entity_v2[] { tri[0], tri[2], tri[1] } : new Entity_v2[] { tri[0], tri[1], tri[2] };
+
+                foreach (var e in ccw) {
                     this.SelectedLayer.Complex.AddExtreme(e);
                 }
-               
+
                 this.SelectedLayer.Complex.CreateExterior();
             }
             else {
@@ -175,38 +185,6 @@ namespace TaskMaker {
                     return LayerStatus.None;
             }
         }
-
-        //static public void Interpolate(SKPoint pointerLocation, Layer layer) {
-        //    var pointer = layer.Pointer;
-        //    pointer.Location = pointerLocation;
-
-        //    var lambdas = layer.Complex.GetLambdas(pointer.Location);
-            
-        //    // no return zero
-        //    if (lambdas.All(lambda => lambda == 0)) {
-        //        return;
-        //    }
-
-        //    var configVector = layer.Complex.GetConfigVectors(pointer.Location);
-
-        //    if (layer.LayerStatus == LayerStatus.WithMotor) {
-        //        var configs = layer.MotorConfigs;
-
-        //        configs.FromVector(configs, configVector);
-        //    }
-
-
-        //    if (layer.LayerStatus == LayerStatus.WithLayer) {
-        //        var configs = layer.LayerConfigs;
-
-        //        configs.FromVector(configs, configVector);
-
-        //        foreach (var l in configs) {
-        //            Interpolate(l.Pointer.Location, l);
-        //        }
-
-        //    }
-        //}
 
         public Layer() {
             this.Text = "New Layer";
@@ -309,56 +287,7 @@ namespace TaskMaker {
             form.Show();
         }
 
-        private void Btn_Click(object sender, EventArgs e) {
-            throw new NotImplementedException();
-        }
-
-        //public void InitializeMotorConfigs() {
-        //    this.MotorConfigs = new Configs<Motor>(
-        //        (me) => {
-        //            var newConfigVector = me.Select(e => (float)e.position.Value).ToArray();
-
-        //            return Vector<float>.Build.Dense(newConfigVector);
-        //        },
-        //        (me, input) => {
-        //            for(int i = 0; i < input.Count; ++i) {
-        //                me[i].position.Value = (int)input[i];
-        //            }
-        //        }
-        //    );
-
-        //    this.LayerConfigs = null;
-        //}
-
-        //public void InitializeLayerConfigs() {
-        //    this.LayerConfigs = new Configs<Layer>(
-        //        (me) => {
-        //            var newConfigVector = me.Select(e => e.Pointer.Location.ToVector()).ToList();
-        //            var flattern = new List<float>();
-        //            newConfigVector.ForEach(v => flattern.AddRange(v));
-
-        //            return Vector<float>.Build.Dense(flattern.ToArray());
-        //        },
-        //        (me, input) => {
-        //            for(int i = 0; i < input.Count / 2; ++i) {
-        //                me[i].Pointer.Location = new SKPoint(input[i * 2], input[i * 2 + 1]);
-        //            }
-        //        });
-
-        //    this.MotorConfigs = null;
-        //}
-
-        //public void Interpolate(SKPoint pointerLocation) {
-        //    if (this.Complex.IsPaired) {
-        //        Interpolate(pointerLocation, this);
-        //    }
-        //}
-
         public void Invalidate() {
-            //foreach(var simplex in this.Complex) {
-            //    simplex.Pairs.UpdateBary();
-            //}
-
             foreach(var s in Complex) {
                 s.Invalidate();
             }
@@ -407,9 +336,9 @@ namespace TaskMaker {
     }
 
     public class PointerTrace : CanvasObject_v2 {
-        public SKPath Path { get; set; }
+        private SKPath _path;
 
-        private SKPaint strokePaint = new SKPaint {
+        private SKPaint _strokePaint = new SKPaint {
             IsAntialias = true,
             Color = SKColors.Black,
             Style = SKPaintStyle.Stroke,
@@ -418,21 +347,17 @@ namespace TaskMaker {
 
         public PointerTrace(SKPoint start) {
             this.Location = start;
-            this.Path = new SKPath();
+            _path = new SKPath();
 
-            this.Path.MoveTo(start);
+            _path.MoveTo(start);
         }
 
         public void Update(SKPoint point) {
-            this.Path.LineTo(point);
+            _path.LineTo(point);
         }
 
         public override void Draw(SKCanvas sKCanvas) {
-            sKCanvas.DrawPath(this.Path, this.strokePaint);
-        }
-
-        public override void Invalidate() {
-            base.Invalidate();
+            sKCanvas.DrawPath(_path, _strokePaint);
         }
     }
 

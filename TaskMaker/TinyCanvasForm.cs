@@ -14,7 +14,7 @@ namespace TaskMaker {
     public partial class TinyCanvasForm : Form {
 
         public Canvas Canvas { get; set; }
-        private SKControl sKControl;
+        private SKGLControl sKControl;
         private Layer parentLayer;
         private CrossPointer pointer;
         private Timer timer;
@@ -28,7 +28,7 @@ namespace TaskMaker {
             this.timer.Tick += this.Timer_Tick;
             this.timer.Enabled = true;
 
-            this.sKControl = new SKControl();
+            this.sKControl = new SKGLControl();
             this.sKControl.Dock = DockStyle.Fill;
             this.groupBox1.Controls.Add(this.sKControl);
 
@@ -85,10 +85,10 @@ namespace TaskMaker {
             this.Invalidate(true);
         }
 
-        private void SKControl_PaintSurface(object sender, SKPaintSurfaceEventArgs ev) {
+        private void SKControl_PaintSurface(object sender, SKPaintGLSurfaceEventArgs ev) {
             var canvas = ev.Surface.Canvas;
 
-            canvas.Clear();
+            canvas.Clear(SKColors.White);
 
             this.parentLayer.Draw(canvas);
 
