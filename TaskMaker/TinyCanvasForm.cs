@@ -24,7 +24,7 @@ namespace TaskMaker {
 
             this.parentLayer = layer;
             this.timer = new Timer();
-            this.timer.Interval = 100;
+            this.timer.Interval = 10;
             this.timer.Tick += this.Timer_Tick;
             this.timer.Enabled = true;
 

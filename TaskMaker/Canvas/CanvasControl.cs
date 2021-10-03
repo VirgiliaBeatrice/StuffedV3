@@ -38,7 +38,7 @@ namespace TaskMaker {
 
 
 
-        private SKControl skControl;
+        private SKGLControl skControl;
         private SKMatrix translate = SKMatrix.Empty;
         private SKPoint prevMid;
         private SKImageInfo imageInfo;
@@ -55,7 +55,7 @@ namespace TaskMaker {
         public CanvasControl(Services services) {
             InitializeComponent();
 
-            this.skControl = new SKControl();
+            this.skControl = new SKGLControl();
             this.skControl.Location = new Point(0, 0);
             this.skControl.Dock = DockStyle.Fill;
 
@@ -395,8 +395,10 @@ namespace TaskMaker {
         }
 
 
-        private void SkControl_PaintSurface(object sender, SKPaintSurfaceEventArgs e) {
-            this.imageInfo = e.Info;
+        private void SkControl_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e) {
+            e.Surface.Canvas.GetDeviceClipBounds(out SKRectI bounds);
+
+            this.imageInfo = new SKImageInfo(bounds.Width, bounds.Height);
             //e.Surface.Canvas.Translate(this.translate.TransX, this.translate.TransY);
             //this.translate = SKMatrix.Empty;
             this.Draw(e.Surface.Canvas);
@@ -411,9 +413,8 @@ namespace TaskMaker {
             using (var bitmap = new SKBitmap(imageInfo.Width, imageInfo.Height)) {
                 var canvas = new SKCanvas(bitmap);
 
-                canvas.Clear();
+                canvas.Clear(SKColors.White);
 
-                canvas.DrawColor(SKColors.White);
                 this.Draw(canvas);
 
                 var image = SKImage.FromBitmap(bitmap);
@@ -433,7 +434,7 @@ namespace TaskMaker {
         }
 
         protected virtual void Draw(SKCanvas sKCanvas) {
-            sKCanvas.Clear();
+            sKCanvas.Clear(SKColors.White);
 
             this.canvas.Draw(sKCanvas);
         }
