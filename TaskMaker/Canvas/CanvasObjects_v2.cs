@@ -7,19 +7,25 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Windows.Forms;
 using TaskMaker.MementoPattern;
 using TaskMaker.SimplicialMapping;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TaskMaker {
 
-    public class CanvasState {
-        private IList<Layer> _layers;
+    public class CanvasState : Jsonable, IMemento {
+        [JsonPropertyName("Layers")]
+        public List<LayerState> _layers { get; private set; }
+        public string Name { get; set; }
 
         public CanvasState(Canvas c) {
-            _layers = new List<Layer>(c.Layers).AsReadOnly();
+            _layers = new List<LayerState>(c.Layers.Select(l => l.Save() as LayerState)).AsReadOnly().ToList();
+            Name = "test";
         }
+
+        public object GetState() => _layers;
     }
 
     public class Canvas : IOriginator {
@@ -33,8 +39,6 @@ namespace TaskMaker {
         public ISelectionTool SelectionTool { get; set; }
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
-
-        private List<object> _states = new List<object>();
 
         private readonly Mapping.Triangulation _triangulation = new Mapping.Triangulation();
 
@@ -53,14 +57,11 @@ namespace TaskMaker {
             //});
         }
 
-        public Memento Save() => new Memento(_states);
+        public IMemento Save() => new CanvasState(this);
 
-        public void Restore(Memento m) {
-            _states = m.GetStates() as List<object>;
-            var rootLayer = _states[0] as Layer;
-            var selectedLayer = _states[1] as Layer;
-            //RootLayer = rootLayer;
-            //SelectedLayer = selectedLayer;
+        public void Restore(IMemento m) {
+            var state = m.GetState() as CanvasState;
+
 
             Reset();
         }
@@ -179,8 +180,10 @@ namespace TaskMaker {
     /// <summary>
     /// Immutable layer state class
     /// </summary>
-    public class LayerState {
+    public class LayerState : Jsonable, IMemento {
+        [JsonInclude]
         private string _name;
+        [JsonInclude]
         private IList<EntityState> _entities;
         private SimplicialComplex _complex;
         private Exterior _exterior;
@@ -188,14 +191,19 @@ namespace TaskMaker {
 
         public LayerState(Layer l) {
             _name = l.Name;
-            _entities = new List<EntityState>(l.Entities.Select(e => e.ToState())).AsReadOnly();
-            _complex = l.Complex;
-            _exterior = l.Exterior;
-            _bindedTarget = l.BindedTarget;
+            _entities = l.Entities.Select(e => (EntityState)e.Save()).ToList().AsReadOnly();
+            //_complex = l.Complex;
+            //_exterior = l.Exterior;
+            //_bindedTarget = l.BindedTarget;
+        }
+
+        public object GetState() {
+            return (_name, _entities );
+            //return (_name, _entities, _complex, _exterior, _bindedTarget);
         }
     }
 
-    public class Layer {
+    public class Layer : IOriginator {
         public string Name { get; set; }
         public bool IsShownPointer { get; set; } = false;
         public bool IsSelected { get; set; } = false;
@@ -337,6 +345,24 @@ namespace TaskMaker {
 
             if (IsShownPointer) {
                 Pointer.Draw(sKCanvas);
+            }
+        }
+
+        public IMemento Save() => new LayerState(this);
+
+        public void Restore(IMemento m) {
+            var state = ((string, IList<EntityState>))m.GetState();
+            var name = state.Item1;
+            var entites = state.Item2;
+
+            Name = name;
+            Entities.Clear();
+
+            foreach(var e in entites) {
+                var item = new Entity(new SKPoint());
+
+                item.Restore(e);
+                Entities.Add(item);
             }
         }
     }
@@ -502,7 +528,7 @@ namespace TaskMaker {
     }
 
 
-    public class EntityState {
+    public class EntityState : IMemento {
         private int _index;
         private SKPoint _location;
         private TargetState _targetState;
@@ -512,9 +538,13 @@ namespace TaskMaker {
             _location = e.Location;
             _targetState = e.TargetState;
         }
+
+        public object GetState() {
+            return (_index, _location, _targetState);
+        }
     }
 
-    public class Entity : CanvasObject_v2, IVectorizable {
+    public class Entity : CanvasObject_v2, IVectorizable, IOriginator {
         public bool IsSelected {
             get => isSelected;
             set {
@@ -567,8 +597,6 @@ namespace TaskMaker {
 
         public Vector<float> ToVector() => Location.ToVector();
 
-        public EntityState ToState() => new EntityState(this);
-
         public override bool ContainsPoint(SKPoint point) {
             return SKPoint.Distance(point, Location) <= _radius;
         }
@@ -607,6 +635,19 @@ namespace TaskMaker {
                 Color = SKColors.Black,
             };
             canvas.DrawText($"Entity - {Index}", location, text);
+        }
+
+        public IMemento Save() => new EntityState(this);
+
+        public void Restore(IMemento m) {
+            var state = ((int, SKPoint, TargetState))m.GetState();
+            var index = state.Item1;
+            var location = state.Item2;
+            var targetState = state.Item3;
+
+            Index = index;
+            Location = location;
+            TargetState = targetState;
         }
     }
 

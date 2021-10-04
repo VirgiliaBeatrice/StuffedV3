@@ -3,16 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 
 namespace TaskMaker.MementoPattern {
-    public class Memento {
-        private object _states;
+    public interface IMemento {
+        object GetState();
+    }
 
-        public Memento(object states) {
-            _states = states;
+    public class Jsonable {
+        public string ToJson() {
+            var options = new JsonSerializerOptions { WriteIndented = true, IncludeFields = true, };
+
+            return JsonSerializer.Serialize(this, options);
+        }
+    }
+
+    public class Memento {
+        private object _state;
+
+        public Memento(object state) {
+            _state = state;
         }
 
-        public object GetStates() { return _states; }
+        public object GetState() { return _state; }
     }
 
     public class Originator {
@@ -23,25 +38,20 @@ namespace TaskMaker.MementoPattern {
     }
 
     public interface IOriginator {
-        Memento Save();
-        void Restore(Memento m);
+        IMemento Save();
+        void Restore(IMemento m);
     }
 
     public class Caretaker {
         private IOriginator _originator;
-        private Stack<(Memento, IOriginator)> _history = new Stack<(Memento, IOriginator)>(10);
+        private Stack<(IMemento, IOriginator)> _history = new Stack<(IMemento, IOriginator)>(10);
+        private Stack<(IMemento, IOriginator)> _redoHistory = new Stack<(IMemento, IOriginator)>(10);
 
         public Caretaker(IOriginator originator) {
             _originator = originator;
         }
 
         public Caretaker() { }
-
-        //public void Do() {
-        //    var m = _originator.Save();
-
-        //    _history.Push(m);
-        //}
 
         public void Do(IOriginator o) {
             var m = o.Save();
@@ -54,6 +64,12 @@ namespace TaskMaker.MementoPattern {
                 var (m, o) = _history.Pop();
 
                 o.Restore(m);
+            }
+        }
+
+        public void Redo() {
+            if (_redoHistory.Count != 0) {
+                var (m, o) = _redoHistory.Pop();
             }
         }
     }

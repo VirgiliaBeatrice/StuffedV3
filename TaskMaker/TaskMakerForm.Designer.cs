@@ -33,6 +33,7 @@ namespace TaskMaker {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.toolbox = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.button16 = new System.Windows.Forms.Button();
             this.button15 = new System.Windows.Forms.Button();
             this.button14 = new System.Windows.Forms.Button();
             this.button13 = new System.Windows.Forms.Button();
@@ -57,7 +58,8 @@ namespace TaskMaker {
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.propertyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.layerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.button16 = new System.Windows.Forms.Button();
+            this.saveProjectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.statusStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.toolbox.SuspendLayout();
@@ -181,6 +183,16 @@ namespace TaskMaker {
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(104, 561);
             this.tableLayoutPanel2.TabIndex = 0;
+            // 
+            // button16
+            // 
+            this.button16.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.button16.Location = new System.Drawing.Point(3, 440);
+            this.button16.Name = "button16";
+            this.button16.Size = new System.Drawing.Size(98, 23);
+            this.button16.TabIndex = 15;
+            this.button16.Text = "NULL";
+            this.button16.UseVisualStyleBackColor = true;
             // 
             // button15
             // 
@@ -401,7 +413,9 @@ namespace TaskMaker {
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.settingsToolStripMenuItem});
+            this.settingsToolStripMenuItem,
+            this.toolStripSeparator1,
+            this.saveProjectToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             this.fileToolStripMenuItem.Text = "&Settings";
@@ -411,7 +425,7 @@ namespace TaskMaker {
             this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
             this.settingsToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+,";
             this.settingsToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Oemcomma)));
-            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(159, 22);
+            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.settingsToolStripMenuItem.Text = "ComPort";
             this.settingsToolStripMenuItem.Click += new System.EventHandler(this.settingsToolStripMenuItem_Click);
             // 
@@ -437,15 +451,17 @@ namespace TaskMaker {
             this.layerToolStripMenuItem.Text = "Layer";
             this.layerToolStripMenuItem.Click += new System.EventHandler(this.layerToolStripMenuItem_Click);
             // 
-            // button16
+            // saveProjectToolStripMenuItem
             // 
-            this.button16.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button16.Location = new System.Drawing.Point(3, 440);
-            this.button16.Name = "button16";
-            this.button16.Size = new System.Drawing.Size(98, 23);
-            this.button16.TabIndex = 15;
-            this.button16.Text = "NULL";
-            this.button16.UseVisualStyleBackColor = true;
+            this.saveProjectToolStripMenuItem.Name = "saveProjectToolStripMenuItem";
+            this.saveProjectToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.saveProjectToolStripMenuItem.Text = "Save Project";
+            this.saveProjectToolStripMenuItem.Click += new System.EventHandler(this.saveProjectToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
             // 
             // TaskMakerForm
             // 
@@ -506,5 +522,7 @@ namespace TaskMaker {
         private System.Windows.Forms.ToolStripMenuItem layerToolStripMenuItem;
         private System.Windows.Forms.Button button15;
         private System.Windows.Forms.Button button16;
+        private System.Windows.Forms.ToolStripMenuItem saveProjectToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
     }
 }

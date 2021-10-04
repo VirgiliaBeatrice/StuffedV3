@@ -14,38 +14,16 @@ namespace TaskMaker {
             get => selectedMode;
             set {
                 selectedMode = value;
-
-                //ModeChanged?.Invoke(this, null);
             }
         }
-
-        //public Layer SelectedLayer {
-        //    get => canvas.SelectedLayer;
-        //    set {
-        //        canvas.SelectedLayer = value;
-
-        //        LayerFocused?.Invoke(this, new LayerFocusedEventArgs { Layer = canvas.SelectedLayer });
-        //    }
-        //}
-
-        //public Layer RootLayer => canvas.RootLayer;
         public Canvas Canvas => canvas;
-        //public Services Services => (this.ParentForm as TaskMakerForm).Services;
-
         public Layer SelectedLayer => canvas.SelectedLayer;
 
         private SKGLControl skControl;
-        private SKMatrix translate = SKMatrix.Empty;
-        private SKPoint prevMid;
         private SKImageInfo imageInfo;
         private Canvas canvas;
         private Modes selectedMode;
         private Timer timer;
-
-        //public event EventHandler<LayerFocusedEventArgs> LayerFocused;
-        //public event EventHandler ModeChanged;
-        //public event EventHandler<InterpolatingEventArgs> Interpolated;
-
         private EditPhase editPhase = EditPhase.None;
 
         public CanvasControl() {
@@ -69,7 +47,7 @@ namespace TaskMaker {
             //this.skControl.KeyPress += this.SkControl_KeyPress;
             //this.skControl.MouseEnter += this.SkControl_MouseEnter;
 
-            prevMid = new SKPoint(skControl.ClientSize.Width / 2, skControl.ClientSize.Height / 2);
+            //prevMid = new SKPoint(skControl.ClientSize.Width / 2, skControl.ClientSize.Height / 2);
 
             canvas = new Canvas();
 
@@ -469,12 +447,13 @@ namespace TaskMaker {
         }
 
         private void ProcessAddNodeMouseClickEvent(MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                canvas.SelectedLayer.Entities.Add(new Entity(e.Location.ToSKPoint()) {
-                    Index = canvas.SelectedLayer.Entities.Count,
-                });
 
-                Services.Caretaker.Do(canvas);
+            if (e.Button == MouseButtons.Left) {
+                Services.Caretaker.Do(SelectedLayer);
+
+                SelectedLayer.Entities.Add(new Entity(e.Location.ToSKPoint()) {
+                    Index = SelectedLayer.Entities.Count,
+                });
             }
 
             // Quit from current mode after adding one entity

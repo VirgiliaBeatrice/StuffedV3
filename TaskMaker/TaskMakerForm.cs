@@ -417,6 +417,12 @@ namespace TaskMaker {
         private void button15_Click(object sender, EventArgs e) {
             _caretaker.Undo();
         }
+
+        private void saveProjectToolStripMenuItem_Click(object sender, EventArgs e) {
+            var state = canvasControl1.Canvas.Save() as CanvasState;
+
+            Console.Write(state.ToJson());
+        }
     }
 
     static public class Services {

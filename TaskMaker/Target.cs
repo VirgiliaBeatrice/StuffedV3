@@ -64,16 +64,19 @@ namespace TaskMaker {
     /// <summary>
     /// Immutable target state
     /// </summary>
-    public class TargetState : IVectorizable {
-        public Vector<float> State { get; private set; }
-
+    public class TargetState : IVectorizable, MementoPattern.IMemento {
+        private Vector<float> _state;
         private Target _parent;
 
         public TargetState(Target target) {
             _parent = target;
-            State = _parent.ToVector();
+            _state = _parent.ToVector();
         }
 
-        public Vector<float> ToVector() => State;
+        public Vector<float> ToVector() => _state;
+
+        public object GetState() {
+            return (_state, _parent);
+        }
     }
 }
