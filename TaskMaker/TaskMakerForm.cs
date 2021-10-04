@@ -5,6 +5,10 @@ using System.Windows.Forms;
 using TaskMaker.MementoPattern;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -50,8 +54,7 @@ namespace TaskMaker {
 
             _root = new TreeNode("Root");
 
-            Services.LayerTree = _root;
-            _root.Nodes.Add(new TreeNode() { Text = canvasControl1.Canvas.Layers[0].Name, Tag = canvasControl1.Canvas.Layers[0] });
+
 
             UpdateTreeview();
         }
@@ -215,6 +218,11 @@ namespace TaskMaker {
         }
 
         private void UpdateTreeview() {
+            Services.LayerTree = _root;
+
+            _root.Nodes.Clear();
+            _root.Nodes.Add(new TreeNode() { Text = canvasControl1.Canvas.Layers[0].Name, Tag = canvasControl1.Canvas.Layers[0] });
+
             treeView1.BeginUpdate();
             treeView1.Nodes.Clear();
 
@@ -418,10 +426,30 @@ namespace TaskMaker {
             _caretaker.Undo();
         }
 
-        private void saveProjectToolStripMenuItem_Click(object sender, EventArgs e) {
+        private async void saveProjectToolStripMenuItem_Click(object sender, EventArgs e) {
             var state = canvasControl1.Canvas.Save() as CanvasState;
 
-            Console.Write(state.ToJson());
+            var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\TaskMaker\\";
+
+            Directory.CreateDirectory(path);
+            
+            using (var fs = File.Create(path + "preferences.json")) {
+                var jsonUtf8Bytes = state.ToJsonUtf8Bytes();
+                await fs.WriteAsync(jsonUtf8Bytes, 0, jsonUtf8Bytes.Length);
+            }
+
+            MessageBox.Show("Project saved.", "Saved", MessageBoxButtons.OK);
+        }
+
+        private async void loadProjectToolStripMenuItem_Click(object sender, EventArgs e) {
+            var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\TaskMaker\\";
+
+            using (var fs = File.OpenText(path + "preferences.json")) {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                var state = await JsonSerializer.DeserializeAsync<CanvasState>(fs.BaseStream, options);
+
+                canvasControl1.Canvas.Restore(state);
+            }
         }
     }
 

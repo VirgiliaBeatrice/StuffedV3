@@ -15,17 +15,20 @@ using System.Text.Json.Serialization;
 
 namespace TaskMaker {
 
-    public class CanvasState : Jsonable, IMemento {
-        [JsonPropertyName("Layers")]
-        public List<LayerState> _layers { get; private set; }
-        public string Name { get; set; }
+    public class CanvasState : BaseState {
+        [JsonInclude]
+        public IList<LayerState> Layers { get; private set; }
 
         public CanvasState(Canvas c) {
-            _layers = new List<LayerState>(c.Layers.Select(l => l.Save() as LayerState)).AsReadOnly().ToList();
-            Name = "test";
+            Layers = new List<LayerState>(c.Layers.Select(l => l.Save() as LayerState)).AsReadOnly();
         }
 
-        public object GetState() => _layers;
+        [JsonConstructor]
+        public CanvasState(IList<LayerState> layers) {
+            Layers = layers;
+        }
+
+        public override object GetState() => (Layers);
     }
 
     public class Canvas : IOriginator {
@@ -60,9 +63,19 @@ namespace TaskMaker {
         public IMemento Save() => new CanvasState(this);
 
         public void Restore(IMemento m) {
-            var state = m.GetState() as CanvasState;
+            var state = (IList<LayerState>)m.GetState();
 
+            Layers.Clear();
 
+            foreach (var ls in state) {
+                var item = new Layer("New Layer");
+
+                item.Restore(ls);
+                Layers.Add(item);
+            }
+
+            // Reset selection
+            Layers[0].IsSelected = true;
             Reset();
         }
 
@@ -180,27 +193,34 @@ namespace TaskMaker {
     /// <summary>
     /// Immutable layer state class
     /// </summary>
-    public class LayerState : Jsonable, IMemento {
+    public class LayerState : BaseState {
         [JsonInclude]
-        private string _name;
+        public string Name { get; private set; }
         [JsonInclude]
-        private IList<EntityState> _entities;
+        public IList<EntityState> Entities { get; private set; }
         private SimplicialComplex _complex;
         private Exterior _exterior;
         private Target _bindedTarget;
 
         public LayerState(Layer l) {
-            _name = l.Name;
-            _entities = l.Entities.Select(e => (EntityState)e.Save()).ToList().AsReadOnly();
+            Name = l.Name;
+            Entities = l.Entities.Select(e => (EntityState)e.Save()).ToList().AsReadOnly();
             //_complex = l.Complex;
             //_exterior = l.Exterior;
             //_bindedTarget = l.BindedTarget;
         }
 
-        public object GetState() {
-            return (_name, _entities );
+        [JsonConstructor]
+        public LayerState(string name, IList<EntityState> entities) {
+            Name = name;
+            Entities = entities;
+        }
+
+        public override object GetState() {
+            return (Name, Entities );
             //return (_name, _entities, _complex, _exterior, _bindedTarget);
         }
+
     }
 
     public class Layer : IOriginator {
@@ -528,19 +548,29 @@ namespace TaskMaker {
     }
 
 
-    public class EntityState : IMemento {
-        private int _index;
-        private SKPoint _location;
-        private TargetState _targetState;
+    public class EntityState : BaseState {
+        [JsonInclude]
+        public int Index { get; private set; }
+        [JsonInclude]
+        public SKPoint Location { get; private set; }
+        [JsonInclude]
+        public TargetState TargetState { get; private set; }
 
         public EntityState(Entity e) {
-            _index = e.Index;
-            _location = e.Location;
-            _targetState = e.TargetState;
+            Index = e.Index;
+            Location = e.Location;
+            TargetState = e.TargetState;
         }
 
-        public object GetState() {
-            return (_index, _location, _targetState);
+        [JsonConstructor]
+        public EntityState(int index, SKPoint location, TargetState targetState) {
+            Index = index;
+            Location = location;
+            TargetState = targetState;
+        }
+
+        public override object GetState() {
+            return (Index, Location, TargetState);
         }
     }
 

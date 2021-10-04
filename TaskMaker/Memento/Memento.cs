@@ -12,12 +12,21 @@ namespace TaskMaker.MementoPattern {
         object GetState();
     }
 
-    public class Jsonable {
-        public string ToJson() {
-            var options = new JsonSerializerOptions { WriteIndented = true, IncludeFields = true, };
+    public abstract class BaseState : IMemento {
+        public abstract object GetState();
 
-            return JsonSerializer.Serialize(this, options);
+        public virtual byte[] ToJsonUtf8Bytes() {
+            var options = new JsonSerializerOptions { WriteIndented = true };
+
+            return JsonSerializer.SerializeToUtf8Bytes(this, this.GetType(), options);
         }
+
+        public virtual string ToJsonString() {
+            var options = new JsonSerializerOptions { WriteIndented = true };
+
+            return JsonSerializer.Serialize(this, this.GetType(), options);
+        }
+
     }
 
     public class Memento {
