@@ -31,13 +31,9 @@ namespace TaskMaker {
 
             KeyDown += TaskMaker_KeyDown;
 
-
-
             Services.Boards.Serial = serialPort1;
             Services.MotorTimer.Tick += Timer_Tick;
             Services.Canvas = canvasControl1.Canvas;
-            //Services.RootLayer = canvasControl1.RootLayer;
-            //Services.SelectedLayer = canvasControl1.SelectedLayer;
 
             groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
 
@@ -198,7 +194,7 @@ namespace TaskMaker {
         }
 
         private void CanvasControl1_LayerUpdated(object sender, EventArgs e) {
-            UpdateTreeview();
+            //UpdateTreeview();
         }
 
         private void InitializeSkControl() {
@@ -222,7 +218,6 @@ namespace TaskMaker {
             treeView1.BeginUpdate();
             treeView1.Nodes.Clear();
 
-            //treeView1.Nodes.AddRange((_root.Clone() as TreeNode).Nodes.OfType<TreeNode>().ToArray());
             treeView1.Nodes.Add(_root);
 
             treeView1.EndUpdate();
@@ -242,6 +237,13 @@ namespace TaskMaker {
                     canvasControl1.Pair();
                     e.Handled = true;
                     break;
+            }
+
+            if (e.Control && e.KeyCode == Keys.Z) {
+                _caretaker.Undo();
+            }
+            else if (e.Control && e.Shift && e.KeyCode == Keys.Z) {
+                //_caretaker.Redo();
             }
         }
 
@@ -313,12 +315,32 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button6_Click(object sender, EventArgs e) {
-            var confirmResult = MessageBox.Show("Are you sure to delete this item ?",
-                                     "Confirm Delete!!",
-                                     MessageBoxButtons.OKCancel);
+            var node = treeView1.SelectedNode;
 
-            if (confirmResult == DialogResult.OK)
-                canvasControl1.RemoveLayer();
+            if (node.Parent == null) {
+                MessageBox.Show("Root could not be deleted.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else {
+                var confirmResult = MessageBox.Show("Are you sure to delete this item ?",
+                         "Confirm Delete!!",
+                         MessageBoxButtons.OKCancel);
+
+                if (confirmResult != DialogResult.OK)
+                    return;
+
+                treeView1.BeginUpdate();
+
+                var parent = node.Parent;
+                var children = node.Nodes.OfType<TreeNode>().ToArray();
+
+                node.Remove();
+                parent.Nodes.AddRange(children);
+
+                canvasControl1.RemoveLayer(node.Tag as Layer);
+
+                treeView1.EndUpdate();
+                treeView1.ExpandAll();
+            }
         }
 
 

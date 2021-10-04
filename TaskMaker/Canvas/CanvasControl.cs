@@ -147,12 +147,17 @@ namespace TaskMaker {
             canvas.Layers.Add(layer);
         }
 
-        public void RemoveLayer() {
-            if (SelectedLayer == canvas.Layers[0]) {
-                MessageBox.Show("Root layer could not be deleted.");
+        public void RemoveLayer(Layer layer) {
+            canvas.Layers.Remove(layer);
+            
+            if (canvas.Layers.Count != 0)
+                canvas.Layers[0].IsSelected = true;
 
-                return;
-            }
+            //if (SelectedLayer == canvas.Layers[0]) {
+            //    MessageBox.Show("Root layer could not be deleted.");
+
+            //    return;
+            //}
 
             //var parentNode = SelectedLayer.Parent;
             //var idxInParentNode = parentNode.Nodes.IndexOf(SelectedLayer);
