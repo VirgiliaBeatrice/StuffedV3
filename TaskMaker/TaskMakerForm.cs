@@ -62,7 +62,7 @@ namespace TaskMaker {
 
         private void TreeView1_DragDrop(object sender, DragEventArgs e) {
             //ドロップされたデータがTreeNodeか調べる
-            if (e.Data.GetDataPresent(typeof(Layer))) {
+            if (e.Data.GetDataPresent(typeof(TreeNode))) {
                 TreeView tv = (TreeView)sender;
                 //ドロップされたデータ(TreeNode)を取得
                 var source =
