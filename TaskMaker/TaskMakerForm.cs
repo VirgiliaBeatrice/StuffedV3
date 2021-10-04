@@ -1,69 +1,63 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+﻿using PCController;
+using System;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using MathNet.Numerics.LinearAlgebra;
-using PCController;
 using TaskMaker.MementoPattern;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
-        public Services Services { get; set; }
-
         private CanvasControl canvasControl1;
         private ToolTip tooltipBtnAddLayer = new ToolTip();
         private ToolTip tooltipBtnDeleteLayer = new ToolTip();
         private ToolTip tooltipBtnTargetSelection = new ToolTip();
         private Caretaker _caretaker;
+        private TreeNode _root;
 
         public delegate void InvalidateDelgate(bool invalidateChildren);
 
 
         public TaskMakerForm() {
-            this.Services = new Services();
-
             InitializeComponent();
             InitializeSkControl();
 
-            this.KeyPreview = true;
+            KeyPreview = true;
 
             if (Environment.Is64BitProcess)
                 Console.WriteLine("64-bit process");
             else
                 Console.WriteLine("32-bit process");
 
-            this.KeyDown += TaskMaker_KeyDown;
-            this.canvasControl1.LayerFocused += this.CanvasControl1_LayerFocused;
-            this.canvasControl1.ModeChanged += this.CanvasControl1_ModeChanged;
-            this.canvasControl1.Interpolated += this.CanvasControl1_Interpolated;
+            KeyDown += TaskMaker_KeyDown;
 
-            this.UpdateTreeview();
-            this.treeView1.ExpandAll();
 
-            this.Services.Boards.Serial = this.serialPort1;
-            this.Services.RootLayer = this.canvasControl1.RootLayer;
-            this.Services.SelectedLayer = this.canvasControl1.SelectedLayer;
-            this.Services.Timer = new Timer();
-            this.Services.Timer.Interval = 100;
-            this.Services.Timer.Tick += this.Timer_Tick;
 
-            this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
+            Services.Boards.Serial = serialPort1;
+            Services.MotorTimer.Tick += Timer_Tick;
+            Services.Canvas = canvasControl1.Canvas;
+            //Services.RootLayer = canvasControl1.RootLayer;
+            //Services.SelectedLayer = canvasControl1.SelectedLayer;
 
-            tooltipBtnAddLayer.SetToolTip(this.button5, "Ctrl+A");
-            tooltipBtnDeleteLayer.SetToolTip(this.button6, "Ctrl+D");
-            tooltipBtnTargetSelection.SetToolTip(this.button9, "Ctrl+T");
+            groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
 
-            this.canvasControl1.ContextMenuStrip = this.contextMenuStrip1;
+            tooltipBtnAddLayer.SetToolTip(button5, "Ctrl+A");
+            tooltipBtnDeleteLayer.SetToolTip(button6, "Ctrl+D");
+            tooltipBtnTargetSelection.SetToolTip(button9, "Ctrl+T");
 
-            this.treeView1.AllowDrop = true;
-            this.treeView1.ItemDrag += this.TreeView1_ItemDrag;
-            this.treeView1.DragOver += this.TreeView1_DragOver;
-            this.treeView1.DragDrop += this.TreeView1_DragDrop;
+            canvasControl1.ContextMenuStrip = contextMenuStrip1;
+
+            treeView1.AllowDrop = true;
+            treeView1.ItemDrag += TreeView1_ItemDrag;
+            treeView1.DragOver += TreeView1_DragOver;
+            treeView1.DragDrop += TreeView1_DragDrop;
+
+            _root = new TreeNode("Root");
+
+            Services.LayerTree = _root;
+            _root.Nodes.Add(new TreeNode() { Text = canvasControl1.Canvas.Layers[0].Name, Tag = canvasControl1.Canvas.Layers[0] });
+
+            UpdateTreeview();
         }
 
         private void TreeView1_DragDrop(object sender, DragEventArgs e) {
@@ -71,16 +65,16 @@ namespace TaskMaker {
             if (e.Data.GetDataPresent(typeof(Layer))) {
                 TreeView tv = (TreeView)sender;
                 //ドロップされたデータ(TreeNode)を取得
-                Layer source =
-                    (Layer)e.Data.GetData(typeof(Layer));
+                var source =
+                    (TreeNode)e.Data.GetData(typeof(TreeNode));
                 //ドロップ先のTreeNodeを取得する
-                Layer target =
-                    tv.GetNodeAt(tv.PointToClient(new Point(e.X, e.Y))) as Layer;
+                var target =
+                    tv.GetNodeAt(tv.PointToClient(new Point(e.X, e.Y)));
                 //マウス下のNodeがドロップ先として適切か調べる
                 if (target != null && target != source &&
                     !IsChildNode(source, target)) {
                     //ドロップされたNodeのコピーを作成
-                    var cln = (Layer)source.Clone();
+                    var cln = (TreeNode)source.Clone();
                     //Nodeを追加
                     target.Nodes.Add(cln);
                     //ドロップ先のNodeを展開
@@ -98,7 +92,7 @@ namespace TaskMaker {
 
         private void TreeView1_DragOver(object sender, DragEventArgs e) {
             //ドラッグされているデータがTreeNodeか調べる
-            if (e.Data.GetDataPresent(typeof(Layer))) {
+            if (e.Data.GetDataPresent(typeof(TreeNode))) {
                 if ((e.KeyState & 8) == 8 &&
                     (e.AllowedEffect & DragDropEffects.Copy) ==
                     DragDropEffects.Copy)
@@ -118,13 +112,13 @@ namespace TaskMaker {
 
             //マウス下のNodeを選択する
             if (e.Effect != DragDropEffects.None) {
-                TreeView tv = (TreeView)sender;
+                var tv = (TreeView)sender;
                 //マウスのあるNodeを取得する
-                TreeNode target =
+                var target =
                     tv.GetNodeAt(tv.PointToClient(new Point(e.X, e.Y)));
                 //ドラッグされているNodeを取得する
-                TreeNode source =
-                    (TreeNode)e.Data.GetData(typeof(Layer));
+                var source =
+                    (TreeNode)e.Data.GetData(typeof(TreeNode));
                 //マウス下のNodeがドロップ先として適切か調べる
                 if (target != null && target != source &&
                         !IsChildNode(source, target)) {
@@ -145,7 +139,7 @@ namespace TaskMaker {
 
             DragDropEffects dde = tv.DoDragDrop(e.Item, DragDropEffects.All);
 
-            if((dde & DragDropEffects.Move) == DragDropEffects.Move) {
+            if ((dde & DragDropEffects.Move) == DragDropEffects.Move) {
                 tv.Nodes.Remove(e.Item as TreeNode);
             }
         }
@@ -166,83 +160,86 @@ namespace TaskMaker {
         }
 
         private void CanvasControl1_LayerConfigured(object sender, EventArgs e) {
-            this.toolStripStatusLabel4.Text = $"{this.canvasControl1.SelectedLayer.Text} - {this.canvasControl1.SelectedLayer.LayerStatus}";
+            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
         }
 
         private void CanvasControl1_LayerFocused(object sender, LayerFocusedEventArgs e) {
-            this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
-            this.toolStripStatusLabel4.Text = $"{this.canvasControl1.SelectedLayer.Text} - {this.canvasControl1.SelectedLayer.LayerStatus}";
+            groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
+            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
-            this.UpdateMotorPosition(false);
+            UpdateMotorPosition(false);
         }
 
         private void UpdateMotorPosition(bool returnZero) {
-            short[] targets = new short[this.Services.Boards.NMotor];
+            short[] targets = new short[Services.Boards.NMotor];
 
-            for (int i = 0; i < this.Services.Motors.Count; ++i) {
+            for (int i = 0; i < Services.Motors.Count; ++i) {
                 if (returnZero) {
                     targets[i] = 0;
-                } else {
-                    var motor = this.Services.Motors[i];
+                }
+                else {
+                    var motor = Services.Motors[i];
                     targets[i] = (short)(motor.position.Value);
                     //targets[i] = (short)this.Services.Motors[i].position.Value;
                 }
             }
 
-            this.Services.Boards.SendPosDirect(targets);
+            Services.Boards.SendPosDirect(targets);
         }
 
         private void CanvasControl1_Interpolated(object sender, InterpolatingEventArgs e) {
-            this.toolStripStatusLabel3.Text = String.Join(",", e.Values.ToArray());
+            toolStripStatusLabel3.Text = String.Join(",", e.Values.ToArray());
         }
 
         private void CanvasControl1_ModeChanged(object sender, EventArgs e) {
-            this.toolStripStatusLabel2.Text = this.canvasControl1.SelectedMode.ToString();
+            toolStripStatusLabel2.Text = canvasControl1.SelectedMode.ToString();
         }
 
         private void CanvasControl1_LayerUpdated(object sender, EventArgs e) {
-            this.UpdateTreeview();
+            UpdateTreeview();
         }
 
         private void InitializeSkControl() {
             // Bug: UserControl is not working on design-time.
-            this.canvasControl1 = new CanvasControl(this.Services);
-            this.canvasControl1.Dock = DockStyle.Fill;
-            this.canvasControl1.Location = new Point(4, 17);
-            this.canvasControl1.Margin = new Padding(4);
-            this.canvasControl1.Name = "canvasControl1";
-            this.canvasControl1.Padding = new Padding(4);
-            this.canvasControl1.Size = new Size(892, 609);
-            this.canvasControl1.TabIndex = 0;
+            canvasControl1 = new CanvasControl();
+            canvasControl1.Dock = DockStyle.Fill;
+            canvasControl1.Location = new Point(4, 17);
+            canvasControl1.Margin = new Padding(4);
+            canvasControl1.Name = "canvasControl1";
+            canvasControl1.Padding = new Padding(4);
+            canvasControl1.Size = new Size(892, 609);
+            canvasControl1.TabIndex = 0;
 
-            this.groupBox2.Controls.Add(this.canvasControl1);
+            groupBox2.Controls.Add(canvasControl1);
 
-            _caretaker = new Caretaker(canvasControl1.Canvas);
+            _caretaker = new Caretaker();
             Services.Caretaker = _caretaker;
         }
 
         private void UpdateTreeview() {
-            this.treeView1.BeginUpdate();
-            this.treeView1.Nodes.Clear();
+            treeView1.BeginUpdate();
+            treeView1.Nodes.Clear();
 
-            var root = this.canvasControl1.RootLayer;
-            this.treeView1.Nodes.Add(root);
-            this.treeView1.SelectedNode = this.canvasControl1.SelectedLayer;
+            //treeView1.Nodes.AddRange((_root.Clone() as TreeNode).Nodes.OfType<TreeNode>().ToArray());
+            treeView1.Nodes.Add(_root);
 
-            this.treeView1.EndUpdate();
-            this.treeView1.ExpandAll();
+            treeView1.EndUpdate();
+            treeView1.ExpandAll();
+
+            if (treeView1.Nodes.Count != 0)
+                treeView1.SelectedNode = treeView1.Nodes[0];
         }
 
         private void TaskMaker_KeyDown(object sender, KeyEventArgs e) {
             switch (e.KeyCode) {
                 case Keys.Escape:
-                    this.canvasControl1.BeginNoneMode();
+                    canvasControl1.BeginNoneMode();
                     e.Handled = true;
                     break;
                 case Keys.P:
-                    this.canvasControl1.Pair();
+                    canvasControl1.Pair();
                     e.Handled = true;
                     break;
             }
@@ -250,17 +247,17 @@ namespace TaskMaker {
 
         //Add node
         private void button1_Click(object sender, EventArgs e) {
-            this.canvasControl1.BeginAddNodeMode();
+            canvasControl1.BeginAddNodeMode();
         }
 
         // Edit node
         private void button2_Click(object sender, EventArgs e) {
-            this.canvasControl1.BeginEditMode();
+            canvasControl1.BeginEditMode();
         }
 
         // Manipulate
         private void button3_Click(object sender, EventArgs e) {
-            this.canvasControl1.BeginManipulateMode();
+            canvasControl1.BeginManipulateMode();
         }
 
         /// <summary>
@@ -273,7 +270,7 @@ namespace TaskMaker {
                                      "Confirm Delete!!",
                                      MessageBoxButtons.OKCancel);
             if (confirmResult == DialogResult.OK) {
-                this.canvasControl1.RemoveSelectedNodes();
+                canvasControl1.RemoveSelectedNodes();
             }
         }
 
@@ -283,7 +280,31 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button5_Click(object sender, EventArgs e) {
-            this.canvasControl1.AddLayer();
+            var node = treeView1.SelectedNode;
+
+            treeView1.BeginUpdate();
+
+            if (node.Parent != null) {
+                var layerName = $"New Layer {node.Level} {node.Parent.GetNodeCount(false) + 1}";
+
+                var newLayer = new Layer(layerName);
+                var newNode = new TreeNode() { Tag = newLayer, Text = layerName };
+
+                node.Parent.Nodes.Add(newNode);
+                canvasControl1.AddLayer(newLayer);
+            }
+            else {
+                var layerName = $"New Layer {node.Level + 1} {node.GetNodeCount(false) + 1}";
+
+                var newLayer = new Layer(layerName);
+                var newNode = new TreeNode() { Tag = newLayer, Text = layerName };
+
+                node.Nodes.Add(newNode);
+                canvasControl1.AddLayer(newLayer);
+            }
+
+            treeView1.EndUpdate();
+            treeView1.ExpandAll();
         }
 
         /// <summary>
@@ -297,7 +318,7 @@ namespace TaskMaker {
                                      MessageBoxButtons.OKCancel);
 
             if (confirmResult == DialogResult.OK)
-                this.canvasControl1.RemoveLayer();
+                canvasControl1.RemoveLayer();
         }
 
 
@@ -307,96 +328,86 @@ namespace TaskMaker {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void button7_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedMode = Modes.Selection;
+            canvasControl1.SelectedMode = Modes.Selection;
         }
 
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e) {
-            var form = new SettingsForm(this.Services);
+            var form = new SettingsForm();
 
             form.ShowDialog();
             form.Dispose();
         }
 
         private void button10_Click(object sender, EventArgs e) {
-            this.canvasControl1.Triangulate();
+            canvasControl1.Triangulate();
         }
 
         private void button9_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.Services);
-            this.canvasControl1.Reset();
+            canvasControl1.SelectedLayer.ShowTargetSelectionForm();
+            canvasControl1.Reset();
         }
 
         private void button12_Click(object sender, EventArgs e) {
-            this.canvasControl1.Pair();
+            canvasControl1.Pair();
         }
 
         private void layerToolStripMenuItem_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedLayer.ShowTargetSelectionForm(this.Services);
-            this.canvasControl1.Reset();
+            canvasControl1.SelectedLayer.ShowTargetSelectionForm();
+            canvasControl1.Reset();
         }
 
         private void button11_Click(object sender, EventArgs e) {
-            this.canvasControl1.SelectedLayer.ShowTargetControlForm();
+            canvasControl1.SelectedLayer.ShowTargetControlForm();
         }
 
         private void button13_Click(object sender, EventArgs e) {
-            this.canvasControl1.Unpair();
+            canvasControl1.Unpair();
         }
 
         private void button14_Click(object sender, EventArgs e) {
-            if (this.Services.Motors.Count != 0) {
-                this.UpdateMotorPosition(true);
+            if (Services.Motors.Count != 0) {
+                UpdateMotorPosition(true);
             }
         }
 
         private void treeView1_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e) {
-            this.Services.SelectedLayer = (Layer)e.Node;
-            this.canvasControl1.ChooseLayer(e.Node as Layer);
-            this.groupBox2.Text = $"Canvas - [{this.canvasControl1.SelectedLayer.Text}]";
-            this.toolStripStatusLabel4.Text = $"{this.canvasControl1.SelectedLayer.Text} - {this.canvasControl1.SelectedLayer.LayerStatus}";
+            if (e.Node.Parent == null) {
+                return;
+            }
+
+            var layer = e.Node.Tag as Layer;
+
+            canvasControl1.ChooseLayer(layer);
+
+            groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
+            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
         }
 
         private void treeView1_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
-            this.groupBox2.Text = $"Canvas - [{e.Label}]";
-            this.toolStripStatusLabel4.Text = $"{e.Label} - {this.canvasControl1.SelectedLayer.LayerStatus}";
+            groupBox2.Text = $"Canvas - [{e.Label}]";
+            toolStripStatusLabel4.Text = $"{e.Label} - {canvasControl1.SelectedLayer.LayerStatus}";
         }
 
         private void button8_Click(object sender, EventArgs e) {
-            this.canvasControl1.SaveAsImage();
+            canvasControl1.SaveAsImage();
         }
 
         private void button15_Click(object sender, EventArgs e) {
             _caretaker.Undo();
         }
-
-        //private void treeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e) {
-        //    var target = (e.Node as Layer);
-
-        //    var renameDialog = new Form();
-        //    var input = new TextBox();
-
-        //    renameDialog.Text = "Rename";
-        //    renameDialog.ClientSize = new Size(100, 40);
-        //    input.Dock = DockStyle.Fill;
-        //    renameDialog.Controls.Add(input);
-
-        //    // Show testDialog as a modal dialog and determine if DialogResult = OK.
-        //    if (renameDialog.ShowDialog(this) == DialogResult.OK) {
-        //        // Read the contents of testDialog's TextBox.
-        //        target.Text = input.Text;
-        //    }
-
-        //    renameDialog.Dispose();
-        //}
     }
 
-    public class Services {
-        public Boards Boards { get; set; } = new Boards();
-        public Motors Motors { get; set; } = new Motors();
-        public Layer RootLayer { get; set; }
-        public Layer SelectedLayer { get; set; }
-        public Timer Timer { get; set; }
+    static public class Services {
+        //public Boards Boards { get; set; } = new Boards();
+        //public Motors Motors { get; set; } = new Motors();
+        //public Layer RootLayer { get; set; }
+        //public Layer SelectedLayer { get; set; }
 
         static public Caretaker Caretaker { get; set; }
+        static public Boards Boards { get; set; } = new Boards();
+        static public Motors Motors { get; set; } = new Motors();
+        static public Timer MotorTimer { get; set; } = new Timer() { Interval = 100 };
+        static public Canvas Canvas { get; set; }
+        static public TreeNode LayerTree { get; set; }
     }
 }

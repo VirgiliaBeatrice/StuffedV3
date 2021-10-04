@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using SkiaSharp;
+﻿using SkiaSharp;
 using SkiaSharp.Views.Desktop;
+using System;
+using System.Windows.Forms;
 
 namespace TaskMaker {
     public partial class TinyCanvasForm : Form {
@@ -25,32 +18,32 @@ namespace TaskMaker {
         public TinyCanvasForm(Layer layer) {
             InitializeComponent();
 
-            this.parentLayer = layer;
-            this.timer = new Timer();
-            this.timer.Interval = 10;
-            this.timer.Tick += this.Timer_Tick;
-            this.timer.Enabled = true;
+            parentLayer = layer;
+            timer = new Timer();
+            timer.Interval = 10;
+            timer.Tick += Timer_Tick;
+            timer.Enabled = true;
 
-            this.sKControl = new SKGLControl();
-            this.sKControl.Dock = DockStyle.Fill;
-            this.groupBox1.Controls.Add(this.sKControl);
+            sKControl = new SKGLControl();
+            sKControl.Dock = DockStyle.Fill;
+            groupBox1.Controls.Add(sKControl);
 
-            this.sKControl.PaintSurface += this.SKControl_PaintSurface;
-            this.sKControl.MouseDown += this.SKControl_MouseDown;
-            this.sKControl.MouseMove += this.SKControl_MouseMove;
-            this.sKControl.MouseUp += this.SKControl_MouseUp;
+            sKControl.PaintSurface += SKControl_PaintSurface;
+            sKControl.MouseDown += SKControl_MouseDown;
+            sKControl.MouseMove += SKControl_MouseMove;
+            sKControl.MouseUp += SKControl_MouseUp;
 
-            this.groupBox1.Text = layer.Text;
+            groupBox1.Text = layer.Name;
 
-            this.KeyPreview = true;
+            KeyPreview = true;
 
             Reset();
-            this.sKControl.Invalidate();
+            sKControl.Invalidate();
             timer.Start();
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
-            this.Invalidate(true);
+            Invalidate(true);
         }
 
         private void Reset() {
@@ -78,9 +71,9 @@ namespace TaskMaker {
             }
             else if (ModifierKeys == Keys.None) {
                 if (e.Button == MouseButtons.Left) {
-                    var local = this.ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+                    var local = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
                     pointer = new CrossPointer(local);
-                    this.parentLayer.IsShownPointer = true;
+                    parentLayer.IsShownPointer = true;
                 }
             }
         }
@@ -93,11 +86,11 @@ namespace TaskMaker {
             }
             else if (ModifierKeys == Keys.None) {
                 if (e.Button == MouseButtons.Left) {
-                    pointer.Location = this.ViewportToWorld().MapPoint(e.Location.ToSKPoint());
-                    this.parentLayer.Pointer.Location = pointer.Location;
+                    pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+                    parentLayer.Pointer.Location = pointer.Location;
 
                     // Interpolation
-                    parentLayer.Interpolate(this.ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
+                    parentLayer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
                     //this.parentLayer.Interpolate(e.Location.ToSKPoint());
                 }
             }
@@ -105,12 +98,12 @@ namespace TaskMaker {
 
         private void SKControl_PaintSurface(object sender, SKPaintGLSurfaceEventArgs ev) {
             var canvas = ev.Surface.Canvas;
-            var mat = this.WorldToViewport();
+            var mat = WorldToViewport();
 
             canvas.Clear(SKColors.White);
             canvas.Concat(ref mat);
 
-            this.parentLayer.Draw(canvas);
+            parentLayer.Draw(canvas);
 
             if (pointer != null) {
                 pointer.Draw(canvas);
@@ -127,7 +120,7 @@ namespace TaskMaker {
         }
 
         private SKMatrix ViewportToWorld() {
-            return this.WorldToViewport().Invert();
+            return WorldToViewport().Invert();
         }
 
         private void Pan(SKPoint offset) {

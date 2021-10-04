@@ -37,8 +37,8 @@ namespace TaskMaker {
             return values.Sum();
         }
 
-        public static Exterior CreateExterior(Entity_v2[] extremes, Simplex_v2[] simplices) {
-            var ccw = new CircularList<Entity_v2>(extremes);
+        public static Exterior CreateExterior(Entity[] extremes, Simplex[] simplices) {
+            var ccw = new CircularList<Entity>(extremes);
             var exterior = new Exterior();
             var rects = new List<VoronoiRegion_Rect>();
 

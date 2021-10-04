@@ -19,9 +19,9 @@ namespace TaskMaker {
     }
 
     public class VoronoiRegion_Rect : VoronoiRegion {
-        public Simplex_v2 Governor { get; set; }
-        public Entity_v2 E0 { get; set; }
-        public Entity_v2 E1 { get; set; }
+        public Simplex Governor { get; set; }
+        public Entity E0 { get; set; }
+        public Entity E1 { get; set; }
 
         private SKPath rect;
         private SKPaint stroke = new SKPaint() {
@@ -45,7 +45,7 @@ namespace TaskMaker {
             return this.rect.Contains(p.X, p.Y);
         }
 
-        public VoronoiRegion_Rect(Entity_v2 it, Entity_v2 next, Simplex_v2 governor) {
+        public VoronoiRegion_Rect(Entity it, Entity next, Simplex governor) {
             rect = new SKPath();
             Governor = governor;
             E0 = it;
@@ -110,10 +110,10 @@ namespace TaskMaker {
     }
 
     public class VoronoiRegion_CircularSector : VoronoiRegion {
-        public Simplex_v2 Governor0 { get; set; }
-        public Simplex_v2 Governor1 { get; set; }
+        public Simplex Governor0 { get; set; }
+        public Simplex Governor1 { get; set; }
         public SKPoint Intersection { get; set; }
-        public Entity_v2 E0 { get; set; }
+        public Entity E0 { get; set; }
 
         private SKPath circularSector;
         private SKPaint stroke = new SKPaint() {
@@ -139,7 +139,7 @@ namespace TaskMaker {
             return this.circularSector.Contains(p.X, p.Y);
         }
 
-        public VoronoiRegion_CircularSector(Entity_v2 o, SKPoint a, SKPoint i, SKPoint b) {
+        public VoronoiRegion_CircularSector(Entity o, SKPoint a, SKPoint i, SKPoint b) {
             circularSector = new SKPath();
             Intersection = i;
             E0 = o;
@@ -237,7 +237,7 @@ namespace TaskMaker {
     public class VoronoiRegion_Type0 : CanvasObject_v2, IVoronoiRegion {
         public ExteriorRay_v3 ExRay0 { get; set; }
         public ExteriorRay_v3 ExRay1 { get; set; }
-        public Simplex_v2 Triangle { get; set; }
+        public Simplex Triangle { get; set; }
 
         private SKPaint stroke = new SKPaint {
             IsAntialias = true,
@@ -246,7 +246,7 @@ namespace TaskMaker {
             StrokeWidth = 2
         };
 
-        public VoronoiRegion_Type0(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex_v2 triangle) {
+        public VoronoiRegion_Type0(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex triangle) {
             this.ExRay0 = ray0;
             this.ExRay1 = ray1;
             this.Triangle = triangle;
@@ -495,8 +495,8 @@ namespace TaskMaker {
     public class VoronoiRegion_Type1 : CanvasObject_v2, IVoronoiRegion {
         public ExteriorRay_v3 ExRay0 { get; set; }
         public ExteriorRay_v3 ExRay1 { get; set; }
-        public Simplex_v2 Triangle0 { get; set; }
-        public Simplex_v2 Triangle1 { get; set; }
+        public Simplex Triangle0 { get; set; }
+        public Simplex Triangle1 { get; set; }
 
         private SKPaint stroke = new SKPaint {
             IsAntialias = true,
@@ -505,7 +505,7 @@ namespace TaskMaker {
             StrokeWidth = 2
         };
 
-        public VoronoiRegion_Type1(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex_v2 tri0, Simplex_v2 tri1) {
+        public VoronoiRegion_Type1(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex tri0, Simplex tri1) {
             this.ExRay0 = ray0;
             this.ExRay1 = ray1;
             this.Triangle0 = tri0;
@@ -723,7 +723,7 @@ namespace TaskMaker {
     /// </summary>
     public class VoronoiRegion_Type2 : VoronoiRegion_Type0 {
 
-        public VoronoiRegion_Type2(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex_v2 triangle) : base(ray0, ray1, triangle) { }
+        public VoronoiRegion_Type2(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex triangle) : base(ray0, ray1, triangle) { }
 
         public override bool ContainsPoint(SKPoint p) {
             return base.ContainsPoint(p) & !this.Triangle.ContainsPoint(p);

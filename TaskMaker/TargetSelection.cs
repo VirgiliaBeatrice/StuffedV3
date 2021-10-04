@@ -1,179 +1,170 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Runtime.Serialization;
+﻿using MathNet.Numerics.LinearAlgebra;
 using PCController;
+using System;
+using System.Collections.Generic;
+using System.Data;
 using System.IO.Ports;
-using MathNet.Numerics.LinearAlgebra;
-using MathNetExtension;
-using SkiaSharp;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace TaskMaker {
     public partial class TargetSelection : UserControl {
-        public Services ProgramInfo { get; set; }
 
-        public TargetSelection(Services info) {
-            this.ProgramInfo = info;
-
+        public TargetSelection() {
             InitializeComponent();
             //InitializeSerialPort();
             InitializeLayer();
-            this.UpdateMotors();
+            UpdateMotors();
         }
 
         private void InitializeSerialPort() {
             string[] ports = SerialPort.GetPortNames();
             Array.Sort(ports);
-            this.comboBox1.Items.AddRange(ports);
+            comboBox1.Items.AddRange(ports);
 
-            if (this.comboBox1.Items.Count > 0) {
-                this.comboBox1.Text = this.comboBox1.Items[0].ToString();
+            if (comboBox1.Items.Count > 0) {
+                comboBox1.Text = comboBox1.Items[0].ToString();
             }
         }
 
         private void InitializeLayer() {
-            var selectableRoot = SelectableLayer.CreateSelectableLayer(this.ProgramInfo.RootLayer);
+            var selectableRoot = SelectableLayer.CreateSelectableLayer(Services.LayerTree);
 
-            this.treeView2.Nodes.Add(selectableRoot);
+            treeView2.Nodes.Add(selectableRoot);
         }
 
         private void UpdateMotors() {
-            this.treeView1.BeginUpdate();
-            this.treeView1.Nodes.Clear();
+            treeView1.BeginUpdate();
+            treeView1.Nodes.Clear();
 
-            for (int i = 0; i < this.ProgramInfo.Boards.NMotor; ++i) {
-                this.treeView1.Nodes.Add(new SelectableMotor($"Motor{i}") { Target = this.ProgramInfo.Motors[i] });
+            for (int i = 0; i < Services.Boards.NMotor; ++i) {
+                treeView1.Nodes.Add(new SelectableMotor($"Motor{i}") { Target = Services.Motors[i] });
             }
 
-            this.treeView1.EndUpdate();
-            this.treeView1.ExpandAll();
+            treeView1.EndUpdate();
+            treeView1.ExpandAll();
         }
 
         private void ResetMotor() {
-            this.ProgramInfo.Motors.Clear();
-   
-            for (int i = 0; i < this.ProgramInfo.Boards.NMotor; ++i) {
+            Services.Motors.Clear();
+
+            for (int i = 0; i < Services.Boards.NMotor; ++i) {
                 Motor m = new Motor();
 
-                this.ProgramInfo.Motors.Add(m);
+                Services.Motors.Add(m);
             }
 
-            short[] k = new short[this.ProgramInfo.Boards.NMotor];
-            short[] b = new short[this.ProgramInfo.Boards.NMotor];
-            short[] a = new short[this.ProgramInfo.Boards.NMotor];
-            short[] limit = new short[this.ProgramInfo.Boards.NMotor];
-            short[] release = new short[this.ProgramInfo.Boards.NMotor];
-            short[] torqueMin = new short[this.ProgramInfo.Boards.NMotor];
-            short[] torqueMax = new short[this.ProgramInfo.Boards.NMotor];
+            short[] k = new short[Services.Boards.NMotor];
+            short[] b = new short[Services.Boards.NMotor];
+            short[] a = new short[Services.Boards.NMotor];
+            short[] limit = new short[Services.Boards.NMotor];
+            short[] release = new short[Services.Boards.NMotor];
+            short[] torqueMin = new short[Services.Boards.NMotor];
+            short[] torqueMax = new short[Services.Boards.NMotor];
 
-            this.ProgramInfo.Boards.RecvParamPd(ref k, ref b);
-            this.ProgramInfo.Boards.RecvParamCurrent(ref a);
-            this.ProgramInfo.Boards.RecvParamTorque(ref torqueMin, ref torqueMax);
-            this.ProgramInfo.Boards.RecvParamHeat(ref limit, ref release);
+            Services.Boards.RecvParamPd(ref k, ref b);
+            Services.Boards.RecvParamCurrent(ref a);
+            Services.Boards.RecvParamTorque(ref torqueMin, ref torqueMax);
+            Services.Boards.RecvParamHeat(ref limit, ref release);
 
-            for (int i = 0; i < this.ProgramInfo.Boards.NMotor; ++i) {
-                this.ProgramInfo.Motors[i].pd.K = k[i];
-                this.ProgramInfo.Motors[i].pd.B = b[i];
-                this.ProgramInfo.Motors[i].pd.A = a[i];
+            for (int i = 0; i < Services.Boards.NMotor; ++i) {
+                Services.Motors[i].pd.K = k[i];
+                Services.Motors[i].pd.B = b[i];
+                Services.Motors[i].pd.A = a[i];
                 if (limit[i] > 32000) limit[i] = 32000;
                 if (limit[i] < 0) limit[i] = 0;
-                this.ProgramInfo.Motors[i].heat.HeatLimit = limit[i] * release[i];
-                this.ProgramInfo.Motors[i].heat.HeatRelease = release[i];
-                this.ProgramInfo.Motors[i].torque.Minimum = torqueMin[i];
-                this.ProgramInfo.Motors[i].torque.Maximum = torqueMax[i];
+                Services.Motors[i].heat.HeatLimit = limit[i] * release[i];
+                Services.Motors[i].heat.HeatRelease = release[i];
+                Services.Motors[i].torque.Minimum = torqueMin[i];
+                Services.Motors[i].torque.Maximum = torqueMax[i];
             }
         }
 
         private void radioButton1_CheckedChanged(object sender, EventArgs e) {
-            if (this.radioButton1.Checked) {
-                this.radioButton2.Checked = false;
-                this.treeView2.Enabled = false;
+            if (radioButton1.Checked) {
+                radioButton2.Checked = false;
+                treeView2.Enabled = false;
 
-                this.treeView1.Enabled = true;
+                treeView1.Enabled = true;
             }
         }
 
         private void radioButton2_CheckedChanged(object sender, EventArgs e) {
-            if (this.radioButton2.Checked) {
-                this.radioButton1.Checked = false;
-                this.treeView1.Enabled = false;
+            if (radioButton2.Checked) {
+                radioButton1.Checked = false;
+                treeView1.Enabled = false;
 
-                this.treeView2.Enabled = true;
+                treeView2.Enabled = true;
             }
         }
 
         private void button2_Click(object sender, EventArgs e) {
-            var serialPort = this.ProgramInfo.Boards.Serial;
+            var serialPort = Services.Boards.Serial;
             if (serialPort.IsOpen)
                 serialPort.Close();
 
-            if (this.comboBox1.Text.Length == 0) return;
+            if (comboBox1.Text.Length == 0) return;
 
-            serialPort.PortName = this.comboBox1.Text;
+            serialPort.PortName = comboBox1.Text;
             serialPort.BaudRate = 2000000;
 
             try {
                 serialPort.Open();
-            } catch {
+            }
+            catch {
                 return;
             }
 
             if (serialPort.IsOpen) {
-                this.treeView1.Nodes.Clear();
-                this.ProgramInfo.Boards.Clear();
-                this.ProgramInfo.Boards.EnumerateBoard();
+                treeView1.Nodes.Clear();
+                Services.Boards.Clear();
+                Services.Boards.EnumerateBoard();
 
-                this.ResetMotor();
+                ResetMotor();
 
-                for (int i = 0; i < this.ProgramInfo.Boards.NMotor; ++i) {
-                    this.treeView1.Nodes.Add(new SelectableMotor($"Motor{i}") { Target = this.ProgramInfo.Motors[i] });
+                for (int i = 0; i < Services.Boards.NMotor; ++i) {
+                    treeView1.Nodes.Add(new SelectableMotor($"Motor{i}") { Target = Services.Motors[i] });
                 }
             }
         }
 
         private void treeView1_AfterCheck(object sender, TreeViewEventArgs e) {
 
-            
+
         }
 
         private void button1_Click(object sender, EventArgs e) {
-            if (this.radioButton1.Checked) {
-                //this.ProgramInfo.SelectedLayer.InitializeMotorConfigs();
+            if (radioButton1.Checked) {
+                //Services.SelectedLayer.InitializeMotorConfigs();
                 var target = new MotorTarget();
-                this.ProgramInfo.SelectedLayer.BindedTarget = target;
+                Services.Canvas.SelectedLayer.BindedTarget = target;
 
-                foreach (SelectableMotor m in this.treeView1.Nodes) {
+                foreach (SelectableMotor m in treeView1.Nodes) {
                     if (m.Checked) {
-                        //this.ProgramInfo.SelectedLayer.MotorConfigs.Add(m.Target);
+                        //Services.SelectedLayer.MotorConfigs.Add(m.Target);
                         target.Motors.Add(m.Target);
                     }
                 }
 
-                this.ProgramInfo.Timer.Enabled = true;
-                this.ProgramInfo.Timer.Start();
+                Services.MotorTimer.Enabled = true;
+                Services.MotorTimer.Start();
             }
 
-            if (this.radioButton2.Checked) {
-                //this.ProgramInfo.SelectedLayer.InitializeLayerConfigs();
+            if (radioButton2.Checked) {
+                //Services.SelectedLayer.InitializeLayerConfigs();
                 var target = new LayerTarget();
-                this.ProgramInfo.SelectedLayer.BindedTarget = target;
+                Services.Canvas.SelectedLayer.BindedTarget = target;
 
-                var checkedLayers = this.GetAllLayers(this.treeView2.Nodes[0] as SelectableLayer);
+                var checkedLayers = GetAllLayers(treeView2.Nodes[0] as SelectableLayer);
 
-                foreach(SelectableLayer l in checkedLayers) {
-                    //this.ProgramInfo.SelectedLayer.LayerConfigs.Add(l.Target);
+                foreach (SelectableLayer l in checkedLayers) {
+                    //Services.SelectedLayer.LayerConfigs.Add(l.Target);
                     target.Layers.Add(l.Target);
                 }
             }
 
             MessageBox.Show("New configs are set.");
-            this.ParentForm.Close();
+            ParentForm.Close();
         }
 
         private SelectableLayer[] GetAllLayers(SelectableLayer layer) {
@@ -183,7 +174,7 @@ namespace TaskMaker {
                 results.Add(layer);
 
             foreach (SelectableLayer child in layer.Nodes) {
-                results.AddRange(this.GetAllLayers(child));
+                results.AddRange(GetAllLayers(child));
             }
 
             return results.Where(r => r.Checked).ToArray();
@@ -193,7 +184,7 @@ namespace TaskMaker {
     public class SelectableObject<T> : TreeNode {
         public T Target { get; set; }
         public SelectableObject(string name) {
-            this.Text = name;
+            Text = name;
         }
     }
 
@@ -201,7 +192,7 @@ namespace TaskMaker {
         public SelectableMotor(string name) : base(name) { }
 
         public Vector<float> ToVector() {
-            return Vector<float>.Build.Dense(1, this.Target.position.Value);
+            return Vector<float>.Build.Dense(1, Target.position.Value);
         }
     }
 
@@ -210,37 +201,23 @@ namespace TaskMaker {
 
         public Vector<float> ToVector() {
             return Vector<float>.Build.Dense(new float[] {
-                this.Target.Pointer.Location.X, this.Target.Pointer.Location.Y
-            });;
+                Target.Pointer.Location.X, Target.Pointer.Location.Y
+            }); ;
         }
 
-        public static SelectableLayer CreateSelectableLayer(Layer layer) {
-            var selectableLayer = new SelectableLayer(layer.Text) {
+        public static SelectableLayer CreateSelectableLayer(TreeNode node) {
+            var layer = node.Tag as Layer;
+            var selectableLayer = new SelectableLayer(layer.Name) {
                 Target = layer
             };
-            
-            foreach(Layer node in layer.Nodes) {
-                var child = CreateSelectableLayer(node);
 
-                selectableLayer.Nodes.Add(child);
+            foreach (TreeNode childNode in node.Nodes) {
+                var children = CreateSelectableLayer(childNode);
+
+                selectableLayer.Nodes.Add(children);
             }
 
             return selectableLayer;
-        }
-    }
-
-    //public interface IConfigs<T> {
-    //    public Action<T> ToVector;
-    //    Action<T, Vector<float>> FromVector;
-    //}
-
-    public class Configs<T> : List<T> {
-        public Func<Configs<T>, Vector<float>> ToVector;
-        public Action<Configs<T>, Vector<float>> FromVector;
-
-        public Configs(Func<Configs<T>, Vector<float>> funcTo, Action<Configs<T>, Vector<float>> funcFrom) {
-            this.ToVector += funcTo;
-            this.FromVector += funcFrom;
         }
     }
 }

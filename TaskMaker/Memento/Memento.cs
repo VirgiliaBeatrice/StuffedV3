@@ -29,22 +29,31 @@ namespace TaskMaker.MementoPattern {
 
     public class Caretaker {
         private IOriginator _originator;
-        private Stack<Memento> _history = new Stack<Memento>(10);
+        private Stack<(Memento, IOriginator)> _history = new Stack<(Memento, IOriginator)>(10);
 
         public Caretaker(IOriginator originator) {
             _originator = originator;
         }
 
-        public void Do() {
-            var m = _originator.Save();
+        public Caretaker() { }
 
-            _history.Push(m);
+        //public void Do() {
+        //    var m = _originator.Save();
+
+        //    _history.Push(m);
+        //}
+
+        public void Do(IOriginator o) {
+            var m = o.Save();
+
+            _history.Push((m, o));
         }
+
         public void Undo() {
             if (_history.Count != 0) {
-                var m = _history.Pop();
+                var (m, o) = _history.Pop();
 
-                _originator.Restore(m);
+                o.Restore(m);
             }
         }
     }
