@@ -26,6 +26,11 @@ namespace TaskMaker {
         private Timer timer;
         private EditPhase editPhase = EditPhase.None;
 
+        private SKRect _viewport;
+        private SKRect _window;
+        private SKPoint _panCenterInView;
+        private SKPoint _panStartInWorld;
+
         public CanvasControl() {
             InitializeComponent();
 
@@ -55,6 +60,8 @@ namespace TaskMaker {
             timer.Enabled = true;
             timer.Interval = 1;
             timer.Tick += Timer_Tick;
+
+            ResetViewport();
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -72,6 +79,11 @@ namespace TaskMaker {
         public void Reset() {
             canvas.Reset();
             selectedMode = Modes.None;
+        }
+
+        private void ResetViewport() {
+            _window = new SKRect() { Location = new SKPoint(), Size = ClientSize.ToSKSize() };
+            _viewport = new SKRect() { Location = new SKPoint(), Size = ClientSize.ToSKSize() };
         }
 
         public bool Triangulate() {
@@ -194,38 +206,49 @@ namespace TaskMaker {
         }
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
-            switch (SelectedMode) {
-                case Modes.Selection:
-                    ProcessSelectionMouseDownEvent(e);
-                    break;
-                case Modes.Manipulate:
-                    ProcessManipulatMouseDownEvent(e);
-                    break;
-                case Modes.EditNode:
-                    ProcessEditNodeMouseDownEvent(e);
-                    break;
+            if (ModifierKeys == Keys.Control) {
+                if (e.Button == MouseButtons.Left) {
+                    _panCenterInView = e.Location.ToSKPoint();
+                    _panStartInWorld = _window.Location;
+                }
             }
-
-            //this.Invalidate(true);
+            else {
+                switch (SelectedMode) {
+                    case Modes.Selection:
+                        ProcessSelectionMouseDownEvent(e);
+                        break;
+                    case Modes.Manipulate:
+                        ProcessManipulatMouseDownEvent(e);
+                        break;
+                    case Modes.EditNode:
+                        ProcessEditNodeMouseDownEvent(e);
+                        break;
+                }
+            }
         }
 
 
         private void SkControl_MouseMove(object sender, MouseEventArgs e) {
-            switch (SelectedMode) {
-                case Modes.Selection:
-                    ProcessSelectionMouseMoveEvent(e);
-                    break;
-                case Modes.Manipulate:
-                    ProcessManipulateMouseMoveEvent(e);
-                    break;
-                case Modes.EditNode:
-                    ProcessEditNodeMouseMoveEvent(e);
-                    break;
+            if (ModifierKeys == Keys.Control) {
+                if (e.Button == MouseButtons.Left) {
+                    Pan(e.Location.ToSKPoint() - _panCenterInView);
+                }
+            } 
+            else {
+                switch (SelectedMode) {
+                    case Modes.Selection:
+                        ProcessSelectionMouseMoveEvent(e);
+                        break;
+                    case Modes.Manipulate:
+                        ProcessManipulateMouseMoveEvent(e);
+                        break;
+                    case Modes.EditNode:
+                        ProcessEditNodeMouseMoveEvent(e);
+                        break;
+                }
+
+                canvas.Pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
             }
-
-            canvas.Pointer.Location = e.Location.ToSKPoint();
-
-            Invalidate(true);
         }
 
         private void SkControl_MouseClick(object sender, MouseEventArgs e) {
@@ -245,28 +268,34 @@ namespace TaskMaker {
         }
 
         private void SkControl_MouseUp(object sender, MouseEventArgs e) {
-            switch (SelectedMode) {
-                case Modes.Selection:
-                    ProcessSelectionMouseUpEvent(e);
-                    break;
-                case Modes.Manipulate:
-                    ProcessManipulateMouseUpEvent(e);
-                    break;
-                case Modes.EditNode:
-                    ProcessEditNodeMouseUpEvent(e);
-                    break;
+            if (ModifierKeys == Keys.Control) {
+                if (e.Button == MouseButtons.Right) {
+                    ResetViewport();
+                }
             }
-
-            //this.Invalidate(true);
+            else {
+                switch (SelectedMode) {
+                    case Modes.Selection:
+                        ProcessSelectionMouseUpEvent(e);
+                        break;
+                    case Modes.Manipulate:
+                        ProcessManipulateMouseUpEvent(e);
+                        break;
+                    case Modes.EditNode:
+                        ProcessEditNodeMouseUpEvent(e);
+                        break;
+                }
+            }
         }
 
         private void ProcessEditNodeMouseUpEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 if (editPhase == EditPhase.Select) {
                     var entities = SelectedLayer.Entities;
+                    var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
 
                     foreach (var entity in entities) {
-                        if (entity.ContainsPoint(ev.Location.ToSKPoint())) {
+                        if (entity.ContainsPoint(wLocation)) {
                             entity.IsSelected = !entity.IsSelected;
                             break;
                         }
@@ -287,7 +316,7 @@ namespace TaskMaker {
                 var selectedEntities = SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
                 if (selectedEntities.Count != 0) {
-                    selectedEntities[0].Location = ev.Location.ToSKPoint();
+                    selectedEntities[0].Location = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
                 }
             }
         }
@@ -297,9 +326,10 @@ namespace TaskMaker {
             if (ev.Button == MouseButtons.Left) {
                 if (editPhase == EditPhase.Select) {
                     var entities = SelectedLayer.Entities;
+                    var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
 
                     foreach (var entity in entities) {
-                        if (entity.ContainsPoint(ev.Location.ToSKPoint())) {
+                        if (entity.ContainsPoint(wLocation)) {
                             entity.IsSelected = !entity.IsSelected;
                             break;
                         }
@@ -309,9 +339,10 @@ namespace TaskMaker {
                 }
                 else if (editPhase == EditPhase.Edit) {
                     var selectedEntities = SelectedLayer.Entities.FindAll(e => e.IsSelected);
+                    var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
 
                     if (selectedEntities.Count != 0) {
-                        if (!selectedEntities[0].ContainsPoint(ev.Location.ToSKPoint())) {
+                        if (!selectedEntities[0].ContainsPoint(wLocation)) {
                             canvas.Reset();
 
                             editPhase = EditPhase.Select;
@@ -324,15 +355,17 @@ namespace TaskMaker {
 
         private void ProcessManipulatMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                BeginPointerTrace(ev.Location);
+                var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
+                BeginPointerTrace(new Point((int)wLocation.X, (int)wLocation.Y));
             }
         }
 
         private void ProcessManipulateMouseMoveEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
-                canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
-                canvas.PointerTrace.Update(e.Location.ToSKPoint());
+                var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+                canvas.SelectedLayer.Interpolate(wLocation);
+                canvas.PointerTrace.Update(wLocation);
             }
         }
 
@@ -345,17 +378,16 @@ namespace TaskMaker {
 
 
         private void SkControl_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e) {
+            var canvas = e.Surface.Canvas;
+            var mat = WorldToViewport();
+
             e.Surface.Canvas.GetDeviceClipBounds(out SKRectI bounds);
 
             imageInfo = new SKImageInfo(bounds.Width, bounds.Height);
-            //e.Surface.Canvas.Translate(this.translate.TransX, this.translate.TransY);
-            //this.translate = SKMatrix.Empty;
-            Draw(e.Surface.Canvas);
 
-            //var start = new SKPoint(-50, 10);
-            //var direction = new SKPoint(600, 450) - start;
-            //var ray = new Ray_v3(start, direction);
-            //ray.Draw(e.Surface.Canvas);
+            canvas.Clear(SKColors.White);
+            canvas.Concat(ref mat);
+            Draw(e.Surface.Canvas);
         }
 
         public void SaveAsImage() {
@@ -392,23 +424,25 @@ namespace TaskMaker {
             if (ev.Button == MouseButtons.Left) {
                 canvas.Reset();
 
-                canvas.SelectionTool = new LassoSelectionTool(ev.Location.ToSKPoint());
+                var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
+                canvas.SelectionTool = new LassoSelectionTool(wP);
             }
             else if (ev.Button == MouseButtons.Right) {
                 canvas.Reset();
 
-                canvas.SelectionTool = new RectSelectionTool(ev.Location.ToSKPoint());
+                var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
+                canvas.SelectionTool = new RectSelectionTool(wP);
             }
         }
 
         private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                var newLocation = ev.Location.ToSKPoint();
-                canvas.SelectionTool.Trace(newLocation);
+                var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
+                canvas.SelectionTool.Trace(wLocation);
             }
             else if (ev.Button == MouseButtons.Right) {
-                var newLocation = ev.Location.ToSKPoint();
-                canvas.SelectionTool.Trace(newLocation);
+                var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
+                canvas.SelectionTool.Trace(wLocation);
             }
         }
 
@@ -438,7 +472,8 @@ namespace TaskMaker {
                 canvas.Reset();
 
                 foreach (var e in canvas.SelectedLayer.Entities) {
-                    if (e.ContainsPoint(ev.Location.ToSKPoint())) {
+                    var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
+                    if (e.ContainsPoint(wP)) {
                         e.IsSelected = !e.IsSelected;
                         break;
                     }
@@ -451,7 +486,8 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 Services.Caretaker.Do(SelectedLayer);
 
-                SelectedLayer.Entities.Add(new Entity(e.Location.ToSKPoint()) {
+                var wP = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+                SelectedLayer.Entities.Add(new Entity(wP) {
                     Index = SelectedLayer.Entities.Count,
                 });
             }
@@ -460,6 +496,23 @@ namespace TaskMaker {
             //this.SelectedMode = Modes.None;
 
             canvas.Reset();
+        }
+
+        private SKMatrix WorldToViewport() {
+            var translate = SKMatrix.CreateTranslation(-_window.Left, -_window.Top);
+            var scaleMat = SKMatrix.CreateScale(_viewport.Width / _window.Width, _viewport.Height / _window.Height);
+            var translateInv = SKMatrix.CreateTranslation(_viewport.Left, _viewport.Top);
+
+            // T_i * S * T
+            return translate.PostConcat(scaleMat).PostConcat(translateInv);
+        }
+
+        private SKMatrix ViewportToWorld() {
+            return WorldToViewport().Invert();
+        }
+
+        private void Pan(SKPoint offset) {
+            _window.Location = _panStartInWorld - ViewportToWorld().MapVector(offset);
         }
     }
 
