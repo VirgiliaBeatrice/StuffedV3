@@ -9,6 +9,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -53,8 +54,10 @@ namespace TaskMaker {
             treeView1.DragDrop += TreeView1_DragDrop;
 
             _root = new TreeNode("Root");
+            Services.LayerTree = _root;
 
-
+            _root.Nodes.Clear();
+            _root.Nodes.Add(new TreeNode() { Text = canvasControl1.Canvas.Layers[0].Name, Tag = canvasControl1.Canvas.Layers[0] });
 
             UpdateTreeview();
         }
@@ -218,10 +221,25 @@ namespace TaskMaker {
         }
 
         private void UpdateTreeview() {
-            Services.LayerTree = _root;
+            treeView1.BeginUpdate();
+            treeView1.Nodes.Clear();
+
+            treeView1.Nodes.Add(_root);
+
+            treeView1.EndUpdate();
+            treeView1.ExpandAll();
+
+            if (treeView1.Nodes.Count != 0)
+                treeView1.SelectedNode = treeView1.Nodes[0];
+        }
+
+        private void InvalidateTreeView() {
+            // Re-assign root layer into _root from current canvas.
+            var layers = canvasControl1.Canvas.Layers;
+            var nodes = layers.Select(l => new TreeNode() { Text = l.Name, Tag = l });
 
             _root.Nodes.Clear();
-            _root.Nodes.Add(new TreeNode() { Text = canvasControl1.Canvas.Layers[0].Name, Tag = canvasControl1.Canvas.Layers[0] });
+            _root.Nodes.AddRange(nodes.ToArray());
 
             treeView1.BeginUpdate();
             treeView1.Nodes.Clear();
@@ -427,29 +445,86 @@ namespace TaskMaker {
         }
 
         private async void saveProjectToolStripMenuItem_Click(object sender, EventArgs e) {
-            var state = canvasControl1.Canvas.Save() as CanvasState;
-
-            var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\TaskMaker\\";
-
-            Directory.CreateDirectory(path);
-            
-            using (var fs = File.Create(path + "preferences.json")) {
-                var jsonUtf8Bytes = state.ToJsonUtf8Bytes();
-                await fs.WriteAsync(jsonUtf8Bytes, 0, jsonUtf8Bytes.Length);
-            }
-
-            MessageBox.Show("Project saved.", "Saved", MessageBoxButtons.OK);
+            await SaveFile();
         }
 
         private async void loadProjectToolStripMenuItem_Click(object sender, EventArgs e) {
-            var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\TaskMaker\\";
+            await LoadFile();
+            InvalidateTreeView();
+        }
 
-            using (var fs = File.OpenText(path + "preferences.json")) {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                var state = await JsonSerializer.DeserializeAsync<CanvasState>(fs.BaseStream, options);
+        private async Task SaveFile() {
+            var dialog = new SaveFileDialog();
+            dialog.Filter = "Json File|*.json";
+            dialog.Title = "Save Project";
+            dialog.InitialDirectory = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}";
 
-                canvasControl1.Canvas.Restore(state);
+            dialog.ShowDialog();
+
+            if (dialog.FileName != "") {
+                using (var fs = dialog.OpenFile()) {
+                    var state = canvasControl1.Canvas.Save() as CanvasState;
+                    var jsonUtf8Bytes = state.ToJsonUtf8Bytes();
+
+                    await fs.WriteAsync(jsonUtf8Bytes, 0, jsonUtf8Bytes.Length);
+                }
             }
+        }
+
+        private async Task LoadFile() {
+            using (var dialog = new OpenFileDialog()) {
+                dialog.InitialDirectory = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}";
+                dialog.Filter = "Json File|*.json";
+                dialog.FilterIndex = 2;
+                dialog.RestoreDirectory = true;
+
+                if (dialog.ShowDialog() == DialogResult.OK) {
+                    var path = dialog.FileName;
+
+                    using (var fs = File.OpenText(path)) {
+                        var options = new JsonSerializerOptions { WriteIndented = true };
+                        var state = await JsonSerializer.DeserializeAsync<CanvasState>(fs.BaseStream, options);
+
+                        canvasControl1.Canvas.Restore(state);
+                    }
+                }
+            }
+        }
+
+        //public IMemento Save() {
+        //    var treeStructure
+        //    var m = new ProgramState(canvasControl1.Canvas.Save() as CanvasState, _root);
+
+        //    return m;
+        //}
+
+        //private void TreeToJson(TreeView treeView) {
+        //    var nodes = treeView.Nodes;
+
+        //    foreach (var n in nodes) {
+
+        //    }
+        //}
+
+        //public void Restore(IMemento m) {
+        //    var (canvasState, root) = ((CanvasState, TreeNode))m.GetState();
+
+        //    canvasControl1.Canvas.Restore(canvasState);
+        //}
+    }
+
+    public class ProgramState : BaseState {
+        [JsonInclude]
+        public CanvasState CanvasState { get; private set; }
+        [JsonInclude]
+        public TreeNode Root { get; private set; }
+
+        [JsonConstructor]
+        public ProgramState(CanvasState canvasState, TreeNode root) =>
+            (CanvasState, Root) = (canvasState, root);
+
+        public override object GetState() {
+            return (CanvasState, Root);
         }
     }
 

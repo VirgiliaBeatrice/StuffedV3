@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 
 namespace TaskMaker.MementoPattern {
@@ -18,13 +13,13 @@ namespace TaskMaker.MementoPattern {
         public virtual byte[] ToJsonUtf8Bytes() {
             var options = new JsonSerializerOptions { WriteIndented = true };
 
-            return JsonSerializer.SerializeToUtf8Bytes(this, this.GetType(), options);
+            return JsonSerializer.SerializeToUtf8Bytes(this, GetType(), options);
         }
 
         public virtual string ToJsonString() {
             var options = new JsonSerializerOptions { WriteIndented = true };
 
-            return JsonSerializer.Serialize(this, this.GetType(), options);
+            return JsonSerializer.Serialize(this, GetType(), options);
         }
 
     }
