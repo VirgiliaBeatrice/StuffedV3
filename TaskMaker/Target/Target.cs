@@ -70,6 +70,7 @@ namespace TaskMaker {
         public override void FromVector(Vector<float> vector) {
             for (int i = 0; i < vector.Count / 2; ++i) {
                 Layers[i].Pointer.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
+                Layers[i].Interpolate(Layers[i].Pointer.Location);
             }
         }
 
