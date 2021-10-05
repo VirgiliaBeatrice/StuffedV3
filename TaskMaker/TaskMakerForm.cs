@@ -172,6 +172,13 @@ namespace TaskMaker {
 
         private void Timer_Tick(object sender, EventArgs e) {
             UpdateMotorPosition(false);
+            
+            // Get latest pos from boards
+            //for (int i = 0; i < boards.NMotor; ++i) {
+            //    txMsg.Text += boards.GetPos(i);
+            //    txMsg.Text += " ";
+            //}
+            // Pos ==Output Bary.==> Lambdas ==Input Bary.==> Controller
         }
 
         private void UpdateMotorPosition(bool returnZero) {
