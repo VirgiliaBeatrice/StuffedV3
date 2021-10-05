@@ -87,7 +87,8 @@ namespace TaskMaker {
             else if (ModifierKeys == Keys.None) {
                 if (e.Button == MouseButtons.Left) {
                     pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
-                    parentLayer.Pointer.Location = pointer.Location;
+                    //parentLayer.Pointer.Location = pointer.Location;
+                    parentLayer.Controller.Location = pointer.Location;
 
                     // Interpolation
                     parentLayer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));

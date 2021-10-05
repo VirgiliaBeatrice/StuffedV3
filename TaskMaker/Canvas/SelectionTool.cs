@@ -100,7 +100,7 @@ namespace TaskMaker {
         }
 
         public void Trace(SKPoint point) {
-            if (point != _path.LastPoint) {
+            if (point.X != _path.LastPoint.X & point.Y != _path.LastPoint.Y) {
                 this._path.LineTo(point);
             }
         }

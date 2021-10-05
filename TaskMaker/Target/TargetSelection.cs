@@ -207,7 +207,8 @@ namespace TaskMaker {
 
         public Vector<float> ToVector() {
             return Vector<float>.Build.Dense(new float[] {
-                Target.Pointer.Location.X, Target.Pointer.Location.Y
+                //Target.Pointer.Location.X, Target.Pointer.Location.Y
+                Target.Controller.Location.X, Target.Controller.Location.Y
             }); ;
         }
 

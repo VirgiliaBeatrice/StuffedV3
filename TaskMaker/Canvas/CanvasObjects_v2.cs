@@ -219,7 +219,8 @@ namespace TaskMaker {
         public string Name { get; set; }
         public bool IsShownPointer { get; set; } = false;
         public bool IsSelected { get; set; } = false;
-        public Point_v2 Pointer { get; set; } = new Point_v2();
+        //public Point_v2 Pointer { get; set; } = new Point_v2();
+        public Controller Controller { get; set; } = new Controller();
         public List<Entity> Entities { get; set; } = new List<Entity>();
         public SimplicialComplex Complex { get; set; } = new SimplicialComplex();
         public Exterior Exterior { get; set; }
@@ -356,7 +357,8 @@ namespace TaskMaker {
             reverse.ForEach(e => e.Draw(sKCanvas));
 
             if (IsShownPointer) {
-                Pointer.Draw(sKCanvas);
+                //Pointer.Draw(sKCanvas);
+                Controller.Draw(sKCanvas);
             }
         }
 
@@ -417,9 +419,10 @@ namespace TaskMaker {
 
         private SKPaint _strokePaint = new SKPaint {
             IsAntialias = true,
-            Color = SKColors.Black,
+            Color = SKColor.Parse("#77428D").WithAlpha(0.8f),
             Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2
+            StrokeWidth = 2,
+            //PathEffect = SKPathEffect.CreateDash(new float[] { 10, 1 }, 0),
         };
 
         public PointerTrace(SKPoint start) {
@@ -430,13 +433,35 @@ namespace TaskMaker {
         }
 
         public void Update(SKPoint point) {
-            _path.LineTo(point);
+            if (point.X != _path.LastPoint.X & point.Y != _path.LastPoint.Y)
+                _path.LineTo(point);
         }
 
         public override void Draw(SKCanvas sKCanvas) {
-            var curve = Geometry.BezierCurve.GetBezierCurve(_path.Points);
+            var points = _path.Points.Where((p, idx) => idx % 4 == 0);
+            var curve = Geometry.BezierCurve.GetBezierCurve(points, 0.4f);
+
             //sKCanvas.DrawPath(_path, _strokePaint);
             sKCanvas.DrawPath(curve, _strokePaint);
+        }
+    }
+
+    public class Controller : CanvasObject_v2 {
+        private SKPaint _fill = new SKPaint {
+            IsAntialias = true,
+            Color = SKColor.Parse("#005CAF"),
+            Style = SKPaintStyle.Fill
+        };
+        private SKPaint _stroke = new SKPaint {
+            IsAntialias = true,
+            Color = SKColor.Parse("#0F2540"),
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2
+        };
+
+        public override void Draw(SKCanvas sKCanvas) {
+            sKCanvas.DrawCircle(Location, 5.0f, _fill);
+            sKCanvas.DrawCircle(Location, 5.0f, _stroke);
         }
     }
 

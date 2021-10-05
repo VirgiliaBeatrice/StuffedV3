@@ -62,15 +62,18 @@ namespace TaskMaker {
         }
 
         public override Vector<float> ToVector() {
-            var layers = Layers.Select(l => Vector<float>.Build.Dense(new float[] { l.Pointer.Location.X, l.Pointer.Location.Y }));
+            //var layers = Layers.Select(l => Vector<float>.Build.Dense(new float[] { l.Pointer.Location.X, l.Pointer.Location.Y }));
+            var layers = Layers.Select(l => Vector<float>.Build.Dense(new float[] { l.Controller.Location.X, l.Controller.Location.Y }));
 
             return MyExtension.Concatenate(layers);
         }
 
         public override void FromVector(Vector<float> vector) {
             for (int i = 0; i < vector.Count / 2; ++i) {
-                Layers[i].Pointer.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
-                Layers[i].Interpolate(Layers[i].Pointer.Location);
+                //Layers[i].Pointer.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
+                Layers[i].Controller.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
+                //Layers[i].Interpolate(Layers[i].Pointer.Location);
+                Layers[i].Interpolate(Layers[i].Controller.Location);
             }
         }
 
