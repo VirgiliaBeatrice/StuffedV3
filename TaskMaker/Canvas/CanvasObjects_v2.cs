@@ -177,6 +177,7 @@ namespace TaskMaker {
 
             // Reset entities' states
             Reset();
+            SelectedLayer.Invalidate();
 
             return true;
         }
