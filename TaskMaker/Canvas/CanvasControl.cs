@@ -433,6 +433,8 @@ namespace TaskMaker {
                 var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
                 canvas.SelectionTool = new RectSelectionTool(wP);
             }
+
+            // Disable Context Menu
         }
 
         private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {

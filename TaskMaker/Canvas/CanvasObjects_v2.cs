@@ -434,7 +434,9 @@ namespace TaskMaker {
         }
 
         public override void Draw(SKCanvas sKCanvas) {
-            sKCanvas.DrawPath(_path, _strokePaint);
+            var curve = Geometry.BezierCurve.GetBezierCurve(_path.Points);
+            //sKCanvas.DrawPath(_path, _strokePaint);
+            sKCanvas.DrawPath(curve, _strokePaint);
         }
     }
 

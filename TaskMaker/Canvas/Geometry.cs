@@ -95,7 +95,8 @@ namespace TaskMaker.Geometry {
     }
 
     public class BezierCurve {
-        public static SKPath GetBezierCurve(List<SKPoint> points, float factor = 0.2f) {
+        public static SKPath GetBezierCurve(IEnumerable<SKPoint> pointsCollection, float factor = 0.2f) {
+            var points = pointsCollection.ToList();
             var path = new SKPath();
             var controls = new List<(SKPoint, SKPoint)>();
 

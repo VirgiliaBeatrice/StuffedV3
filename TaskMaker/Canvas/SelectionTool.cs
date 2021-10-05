@@ -1,4 +1,6 @@
 ﻿using SkiaSharp;
+using System.Linq;
+using MathNetExtension;
 
 namespace TaskMaker {
     public interface ISelectionTool {
@@ -12,16 +14,17 @@ namespace TaskMaker {
     public class RectSelectionTool : ISelectionTool {
         public bool IsClosed { get; set; } = false;
 
-        private SKPaint fillPaint = new SKPaint {
-            IsAntialias = true,
-            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
-            Style = SKPaintStyle.Fill
-        };
         private SKPaint strokePaint = new SKPaint {
             IsAntialias = true,
-            Color = SKColors.Black,
+            Color = SKColors.DarkGray.WithAlpha(0.9f),
             Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2
+            StrokeWidth = 1,
+            PathEffect = SKPathEffect.CreateDash(new float[] { 5.0f, 5.0f }, 0.0f),
+        };
+        private SKPaint _fill = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.DarkGray.WithAlpha(0.3f),
+            Style = SKPaintStyle.Fill,
         };
         private SKRect _rect = new SKRect();
         private SKSize _size = new SKSize();
@@ -40,8 +43,10 @@ namespace TaskMaker {
         }
 
         public void DrawThis(SKCanvas skCanvas) {
-            if (!this.IsClosed)
+            if (!this.IsClosed) {
                 skCanvas.DrawRect(this._rect, this.strokePaint);
+                skCanvas.DrawRect(this._rect, _fill);
+            }
         }
 
         public void Trace(SKPoint point) {
@@ -60,9 +65,15 @@ namespace TaskMaker {
         private SKPath _path = new SKPath();
         private SKPaint strokePaint = new SKPaint {
             IsAntialias = true,
-            Color = SKColors.Black,
+            Color = SKColors.DarkGray.WithAlpha(0.9f),
             Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2
+            StrokeWidth = 1,
+            PathEffect = SKPathEffect.CreateDash(new float[] { 5.0f, 5.0f }, 0.0f),
+        };
+        private SKPaint _fill = new SKPaint {
+            IsAntialias = true,
+            Color = SKColors.DarkGray.WithAlpha(0.3f),
+            Style = SKPaintStyle.Fill,
         };
 
         public LassoSelectionTool(SKPoint start) {
@@ -78,12 +89,20 @@ namespace TaskMaker {
         }
 
         public void DrawThis(SKCanvas skCanvas) {
-            if (!this.IsClosed)
-                skCanvas.DrawPath(this._path, this.strokePaint);
+            var points = _path.Points.Where((p, idx) => idx % 4 == 0);
+            var curve = Geometry.BezierCurve.GetBezierCurve(points, 0.4f);
+
+            if (!this.IsClosed) {
+                //skCanvas.DrawPath(this._path, this.strokePaint);
+                skCanvas.DrawPath(curve, strokePaint);
+                skCanvas.DrawPath(curve, _fill);
+            }
         }
 
         public void Trace(SKPoint point) {
-            this._path.LineTo(point);
+            if (point != _path.LastPoint) {
+                this._path.LineTo(point);
+            }
         }
 
         public void End() {
