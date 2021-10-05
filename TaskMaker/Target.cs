@@ -6,12 +6,16 @@ using System.Linq;
 using TaskMaker.SimplicialMapping;
 using MathNetExtension;
 using System;
+using TaskMaker.MementoPattern;
 
 namespace TaskMaker {
     public abstract class Target : IVectorizable, IReflectable {
         public abstract Vector<float> ToVector();
         public abstract void FromVector(Vector<float> vector);
         public TargetState CreateTargetState() => new TargetState(this);
+
+        public abstract IMemento Save();
+        public abstract void Restore();
     }
 
     public class MotorTarget : Target {
@@ -33,6 +37,15 @@ namespace TaskMaker {
             for (int i = 0; i < vector.Count; ++i) {
                 Motors[i].position.Value = (int)vector[i];
             }
+        }
+
+        public override IMemento Save() {
+            //return new TargetState()
+            throw new NotImplementedException();
+        }
+
+        public override void Restore() {
+            throw new NotImplementedException();
         }
     }
 
@@ -58,6 +71,14 @@ namespace TaskMaker {
             for (int i = 0; i < vector.Count / 2; ++i) {
                 Layers[i].Pointer.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
             }
+        }
+
+        public override IMemento Save() {
+            throw new NotImplementedException();
+        }
+
+        public override void Restore() {
+            throw new NotImplementedException();
         }
     }
 

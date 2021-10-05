@@ -49,16 +49,8 @@ namespace TaskMaker {
             Layers.Add(new Layer("New Layer") { IsSelected = true });
 
             Pointer = new CrossPointer();
-
-            BindStates();
         }
 
-        private void BindStates() {
-            //_states.AddRange(new object[] {
-            //    RootLayer,
-            //    SelectedLayer
-            //});
-        }
 
         public IMemento Save() => new CanvasState(this);
 
@@ -198,27 +190,26 @@ namespace TaskMaker {
         public string Name { get; private set; }
         [JsonInclude]
         public IList<EntityState> Entities { get; private set; }
-        private SimplicialComplex _complex;
-        private Exterior _exterior;
-        private Target _bindedTarget;
+        [JsonInclude]
+        public SimplicialComplexState Complex { get; private set; }
 
         public LayerState(Layer l) {
             Name = l.Name;
             Entities = l.Entities.Select(e => (EntityState)e.Save()).ToList().AsReadOnly();
-            //_complex = l.Complex;
-            //_exterior = l.Exterior;
-            //_bindedTarget = l.BindedTarget;
+            Complex = new SimplicialComplexState(l.Complex);
         }
 
         [JsonConstructor]
-        public LayerState(string name, IList<EntityState> entities) {
-            Name = name;
-            Entities = entities;
-        }
+        public LayerState(
+            string name,
+            IList<EntityState> entities,
+            SimplicialComplexState complex) =>
+            (Name, Entities, Complex) =
+            (name, entities, complex);
 
         public override object GetState() {
-            return (Name, Entities );
-            //return (_name, _entities, _complex, _exterior, _bindedTarget);
+            //return (Name, Entities );
+            return (Name, Entities, Complex);
         }
 
     }
@@ -370,12 +361,13 @@ namespace TaskMaker {
 
         public IMemento Save() => new LayerState(this);
 
-        public void Restore(IMemento m) {
-            var state = ((string, IList<EntityState>))m.GetState();
-            var name = state.Item1;
-            var entites = state.Item2;
+        public void Restore(IMemento m, object info = null) {
+            var (name, entites, complex) =
+                ((string, IList<EntityState>, SimplicialComplexState))m.GetState();
+            var layer = info as Layer;
 
             Name = name;
+
             Entities.Clear();
 
             foreach(var e in entites) {
@@ -384,6 +376,14 @@ namespace TaskMaker {
                 item.Restore(e);
                 Entities.Add(item);
             }
+
+            Complex.Restore(complex, layer);
+
+            //BindedTarget.Restore(bindedTarget);
+        }
+
+        public void Restore(IMemento m) {
+            throw new NotImplementedException();
         }
     }
 
@@ -681,11 +681,20 @@ namespace TaskMaker {
         }
     }
 
-    public class SimplexState {
-        private IList<Entity> _vertices;
+    public class SimplexState : BaseState {
+        [JsonInclude]
+        public IList<int> VertexIdx { get; private set; }
 
         public SimplexState(Simplex s) {
-            _vertices = new List<Entity>(s.Vertices).AsReadOnly();
+            VertexIdx = new List<int>(s.Vertices.Select(v => v.Index)).AsReadOnly();
+        }
+
+        [JsonConstructor]
+        public SimplexState(IList<int> vertexIdx) =>
+            VertexIdx = vertexIdx;
+
+        public override object GetState() {
+            return VertexIdx;
         }
     }
 
@@ -718,6 +727,8 @@ namespace TaskMaker {
             //this.Pairs.AddRange(entities.Select(e => e.Pair).ToArray());
             //this.Pairs.TaskBary.AddRange(this.Vertices.Select(v => v.Vector).ToArray());
         }
+
+        public Simplex() { }
 
         public bool ContainsPoint(SKPoint p) {
             var ret = GetLambdas_v1(p);
@@ -764,14 +775,38 @@ namespace TaskMaker {
             sKCanvas.DrawPath(path, fillPaint);
             sKCanvas.DrawPath(path, strokePaint);
         }
+
+        public IMemento Save() => new SimplexState(this);
+
+        public void Restore(IMemento m, object info = null) {
+            var state = m as SimplexState;
+            var vertexIdx = state.VertexIdx;
+            var layer = info as Layer;
+
+            Vertices.Clear();
+
+            foreach(var idx in vertexIdx) {
+                Vertices.Add(layer.Entities[idx]);
+            }
+        }
     }
 
 
-    public class SimplicialComplexState {
-        private IList<Simplex> _simplices;
+    public class SimplicialComplexState : BaseState {
+        [JsonInclude]
+        public IList<SimplexState> Simplices { get; private set; }
+
 
         public SimplicialComplexState(SimplicialComplex c) {
-            _simplices = new List<Simplex>(c).AsReadOnly();
+            Simplices = new List<SimplexState>(c.Select(s => new SimplexState(s))).AsReadOnly();
+        }
+
+        [JsonConstructor]
+        public SimplicialComplexState(IList<SimplexState> simplices) =>
+            Simplices = simplices;
+
+        public override object GetState() {
+            return Simplices;
         }
     }
 
@@ -925,6 +960,22 @@ namespace TaskMaker {
             //    this.voronoiRegions[5].Draw(sKCanvas);
             //}
             //this.voronoiRegions.ForEach(v => v.Draw(sKCanvas));
+        }
+
+        public IMemento Save() => new SimplicialComplexState(this);
+
+        public void Restore(IMemento m, object info = null) {
+            var simplices = (IList<SimplexState>)m.GetState();
+            var layer = info as Layer;
+
+            Clear();
+
+            foreach (var s in simplices) {
+                var item = new Simplex();
+
+                item.Restore(s, layer);
+                Add(item);
+            }
         }
     }
 
