@@ -207,17 +207,17 @@
     <Compile Include="SkiaExtension.cs" />
     <Compile Include="SkiaHelper.cs" />
     <Compile Include="SimplicialMapping\Triangulation.cs" />
-    <Compile Include="Target.cs" />
-    <Compile Include="TargetSelection.cs">
+    <Compile Include="Target\Target.cs" />
+    <Compile Include="Target\TargetSelection.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="TargetSelection.designer.cs">
+    <Compile Include="Target\TargetSelection.designer.cs">
       <DependentUpon>TargetSelection.cs</DependentUpon>
     </Compile>
-    <Compile Include="TaskMakerForm.cs">
+    <Compile Include="Target\TaskMakerForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="TaskMakerForm.Designer.cs">
+    <Compile Include="Target\TaskMakerForm.Designer.cs">
       <DependentUpon>TaskMakerForm.cs</DependentUpon>
     </Compile>
     <Compile Include="TinyCanvasForm.cs">
@@ -244,10 +244,10 @@
     <EmbeddedResource Include="SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="TargetSelection.resx">
+    <EmbeddedResource Include="Target\TargetSelection.resx">
       <DependentUpon>TargetSelection.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="TaskMakerForm.resx">
+    <EmbeddedResource Include="Target\TaskMakerForm.resx">
       <DependentUpon>TaskMakerForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="TinyCanvasForm.resx">

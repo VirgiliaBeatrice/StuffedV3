@@ -7,6 +7,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Windows.Forms;
 
+
 namespace TaskMaker {
     public partial class TargetSelection : UserControl {
 
@@ -30,7 +31,11 @@ namespace TaskMaker {
         private void InitializeLayer() {
             var selectableRoot = SelectableLayer.CreateSelectableLayer(Services.LayerTree);
 
-            treeView2.Nodes.Add(selectableRoot);
+            treeView1.BeginUpdate();
+            treeView2.Nodes.AddRange(selectableRoot.Nodes.OfType<SelectableLayer>().ToArray());
+
+            treeView1.EndUpdate();
+            treeView1.ExpandAll();
         }
 
         private void UpdateMotors() {
@@ -206,13 +211,16 @@ namespace TaskMaker {
         }
 
         public static SelectableLayer CreateSelectableLayer(TreeNode node) {
+            SelectableLayer selectableLayer;
             if (node.Parent == null)
-                return new SelectableLayer("Root");
+                selectableLayer = new SelectableLayer("Root");
+            else {
+                var layer = node.Tag as Layer;
+                selectableLayer = new SelectableLayer(layer.Name) {
+                    Target = layer
+                };
+            }
 
-            var layer = node.Tag as Layer;
-            var selectableLayer = new SelectableLayer(layer.Name) {
-                Target = layer
-            };
 
             foreach (TreeNode childNode in node.Nodes) {
                 var children = CreateSelectableLayer(childNode);
