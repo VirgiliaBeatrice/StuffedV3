@@ -206,6 +206,9 @@ namespace TaskMaker {
         }
 
         public static SelectableLayer CreateSelectableLayer(TreeNode node) {
+            if (node.Parent == null)
+                return new SelectableLayer("Root");
+
             var layer = node.Tag as Layer;
             var selectableLayer = new SelectableLayer(layer.Name) {
                 Target = layer

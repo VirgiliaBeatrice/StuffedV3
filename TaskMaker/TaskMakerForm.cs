@@ -432,8 +432,11 @@ namespace TaskMaker {
         }
 
         private void treeView1_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
-            groupBox2.Text = $"Canvas - [{e.Label}]";
-            toolStripStatusLabel4.Text = $"{e.Label} - {canvasControl1.SelectedLayer.LayerStatus}";
+            e.Node.Text = e.Label;
+            (e.Node.Tag as Layer).Name = e.Label; 
+
+            groupBox2.Text = $"Canvas - [{e.Node.Text}]";
+            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
         }
 
         private void button8_Click(object sender, EventArgs e) {
