@@ -57,7 +57,7 @@ namespace TaskMaker {
             Layers.AddRange(layers);
         }
 
-        public void AddMotor(Layer layer) {
+        public void Add(Layer layer) {
             Layers.Add(layer);
         }
 

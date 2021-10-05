@@ -32,7 +32,7 @@ namespace TaskMaker {
             var selectableRoot = SelectableLayer.CreateSelectableLayer(Services.LayerTree);
 
             treeView1.BeginUpdate();
-            treeView2.Nodes.AddRange(selectableRoot.Nodes.OfType<SelectableLayer>().ToArray());
+            treeView2.Nodes.AddRange(selectableRoot.Nodes.OfType<SelectableLayer>().Where(l => l.Target != Services.Canvas.SelectedLayer).ToArray());
 
             treeView1.EndUpdate();
             treeView1.ExpandAll();
@@ -160,10 +160,11 @@ namespace TaskMaker {
                 var target = new LayerTarget();
                 Services.Canvas.SelectedLayer.BindedTarget = target;
 
-                var checkedLayers = GetAllLayers(treeView2.Nodes[0] as SelectableLayer);
+                var topLayers = treeView2.Nodes.OfType<SelectableLayer>().ToList();
+                var checkedLayers = new List<SelectableLayer>();
+                topLayers.ForEach(l => checkedLayers.AddRange(GetAllLayers(l)));
 
                 foreach (SelectableLayer l in checkedLayers) {
-                    //Services.SelectedLayer.LayerConfigs.Add(l.Target);
                     target.Layers.Add(l.Target);
                 }
             }
@@ -172,7 +173,7 @@ namespace TaskMaker {
             ParentForm.Close();
         }
 
-        private SelectableLayer[] GetAllLayers(SelectableLayer layer) {
+        static public SelectableLayer[] GetAllLayers(SelectableLayer layer) {
             var results = new List<SelectableLayer>();
 
             if (layer.Checked)
