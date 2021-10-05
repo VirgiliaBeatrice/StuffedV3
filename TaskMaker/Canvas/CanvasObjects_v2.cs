@@ -54,7 +54,7 @@ namespace TaskMaker {
 
         public IMemento Save() => new CanvasState(this);
 
-        public void Restore(IMemento m) {
+        public void Restore(IMemento m, object info = null) {
             var state = (IList<LayerState>)m.GetState();
 
             Layers.Clear();
@@ -364,7 +364,6 @@ namespace TaskMaker {
         public void Restore(IMemento m, object info = null) {
             var (name, entites, complex) =
                 ((string, IList<EntityState>, SimplicialComplexState))m.GetState();
-            var layer = info as Layer;
 
             Name = name;
 
@@ -377,13 +376,9 @@ namespace TaskMaker {
                 Entities.Add(item);
             }
 
-            Complex.Restore(complex, layer);
+            Complex.Restore(complex, this);
 
             //BindedTarget.Restore(bindedTarget);
-        }
-
-        public void Restore(IMemento m) {
-            throw new NotImplementedException();
         }
     }
 
@@ -669,7 +664,7 @@ namespace TaskMaker {
 
         public IMemento Save() => new EntityState(this);
 
-        public void Restore(IMemento m) {
+        public void Restore(IMemento m, object info = null) {
             var state = ((int, SKPoint, TargetState))m.GetState();
             var index = state.Item1;
             var location = state.Item2;

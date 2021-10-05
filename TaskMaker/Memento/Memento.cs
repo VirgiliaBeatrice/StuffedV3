@@ -43,7 +43,7 @@ namespace TaskMaker.MementoPattern {
 
     public interface IOriginator {
         IMemento Save();
-        void Restore(IMemento m);
+        void Restore(IMemento m, object info = null);
     }
 
     public class Caretaker {
