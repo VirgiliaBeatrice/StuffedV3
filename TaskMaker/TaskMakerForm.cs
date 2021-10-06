@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using TaskMaker.Mapping;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -38,7 +39,7 @@ namespace TaskMaker {
 
             Services.Boards.Serial = serialPort1;
             Services.MotorTimer.Tick += Timer_Tick;
-            Services.Canvas = canvasControl1.Canvas;
+            //Services.Canvas = canvasControl1.Canvas;
 
             groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
 
@@ -57,7 +58,7 @@ namespace TaskMaker {
             Services.LayerTree = _root;
 
             _root.Nodes.Clear();
-            _root.Nodes.Add(new TreeNode() { Text = canvasControl1.Canvas.Layers[0].Name, Tag = canvasControl1.Canvas.Layers[0] });
+            _root.Nodes.Add(new TreeNode() { Text = Services.Canvas.Layers[0].Name, Tag = Services.Canvas.Layers[0] });
 
             UpdateTreeview();
         }
@@ -242,7 +243,7 @@ namespace TaskMaker {
 
         private void InvalidateTreeView() {
             // Re-assign root layer into _root from current canvas.
-            var layers = canvasControl1.Canvas.Layers;
+            var layers = Services.Canvas.Layers;
             var nodes = layers.Select(l => new TreeNode() { Text = l.Name, Tag = l });
 
             _root.Nodes.Clear();
@@ -394,7 +395,8 @@ namespace TaskMaker {
         }
 
         private void button10_Click(object sender, EventArgs e) {
-            canvasControl1.Triangulate();
+            Services.Canvas.SelectedLayer.Triangulate();
+            //canvasControl1.Triangulate();
         }
 
         private void button9_Click(object sender, EventArgs e) {
@@ -473,7 +475,7 @@ namespace TaskMaker {
 
             if (dialog.FileName != "") {
                 using (var fs = dialog.OpenFile()) {
-                    var state = canvasControl1.Canvas.Save() as CanvasState;
+                    var state = Services.Canvas.Save() as CanvasState;
                     var jsonUtf8Bytes = state.ToJsonUtf8Bytes();
 
                     await fs.WriteAsync(jsonUtf8Bytes, 0, jsonUtf8Bytes.Length);
@@ -495,7 +497,7 @@ namespace TaskMaker {
                         var options = new JsonSerializerOptions { WriteIndented = true };
                         var state = await JsonSerializer.DeserializeAsync<CanvasState>(fs.BaseStream, options);
 
-                        canvasControl1.Canvas.Restore(state);
+                        Services.Canvas.Restore(state);
                     }
                 }
             }
@@ -548,7 +550,8 @@ namespace TaskMaker {
         static public Boards Boards { get; set; } = new Boards();
         static public Motors Motors { get; set; } = new Motors();
         static public Timer MotorTimer { get; set; } = new Timer() { Interval = 100 };
-        static public Canvas Canvas { get; set; }
         static public TreeNode LayerTree { get; set; }
+        static public Triangulation TriHandler { get; set; } = new Triangulation();
+        static public Canvas Canvas { get; set; } = new Canvas();
     }
 }

@@ -12,6 +12,7 @@ using TaskMaker.MementoPattern;
 using TaskMaker.SimplicialMapping;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using TaskMaker.Mapping;
 
 namespace TaskMaker {
 
@@ -31,7 +32,7 @@ namespace TaskMaker {
         public override object GetState() => (Layers);
     }
 
-    public class Canvas : IOriginator {
+    public partial class Canvas : IOriginator {
         public bool IsShownPointer { get; set; } = false;
         public bool IsShownPointerTrace { get; set; } = false;
         //public Layer RootLayer { get; set; } = new Layer("Root");
@@ -43,7 +44,7 @@ namespace TaskMaker {
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
 
-        private readonly Mapping.Triangulation _triangulation = new Mapping.Triangulation();
+        private readonly Triangulation _triangulation = Services.TriHandler;
 
         public Canvas() {
             Layers.Add(new Layer("New Layer") { IsSelected = true });
@@ -93,94 +94,7 @@ namespace TaskMaker {
             }
         }
 
-        public bool Triangulate() {
-            var selectedEntities = SelectedLayer.Entities.Where(e => e.IsSelected);
-            SelectedLayer.Complex = new SimplicialComplex();
 
-            // Case: amount less than 3
-            if (selectedEntities.Count() < 3) {
-                return false;
-            }
-            else if (selectedEntities.Count() == 3) {
-                var tri = selectedEntities.ToArray();
-
-                SelectedLayer.Complex.Add(new Simplex(tri));
-
-                var a = tri[0].Location;
-                var b = tri[1].Location;
-                var c = tri[2].Location;
-
-                var centroid = (a + b + c).DivideBy(3.0f);
-                var theta0 = Math.Asin((a - centroid).Cross(b - centroid) / ((a - centroid).Length * (b - centroid).Length));
-                var theta1 = Math.Asin((a - centroid).Cross(b - centroid) / ((a - centroid).Length * (b - centroid).Length));
-
-                var ccw = theta0 > theta1 ? new Entity[] { tri[0], tri[2], tri[1] } : new Entity[] { tri[0], tri[1], tri[2] };
-
-                foreach (var e in ccw) {
-                    SelectedLayer.Complex.AddExtreme(e);
-                }
-
-                SelectedLayer.CreateExterior();
-            }
-            else {
-                // Case: amount larger than 3
-                var vectors = selectedEntities.Select(e => new double[] { e.Location.X, e.Location.Y });
-                var flattern = new List<double>();
-
-                foreach (var e in vectors) {
-                    flattern.AddRange(e);
-                }
-
-                var input = flattern.ToArray();
-                var output = _triangulation.RunDelaunay_v1(2, input.Length / 2, ref input);
-
-                var outputConvexList = _triangulation.RunConvexHull_v1(2, input.Length / 2, ref input);
-                // cw => ccw
-                outputConvexList.Reverse();
-                var outputConvex = new LinkedList<int>(outputConvexList);
-
-                foreach (var triIndices in output) {
-                    var arrSelectedEntities = selectedEntities.ToArray();
-                    var tri = new Entity[] {
-                            arrSelectedEntities[triIndices[0]],
-                            arrSelectedEntities[triIndices[1]],
-                            arrSelectedEntities[triIndices[2]]
-                        };
-
-                    SelectedLayer.Complex.Add(new Simplex(tri));
-                }
-
-                // Get all edges of convex hull.
-                for (var it = outputConvex.First; it != null; it = it.Next) {
-                    Entity e1;
-                    var arrSelectedEntities = selectedEntities.ToArray();
-
-                    var e0 = arrSelectedEntities[it.Value];
-
-                    SelectedLayer.Complex.AddExtreme(e0);
-
-                    if (it == outputConvex.Last) {
-                        e1 = arrSelectedEntities[outputConvex.First.Value];
-                    }
-                    else {
-                        e1 = arrSelectedEntities[it.Next.Value];
-                    }
-
-                    var edge = SelectedLayer.Complex.GetAllEdges().Where(e => e.Contains(e0) & e.Contains(e1));
-
-                    SelectedLayer.Complex.AddComplexEdge(edge.First());
-                }
-
-                //this.SelectedLayer.Complex.SetVoronoiRegions();
-                SelectedLayer.CreateExterior();
-            }
-
-            // Reset entities' states
-            Reset();
-            SelectedLayer.Invalidate();
-
-            return true;
-        }
     }
 
     /// <summary>
@@ -215,18 +129,22 @@ namespace TaskMaker {
 
     }
 
-    public class Layer : IOriginator {
+    public partial class Layer : IOriginator {
         public string Name { get; set; }
         public bool IsShownPointer { get; set; } = false;
         public bool IsSelected { get; set; } = false;
-        //public Point_v2 Pointer { get; set; } = new Point_v2();
-        public Controller Controller { get; set; } = new Controller();
         public List<Entity> Entities { get; set; } = new List<Entity>();
-        public SimplicialComplex Complex { get; set; } = new SimplicialComplex();
         public Exterior Exterior { get; set; }
-        //public Layer NextLayer => (Layer)NextNode;
-        public SKPoint Input { get; set; }
         public Target BindedTarget { get; set; }
+
+        #region old
+        public Controller Controller { get; set; } = new Controller();
+        public SimplicialComplex Complex { get; set; } = new SimplicialComplex();
+        #endregion
+
+        public List<SimplicialComplex> Complexes { get; set; } = new List<SimplicialComplex>();
+        public List<Exterior> Exteriors { get; set; } = new List<Exterior>();
+
         public LayerStatus LayerStatus {
             get {
                 if (BindedTarget == null)
@@ -246,6 +164,7 @@ namespace TaskMaker {
 
         public void CreateExterior() {
             Exterior = Complex.CreateExterior();
+            Exteriors.AddRange(Complexes.Select(c => c.CreateExterior()));
         }
 
         public void Interpolate(SKPoint p) {
@@ -349,7 +268,9 @@ namespace TaskMaker {
         }
 
         public void Draw(SKCanvas sKCanvas) {
-            Complex.Draw(sKCanvas);
+            //Complex.Draw(sKCanvas);
+            Complexes.ForEach(c => c.Draw(sKCanvas));
+            Exteriors.ForEach(ex => ex.Draw(sKCanvas));
             Exterior?.Draw(sKCanvas);
 
             var reverse = new List<Entity>(Entities);
@@ -759,6 +680,10 @@ namespace TaskMaker {
             return ret.All(e => e >= 0);
         }
 
+        public void Reset() {
+            Vertices.ForEach(e => e.IsSelected = false);
+        }
+
         //public Vector<float> GetLambdas(SKPoint point) {
         //    return this.Pairs.TaskBary.GetLambdasOnlyInterior(point.ToVector());
         //}
@@ -834,6 +759,8 @@ namespace TaskMaker {
     }
 
     public class SimplicialComplex : List<Simplex> {
+        public Controller controller { get; set; } = new Controller();
+
         private List<Edge_v2> edges = new List<Edge_v2>();
         private List<Edge_v2> complexEdges = new List<Edge_v2>();
         private CircularList<Entity> _extremes = new CircularList<Entity>();
@@ -887,6 +814,14 @@ namespace TaskMaker {
 
         private List<Edge_v2> FindInComplexEdges(Entity target) {
             return complexEdges.FindAll(e => e.Contains(target));
+        }
+
+        public bool ContainsEntity(Entity e) {
+            return this.Any(s => s.IsVertex(e));
+        }
+
+        public void Reset() {
+            ForEach(s => s.Reset());
         }
 
         #region Voronoi_Outdate

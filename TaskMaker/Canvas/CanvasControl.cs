@@ -16,14 +16,13 @@ namespace TaskMaker {
                 selectedMode = value;
             }
         }
-        public Canvas Canvas => canvas;
-        public Layer SelectedLayer => canvas.SelectedLayer;
+        public Layer SelectedLayer => _canvas.SelectedLayer;
 
         private SKGLControl skControl;
         private SKImageInfo imageInfo;
-        private Canvas canvas;
         private Modes selectedMode;
-        private Timer timer;
+        private Timer _refreshTimer;
+        private Canvas _canvas => Services.Canvas;
         private EditPhase editPhase = EditPhase.None;
 
         private SKRect _viewport;
@@ -54,12 +53,10 @@ namespace TaskMaker {
 
             //prevMid = new SKPoint(skControl.ClientSize.Width / 2, skControl.ClientSize.Height / 2);
 
-            canvas = new Canvas();
-
-            timer = new Timer();
-            timer.Enabled = true;
-            timer.Interval = 1;
-            timer.Tick += Timer_Tick;
+            _refreshTimer = new Timer();
+            _refreshTimer.Enabled = true;
+            _refreshTimer.Interval = 1;
+            _refreshTimer.Tick += Timer_Tick;
 
             ResetViewport();
         }
@@ -77,7 +74,7 @@ namespace TaskMaker {
         }
 
         public void Reset() {
-            canvas.Reset();
+            _canvas.Reset();
             selectedMode = Modes.None;
         }
 
@@ -86,17 +83,13 @@ namespace TaskMaker {
             _viewport = new SKRect() { Location = new SKPoint(), Size = ClientSize.ToSKSize() };
         }
 
-        public bool Triangulate() {
-            return canvas.Triangulate();
-        }
-
         public void BeginAddNodeMode() {
-            canvas.IsShownPointer = true;
+            _canvas.IsShownPointer = true;
             SelectedMode = Modes.AddNode;
         }
 
         public void EndAddNodeMode() {
-            canvas.Reset();
+            _canvas.Reset();
             SelectedLayer.Invalidate();
         }
 
@@ -106,7 +99,7 @@ namespace TaskMaker {
         }
 
         public void EndEditMode() {
-            canvas.Reset();
+            _canvas.Reset();
             SelectedLayer.Invalidate();
         }
 
@@ -125,23 +118,23 @@ namespace TaskMaker {
         }
 
         public void BeginPointerTrace(Point position) {
-            canvas.PointerTrace = new PointerTrace(position.ToSKPoint());
-            canvas.IsShownPointerTrace = true;
+            _canvas.PointerTrace = new PointerTrace(position.ToSKPoint());
+            _canvas.IsShownPointerTrace = true;
         }
 
         public void EndPointerTrace() {
-            canvas.Reset();
+            _canvas.Reset();
         }
 
         public void AddLayer(Layer layer) {
-            canvas.Layers.Add(layer);
+            _canvas.Layers.Add(layer);
         }
 
         public void RemoveLayer(Layer layer) {
-            canvas.Layers.Remove(layer);
+            _canvas.Layers.Remove(layer);
             
-            if (canvas.Layers.Count != 0)
-                canvas.Layers[0].IsSelected = true;
+            if (_canvas.Layers.Count != 0)
+                _canvas.Layers[0].IsSelected = true;
 
             //if (SelectedLayer == canvas.Layers[0]) {
             //    MessageBox.Show("Root layer could not be deleted.");
@@ -167,7 +160,7 @@ namespace TaskMaker {
         }
 
         public void ChooseLayer(Layer layer) {
-            canvas.Layers.ForEach(l => l.IsSelected = false);
+            _canvas.Layers.ForEach(l => l.IsSelected = false);
             layer.IsSelected = true;
 
             SelectedLayer.Invalidate();
@@ -181,7 +174,7 @@ namespace TaskMaker {
                 return;
             }
 
-            var selectedEntities = canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+            var selectedEntities = _canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
             if (selectedEntities.Count > 1) {
                 MessageBox.Show("More than one entity are selected.",
@@ -198,7 +191,7 @@ namespace TaskMaker {
 
 
         public void Unpair() {
-            var selectedEnities = canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+            var selectedEnities = _canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
             selectedEnities.ForEach(e => e.TargetState = null);
             //selectedEnities.ForEach(e => e.Pair.RemovePair());
@@ -247,7 +240,7 @@ namespace TaskMaker {
                         break;
                 }
 
-                canvas.Pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+                _canvas.Pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
             }
         }
 
@@ -304,7 +297,7 @@ namespace TaskMaker {
                     editPhase = EditPhase.Edit;
                 }
                 else if (editPhase == EditPhase.Edit) {
-                    canvas.Reset();
+                    _canvas.Reset();
 
                     editPhase = EditPhase.Select;
                 }
@@ -343,7 +336,7 @@ namespace TaskMaker {
 
                     if (selectedEntities.Count != 0) {
                         if (!selectedEntities[0].ContainsPoint(wLocation)) {
-                            canvas.Reset();
+                            _canvas.Reset();
 
                             editPhase = EditPhase.Select;
                         }
@@ -364,8 +357,8 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
-                canvas.SelectedLayer.Interpolate(wLocation);
-                canvas.PointerTrace.Update(wLocation);
+                _canvas.SelectedLayer.Interpolate(wLocation);
+                _canvas.PointerTrace.Update(wLocation);
             }
         }
 
@@ -417,21 +410,21 @@ namespace TaskMaker {
         protected virtual void Draw(SKCanvas sKCanvas) {
             sKCanvas.Clear(SKColors.White);
 
-            canvas.Draw(sKCanvas);
+            _canvas.Draw(sKCanvas);
         }
 
         private void ProcessSelectionMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                canvas.Reset();
+                _canvas.Reset();
 
                 var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                canvas.SelectionTool = new LassoSelectionTool(wP);
+                _canvas.SelectionTool = new LassoSelectionTool(wP);
             }
             else if (ev.Button == MouseButtons.Right) {
-                canvas.Reset();
+                _canvas.Reset();
 
                 var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                canvas.SelectionTool = new RectSelectionTool(wP);
+                _canvas.SelectionTool = new RectSelectionTool(wP);
             }
 
             // Disable Context Menu
@@ -440,40 +433,40 @@ namespace TaskMaker {
         private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                canvas.SelectionTool.Trace(wLocation);
+                _canvas.SelectionTool.Trace(wLocation);
             }
             else if (ev.Button == MouseButtons.Right) {
                 var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                canvas.SelectionTool.Trace(wLocation);
+                _canvas.SelectionTool.Trace(wLocation);
             }
         }
 
         private void ProcessSelectionMouseUpEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                foreach (var e in canvas.SelectedLayer.Entities) {
-                    if (canvas.SelectionTool.Contains(e.Location)) {
+                foreach (var e in _canvas.SelectedLayer.Entities) {
+                    if (_canvas.SelectionTool.Contains(e.Location)) {
                         e.IsSelected = true;
                     }
                 }
 
-                canvas.SelectionTool.End();
+                _canvas.SelectionTool.End();
             }
             else if (ev.Button == MouseButtons.Right) {
-                foreach (var e in canvas.SelectedLayer.Entities) {
-                    if (canvas.SelectionTool.Contains(e.Location)) {
+                foreach (var e in _canvas.SelectedLayer.Entities) {
+                    if (_canvas.SelectionTool.Contains(e.Location)) {
                         e.IsSelected = true;
                     }
                 }
 
-                canvas.SelectionTool.End();
+                _canvas.SelectionTool.End();
             }
         }
 
         private void ProcessGeneralMouseClickEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                canvas.Reset();
+                _canvas.Reset();
 
-                foreach (var e in canvas.SelectedLayer.Entities) {
+                foreach (var e in _canvas.SelectedLayer.Entities) {
                     var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
                     if (e.ContainsPoint(wP)) {
                         e.IsSelected = !e.IsSelected;
@@ -497,7 +490,7 @@ namespace TaskMaker {
             // Quit from current mode after adding one entity
             //this.SelectedMode = Modes.None;
 
-            canvas.Reset();
+            _canvas.Reset();
         }
 
         private SKMatrix WorldToViewport() {
