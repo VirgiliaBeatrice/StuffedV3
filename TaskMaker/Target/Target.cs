@@ -62,19 +62,30 @@ namespace TaskMaker {
         }
 
         public override Vector<float> ToVector() {
-            //var layers = Layers.Select(l => Vector<float>.Build.Dense(new float[] { l.Pointer.Location.X, l.Pointer.Location.Y }));
-            var layers = Layers.Select(l => Vector<float>.Build.Dense(new float[] { l.Controller.Location.X, l.Controller.Location.Y }));
+            var columns = Layers.Select(l => l.ControllerVector);
+            var mat = Matrix<float>.Build.DenseOfColumnVectors(columns);
 
-            return MyExtension.Concatenate(layers);
+            return Vector<float>.Build.DenseOfArray(mat.AsColumnMajorArray());
         }
 
         public override void FromVector(Vector<float> vector) {
-            for (int i = 0; i < vector.Count / 2; ++i) {
-                //Layers[i].Pointer.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
-                Layers[i].Controller.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
-                //Layers[i].Interpolate(Layers[i].Pointer.Location);
-                Layers[i].Interpolate(Layers[i].Controller.Location);
-            }
+            //var mat = Matrix<float>.Build.DenseOfColumnVectors(vector);
+            //mat = mat.Resize(2, vector.Count / 2);
+
+            //for (int i = 0; i < vector.Count / 2; ++i) {
+            //    var colVector = mat.Column(i);
+
+            //    foreach (var c in Layers[i].Complexes) {
+            //        c.Controller.Location = mat.Column()
+            //    }
+            //}
+
+            //for (int i = 0; i < vector.Count / 2; ++i) {
+            //    //Layers[i].Pointer.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
+            //    Layers[i].Controller.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
+            //    //Layers[i].Interpolate(Layers[i].Pointer.Location);
+            //    Layers[i].Interpolate(Layers[i].Controller.Location);
+            //}
         }
 
         public override IMemento Save() {
@@ -89,7 +100,7 @@ namespace TaskMaker {
     /// <summary>
     /// Immutable target state
     /// </summary>
-    public class TargetState : IVectorizable, MementoPattern.IMemento {
+    public class TargetState : IVectorizable, IMemento {
         private Vector<float> _state;
         private Target _parent;
 
@@ -104,4 +115,27 @@ namespace TaskMaker {
             return (_state, _parent);
         }
     }
+
+    public interface IInput {
+        Vector<float> ToVector();
+    }
+
+    public interface IOutput { }
+
+    public class Node<T> {
+        public T Tag { get; set; }
+
+    }
+
+    public class Link {
+        public object Input { get; set; }
+        public object Output { get; set; }
+
+        public void Process() {
+            if (Input != null & Output != null) {
+
+            }
+        }
+    }
+
 }

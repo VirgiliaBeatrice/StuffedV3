@@ -1,6 +1,7 @@
 ﻿using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace TaskMaker {
@@ -8,17 +9,18 @@ namespace TaskMaker {
 
         public Canvas Canvas { get; set; }
         private SKGLControl sKControl;
-        private Layer parentLayer;
+        private Layer _layer;
         private CrossPointer pointer;
         private Timer timer;
         private SKRect _viewport;
         private SKRect _window;
         private SKPoint _panCenterInView;
         private SKPoint _panStartInWorld;
+        private Controller _controller;
         public TinyCanvasForm(Layer layer) {
             InitializeComponent();
 
-            parentLayer = layer;
+            _layer = layer;
             timer = new Timer();
             timer.Interval = 10;
             timer.Tick += Timer_Tick;
@@ -55,6 +57,7 @@ namespace TaskMaker {
             if (ModifierKeys == Keys.None) {
                 if (e.Button == MouseButtons.Left) {
                     pointer = null;
+                    _controller = null;
                 }
                 else if (e.Button == MouseButtons.Right) {
                     Reset();
@@ -71,9 +74,16 @@ namespace TaskMaker {
             }
             else if (ModifierKeys == Keys.None) {
                 if (e.Button == MouseButtons.Left) {
-                    var local = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
-                    pointer = new CrossPointer(local);
-                    parentLayer.IsShownPointer = true;
+                    var wP = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+                    pointer = new CrossPointer(wP);
+
+                    //var controller = _layer.Complexes.Where(c => c.Controller.Contains(wP));
+
+                    var controller = _layer.Controller.Contains(wP)? _layer.Controller : null;
+
+                    if(controller != null) {
+                        _controller = controller;
+                    }
                 }
             }
         }
@@ -86,13 +96,13 @@ namespace TaskMaker {
             }
             else if (ModifierKeys == Keys.None) {
                 if (e.Button == MouseButtons.Left) {
-                    pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
-                    //parentLayer.Pointer.Location = pointer.Location;
-                    parentLayer.Controller.Location = pointer.Location;
+                    var wP = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+
+                    pointer.Location = wP;
+                    _controller.Location = wP;
 
                     // Interpolation
-                    parentLayer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
-                    //this.parentLayer.Interpolate(e.Location.ToSKPoint());
+                    _layer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
                 }
             }
         }
@@ -104,7 +114,7 @@ namespace TaskMaker {
             canvas.Clear(SKColors.White);
             canvas.Concat(ref mat);
 
-            parentLayer.Draw(canvas);
+            _layer.Draw(canvas);
 
             if (pointer != null) {
                 pointer.Draw(canvas);

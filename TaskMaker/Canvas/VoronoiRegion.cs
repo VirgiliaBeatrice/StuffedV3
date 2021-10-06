@@ -726,7 +726,7 @@ namespace TaskMaker {
         public VoronoiRegion_Type2(ExteriorRay_v3 ray0, ExteriorRay_v3 ray1, Simplex triangle) : base(ray0, ray1, triangle) { }
 
         public override bool ContainsPoint(SKPoint p) {
-            return base.ContainsPoint(p) & !this.Triangle.ContainsPoint(p);
+            return base.ContainsPoint(p) & !this.Triangle.Contains(p);
         }
     }
 

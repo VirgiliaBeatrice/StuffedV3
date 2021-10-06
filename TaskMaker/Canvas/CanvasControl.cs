@@ -16,7 +16,7 @@ namespace TaskMaker {
                 selectedMode = value;
             }
         }
-        public Layer SelectedLayer => _canvas.SelectedLayer;
+        //public Layer SelectedLayer => _canvas.SelectedLayer;
 
         private SKGLControl skControl;
         private SKImageInfo imageInfo;
@@ -59,6 +59,7 @@ namespace TaskMaker {
             _refreshTimer.Tick += Timer_Tick;
 
             ResetViewport();
+            //Services.Canvas.Bounds = _viewport;
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -81,6 +82,7 @@ namespace TaskMaker {
         private void ResetViewport() {
             _window = new SKRect() { Location = new SKPoint(), Size = ClientSize.ToSKSize() };
             _viewport = new SKRect() { Location = new SKPoint(), Size = ClientSize.ToSKSize() };
+            Services.Canvas.Bounds = _viewport;
         }
 
         public void BeginAddNodeMode() {
@@ -110,11 +112,17 @@ namespace TaskMaker {
         }
 
         public void BeginManipulateMode() {
+            // Set mode = manipulate
             SelectedMode = Modes.Manipulate;
+
+            // Show controllers in complexes
+            SelectedLayer.ShowController();
         }
 
         public void BeginSelectionMode() {
             SelectedMode = Modes.Selection;
+
+            SelectedLayer.HideController();
         }
 
         public void BeginPointerTrace(Point position) {

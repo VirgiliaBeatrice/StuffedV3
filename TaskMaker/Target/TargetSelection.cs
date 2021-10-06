@@ -205,12 +205,12 @@ namespace TaskMaker {
     public class SelectableLayer : SelectableObject<Layer> {
         public SelectableLayer(string name) : base(name) { }
 
-        public Vector<float> ToVector() {
-            return Vector<float>.Build.Dense(new float[] {
-                //Target.Pointer.Location.X, Target.Pointer.Location.Y
-                Target.Controller.Location.X, Target.Controller.Location.Y
-            }); ;
-        }
+        //public Vector<float> ToVector() {
+        //    return Vector<float>.Build.Dense(new float[] {
+        //        //Target.Pointer.Location.X, Target.Pointer.Location.Y
+        //        Target.Controller.Location.X, Target.Controller.Location.Y
+        //    }); ;
+        //}
 
         public static SelectableLayer CreateSelectableLayer(TreeNode node) {
             SelectableLayer selectableLayer;

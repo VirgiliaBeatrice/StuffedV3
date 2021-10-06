@@ -21,6 +21,8 @@ namespace TaskMaker {
         private Caretaker _caretaker;
         private TreeNode _root;
 
+        private Layer SelectedLayer => Services.Canvas.SelectedLayer;
+
         public delegate void InvalidateDelgate(bool invalidateChildren);
 
 
@@ -39,9 +41,8 @@ namespace TaskMaker {
 
             Services.Boards.Serial = serialPort1;
             Services.MotorTimer.Tick += Timer_Tick;
-            //Services.Canvas = canvasControl1.Canvas;
 
-            groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
+            groupBox2.Text = $"Canvas - [{SelectedLayer.Name}]";
 
             tooltipBtnAddLayer.SetToolTip(button5, "Ctrl+A");
             tooltipBtnDeleteLayer.SetToolTip(button6, "Ctrl+D");
@@ -163,12 +164,12 @@ namespace TaskMaker {
         }
 
         private void CanvasControl1_LayerConfigured(object sender, EventArgs e) {
-            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
+            toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
         }
 
         private void CanvasControl1_LayerFocused(object sender, LayerFocusedEventArgs e) {
-            groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
-            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
+            groupBox2.Text = $"Canvas - [{SelectedLayer.Name}]";
+            toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -400,7 +401,7 @@ namespace TaskMaker {
         }
 
         private void button9_Click(object sender, EventArgs e) {
-            canvasControl1.SelectedLayer.ShowTargetSelectionForm();
+            SelectedLayer.ShowTargetSelectionForm();
             canvasControl1.Reset();
         }
 
@@ -409,12 +410,12 @@ namespace TaskMaker {
         }
 
         private void layerToolStripMenuItem_Click(object sender, EventArgs e) {
-            canvasControl1.SelectedLayer.ShowTargetSelectionForm();
+            SelectedLayer.ShowTargetSelectionForm();
             canvasControl1.Reset();
         }
 
         private void button11_Click(object sender, EventArgs e) {
-            canvasControl1.SelectedLayer.ShowTargetControlForm();
+            SelectedLayer.ShowTargetControlForm();
         }
 
         private void button13_Click(object sender, EventArgs e) {
@@ -436,8 +437,8 @@ namespace TaskMaker {
 
             canvasControl1.ChooseLayer(layer);
 
-            groupBox2.Text = $"Canvas - [{canvasControl1.SelectedLayer.Name}]";
-            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
+            groupBox2.Text = $"Canvas - [{SelectedLayer.Name}]";
+            toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
         }
 
         private void treeView1_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
@@ -445,7 +446,7 @@ namespace TaskMaker {
             (e.Node.Tag as Layer).Name = e.Label; 
 
             groupBox2.Text = $"Canvas - [{e.Node.Text}]";
-            toolStripStatusLabel4.Text = $"{canvasControl1.SelectedLayer.Name} - {canvasControl1.SelectedLayer.LayerStatus}";
+            toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
         }
 
         private void button8_Click(object sender, EventArgs e) {

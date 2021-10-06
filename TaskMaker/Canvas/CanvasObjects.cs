@@ -33,10 +33,9 @@ namespace TaskMaker {
     }
 
     public partial class Canvas : IOriginator {
+        public SKRect Bounds { get; set; }
         public bool IsShownPointer { get; set; } = false;
         public bool IsShownPointerTrace { get; set; } = false;
-        //public Layer RootLayer { get; set; } = new Layer("Root");
-        //public Layer SelectedLayer { get; set; }
 
         public List<Layer> Layers { get; set; } = new List<Layer>();
         public Layer SelectedLayer => Layers.Find(l => l.IsSelected);
@@ -44,7 +43,6 @@ namespace TaskMaker {
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
 
-        private readonly Triangulation _triangulation = Services.TriHandler;
 
         public Canvas() {
             Layers.Add(new Layer("New Layer") { IsSelected = true });
@@ -73,13 +71,17 @@ namespace TaskMaker {
         }
 
         public void Reset() {
-            SelectedLayer.Entities.ForEach(e => e.IsSelected = false);
-            IsShownPointer = false;
-            IsShownPointerTrace = false;
+            Layers.ForEach(l => l.Reset());
+            //IsShownPointer = false;
+            //IsShownPointerTrace = false;
         }
 
         public void Draw(SKCanvas sKCanvas) {
-            SelectedLayer.Draw(sKCanvas);
+            foreach(var l in Layers) {
+                if (l.IsVisible) {
+                    l.Draw(sKCanvas);
+                }
+            }
 
             if (SelectionTool != null) {
                 SelectionTool.DrawThis(sKCanvas);
@@ -92,6 +94,8 @@ namespace TaskMaker {
             if (IsShownPointerTrace) {
                 PointerTrace.Draw(sKCanvas);
             }
+
+            
         }
 
 
@@ -131,19 +135,35 @@ namespace TaskMaker {
 
     public partial class Layer : IOriginator {
         public string Name { get; set; }
-        public bool IsShownPointer { get; set; } = false;
+        public bool IsVisible { get; set; } = true;
+        //public bool IsShownPointer { get; set; } = false;
         public bool IsSelected { get; set; } = false;
+        public Controller Controller { get; set; } = new Controller();
+
+        #region Data
         public List<Entity> Entities { get; set; } = new List<Entity>();
+        public SimplicialComplex Complex { get; set; } = new SimplicialComplex();
         public Exterior Exterior { get; set; }
         public Target BindedTarget { get; set; }
-
-        #region old
-        public Controller Controller { get; set; } = new Controller();
-        public SimplicialComplex Complex { get; set; } = new SimplicialComplex();
         #endregion
 
-        public List<SimplicialComplex> Complexes { get; set; } = new List<SimplicialComplex>();
-        public List<Exterior> Exteriors { get; set; } = new List<Exterior>();
+        public object Input { get; set; }
+        public object Output { get; set; }
+
+        private List<Layer> _children = new List<Layer>();
+
+
+        //public List<SimplicialComplex> Complexes { get; set; } = new List<SimplicialComplex>();
+        //public Vector<float> ControllerVector {
+        //    get {
+        //        var mat = Matrix<float>.Build.DenseOfColumnVectors(Complexes.Select(c => c.Controller.Location.ToVector()));
+
+        //        return Vector<float>.Build.DenseOfArray(mat.ToColumnMajorArray());
+        //    }
+        //}
+ 
+
+        //public List<Exterior> Exteriors { get; set; } = new List<Exterior>();
 
         public LayerStatus LayerStatus {
             get {
@@ -162,9 +182,24 @@ namespace TaskMaker {
             Name = name;
         }
 
+        public void Add(Layer child) {
+            _children.Add(child);
+        }
+
+        public void Remove(Layer child) {
+            _children.Remove(child);
+        }
+
+        public Layer[] GetChildren() => _children.ToArray();
+
         public void CreateExterior() {
             Exterior = Complex.CreateExterior();
-            Exteriors.AddRange(Complexes.Select(c => c.CreateExterior()));
+        }
+
+        public void Reset() {
+            Entities.ForEach(e => e.IsSelected = false);
+
+            _children.ForEach(c => c.Reset());
         }
 
         public void Interpolate(SKPoint p) {
@@ -176,6 +211,14 @@ namespace TaskMaker {
             var exteriorConfigs = Exterior.GetInterpolatedConfigs(p);
 
             BindedTarget.FromVector(complexConfigs + exteriorConfigs);
+        }
+
+        public void ShowController() {
+            Controller.IsVisible = true;
+        }
+
+        public void HideController() {
+            Controller.IsVisible = false;
         }
 
         public void ShowTargetSelectionForm() {
@@ -268,19 +311,14 @@ namespace TaskMaker {
         }
 
         public void Draw(SKCanvas sKCanvas) {
-            //Complex.Draw(sKCanvas);
-            Complexes.ForEach(c => c.Draw(sKCanvas));
-            Exteriors.ForEach(ex => ex.Draw(sKCanvas));
+            Complex.Draw(sKCanvas);
             Exterior?.Draw(sKCanvas);
 
             var reverse = new List<Entity>(Entities);
             reverse.Reverse();
             reverse.ForEach(e => e.Draw(sKCanvas));
 
-            if (IsShownPointer) {
-                //Pointer.Draw(sKCanvas);
-                Controller.Draw(sKCanvas);
-            }
+            Controller.Draw(sKCanvas);
         }
 
         public IMemento Save() => new LayerState(this);
@@ -319,6 +357,12 @@ namespace TaskMaker {
         EditNode,
         Manipulate,
         Selection,
+    }
+
+    public class CompositeLayer {
+        public List<Layer> Layers { get; set; } = new List<Layer>();
+
+        public void Tensor() { }
     }
 
 
@@ -368,6 +412,8 @@ namespace TaskMaker {
     }
 
     public class Controller : CanvasObject_v2 {
+        public bool IsVisible { get; set; } = false;
+
         private SKPaint _fill = new SKPaint {
             IsAntialias = true,
             Color = SKColor.Parse("#005CAF"),
@@ -380,9 +426,15 @@ namespace TaskMaker {
             StrokeWidth = 2
         };
 
+        public bool Contains(SKPoint p) {
+            return SKPoint.Distance(Location, p) <= 5.0f;
+        }
+
         public override void Draw(SKCanvas sKCanvas) {
-            sKCanvas.DrawCircle(Location, 5.0f, _fill);
-            sKCanvas.DrawCircle(Location, 5.0f, _stroke);
+            if (IsVisible) {
+                sKCanvas.DrawCircle(Location, 5.0f, _fill);
+                sKCanvas.DrawCircle(Location, 5.0f, _stroke);
+            }
         }
     }
 
@@ -674,7 +726,7 @@ namespace TaskMaker {
 
         public Simplex() { }
 
-        public bool ContainsPoint(SKPoint p) {
+        public bool Contains(SKPoint p) {
             var ret = GetLambdas_v1(p);
 
             return ret.All(e => e >= 0);
@@ -683,14 +735,6 @@ namespace TaskMaker {
         public void Reset() {
             Vertices.ForEach(e => e.IsSelected = false);
         }
-
-        //public Vector<float> GetLambdas(SKPoint point) {
-        //    return this.Pairs.TaskBary.GetLambdasOnlyInterior(point.ToVector());
-        //}
-
-        //public Vector<float> GetLambdasExterior(SKPoint p) {
-        //    return this.Pairs.TaskBary.GetLambdas(p.ToVector());
-        //}
 
         public Vector<float> GetLambdas_v1(SKPoint p) => Map.GetLambdas(p.ToVector());
 
@@ -759,14 +803,10 @@ namespace TaskMaker {
     }
 
     public class SimplicialComplex : List<Simplex> {
-        public Controller controller { get; set; } = new Controller();
-
         private List<Edge_v2> edges = new List<Edge_v2>();
         private List<Edge_v2> complexEdges = new List<Edge_v2>();
         private CircularList<Entity> _extremes = new CircularList<Entity>();
         private VoronoiRegions voronoiRegions = new VoronoiRegions();
-        private Bend bend;
-        //private Exterior exterior;
 
         public new void Add(Simplex simplex) {
             var edge0 = new Edge_v2();
@@ -816,7 +856,7 @@ namespace TaskMaker {
             return complexEdges.FindAll(e => e.Contains(target));
         }
 
-        public bool ContainsEntity(Entity e) {
+        public bool Exists(Entity e) {
             return this.Any(s => s.IsVertex(e));
         }
 
@@ -899,7 +939,7 @@ namespace TaskMaker {
             var values = new List<Vector<float>>();
 
             foreach (var s in this) {
-                var target = s.ContainsPoint(p) ? s.GetInterpolatedTargetVector(p) : s.GetZeroTargetVector();
+                var target = s.Contains(p) ? s.GetInterpolatedTargetVector(p) : s.GetZeroTargetVector();
 
                 values.Add(target);
             }
@@ -909,15 +949,6 @@ namespace TaskMaker {
 
         public void Draw(SKCanvas sKCanvas) {
             ForEach(s => s.DrawThis(sKCanvas));
-            //this.complexEdges.ForEach(edge => edge.Draw(sKCanvas));
-            //this.bend?.Draw(sKCanvas);
-            //this.exterior?.Draw(sKCanvas);
-
-            // Test
-            //if (this.voronoiRegions.Count != 0) {
-            //    this.voronoiRegions[5].Draw(sKCanvas);
-            //}
-            //this.voronoiRegions.ForEach(v => v.Draw(sKCanvas));
         }
 
         public IMemento Save() => new SimplicialComplexState(this);
