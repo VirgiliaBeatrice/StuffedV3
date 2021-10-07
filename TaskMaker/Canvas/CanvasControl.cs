@@ -174,6 +174,47 @@ namespace TaskMaker {
             SelectedLayer.Invalidate();
         }
 
+        public bool PairingStart = true;
+
+        public void PairAll() {
+            if (SelectedLayer.BindedTarget == null) {
+                MessageBox.Show("Layer without target.",
+                    "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (PairingStart) {
+                SelectedLayer.Entities[0].IsSelected = true;
+                PairingStart = false;
+                SelectedLayer.Complex.Bary.BeginSetting(2);
+                
+                return;
+            }
+            else {
+                var bary = SelectedLayer.Complex.Bary;
+                var target = SelectedLayer.BindedTarget;
+                var nextIdx = bary.SetTensor2D(target.CreateTargetState().ToVector().ToArray());
+
+                if (nextIdx != -1) {
+                    SelectedLayer.Reset();
+                    SelectedLayer.Entities[nextIdx].IsSelected = true;
+
+                    MessageBox.Show($"Next: {SelectedLayer.Entities[nextIdx]}",
+                    "Information",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else {
+                    SelectedLayer.Reset();
+                    PairingStart = true;
+
+                    MessageBox.Show("All paired.",
+                    "Information",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } 
+            }
+        }
+
         public void Pair() {
             if (SelectedLayer.BindedTarget == null) {
                 MessageBox.Show("Layer without target.",
@@ -182,7 +223,7 @@ namespace TaskMaker {
                 return;
             }
 
-            var selectedEntities = _canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+            var selectedEntities = SelectedLayer.Entities.FindAll(e => e.IsSelected);
 
             if (selectedEntities.Count > 1) {
                 MessageBox.Show("More than one entity are selected.",
@@ -365,7 +406,9 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
-                _canvas.SelectedLayer.Interpolate(wLocation);
+
+                SelectedLayer.InterpolateTensor(wLocation);
+                //_canvas.SelectedLayer.Interpolate(wLocation);
                 _canvas.PointerTrace.Update(wLocation);
             }
         }

@@ -99,7 +99,7 @@ namespace TaskMaker {
                     var wP = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
                     pointer.Location = wP;
-                    _controller.Location = wP;
+                    //_controller.Location = wP;
 
                     // Interpolation
                     _layer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));

@@ -94,93 +94,151 @@ namespace TaskMaker.SimplicialMapping {
     }
 
     public class SimplexBary {
-        public List<Entity> Basis { get; set; } = new List<Entity>(3);
-        public readonly int Dimension = 3;
+        public List<Entity> Basis;
+        public int Dimension => Basis.Count;
 
         private Matrix<float> A;
         private Matrix<float> InverseA;
 
+        private NDArray _A;
+
+        public SimplexBary(IEnumerable<Entity> basis) {
+            Basis = new List<Entity>(basis);
+        }
+
         private void InitializeA() {
-            if (Basis.Count != 3) {
-                Console.WriteLine($"{this}: Basis is not fully set.");
-                return;
-                //throw new Exception($"{this}: Basis is not fully set.");
-            }
+            var basisArray = np.array(Basis.Select(b => new float[] { b.Location.X, b.Location.Y }).ToArray()).T;
+            var affineFactor = np.ones(Dimension);
+
+            _A = np.vstack(affineFactor, basisArray);
 
             var vBasis = Basis.Select(b => b.ToVector()).ToList();
             A = Matrix<float>.Build.DenseOfColumnVectors(vBasis);
-            A.InsertRow(0, Vector<float>.Build.Dense(Dimension, 1.0f));
+            A = A.InsertRow(0, Vector<float>.Build.Dense(Dimension, 1.0f));
 
             InverseA = A.Inverse();
         }
 
-        public void AddBasis(Entity e) {
-            Basis.Add(e);
+        public float[] GetLambdas(SKPoint p) {
             InitializeA();
-        }
-
-        public Vector<float> GetLambdas(SKPoint p) {
-            if (Basis.Count != 3)
-                throw new Exception($"{this}: Basis is not fully set.");
 
             var vP = p.ToVector().ToColumnMatrix();
-            vP.InsertRow(0, Vector<float>.Build.Dense(1, 1.0f));
+            vP = vP.InsertRow(0, Vector<float>.Build.Dense(1, 1.0f));
 
-            return A.Solve(vP.Column(0));
+            return A.Solve(vP.Column(0)).ToArray();
         }
 
-        public Vector<float> GetZeroLambdas() {
-            if (Basis.Count != 3)
-                throw new Exception($"{this}: Basis is not fully set.");
-
-            return Vector<float>.Build.Dense(Dimension, 0);
+        public float[] GetZeroLambdas() {
+            return Vector<float>.Build.Dense(Dimension, 0).ToArray();
         }
     }
 
-    public class ComplexBary<T> {
-        public List<Entity> Basis0 { get; set; } = new List<Entity>();
-        public List<Entity> Basis1 { get; set; } = new List<Entity>();
-        public List<SimplexBary> Barys { get; set; } = new List<SimplexBary>();
-        //public Dictionary<Entity, NDArray> Pairs { get; set; } = new Dictionary<Entity, NDArray>();
+    public class ComplexBary {
+        public bool IsSet { get; set; } = false;
+        public List<Entity> Basis { get; private set; } = new List<Entity>();
+        public List<Simplex> Simplices { get; set; } = new List<Simplex>();
+        public Exterior Exterior { get; set; }
 
-        public int Dimension => Basis0.Count;
+        private SimplexBary[] Barys => Simplices.Select(s => s.Bary).ToArray();
+        private int[] _shape;
+        private NDArray _wTensor;
+        private int _cursor = 0;
 
-        private NDArray _tensor;
-        private NDArray _lambdas;
+        public ComplexBary(List<Entity> basis) {
+            Basis = basis;
+            _shape = new int[] { Basis.Count };
+            _wTensor = np.ndarray(_shape);
+        }
 
-        private void InitializeScalars() {
-            if (Pairs.Values.Any(e => e == null)) {
-                Console.WriteLine($"{this} is not fully config.");
-                return;
+        private bool HasNext() {
+            return _cursor < _wTensor.shape[1] - 1;
+        }
+        private void MoveNext() {
+            _cursor++;
+        }
+
+        public void BeginSetting(int dim) {
+            _shape = new int[] { dim, Basis.Count };
+            _wTensor = np.ndarray(_shape);
+        }
+
+        public int SetTensor2D(float[] element) {
+            if (HasNext()) {
+                IsSet = false;
+                _wTensor[$":,{_cursor}"] = element;
+                Basis[_cursor].IsSet = true;
+                MoveNext();
+                
+                return _cursor;
+            }
+            else {
+                // Auto reset
+                _cursor = 0;
+                IsSet = true;
+
+                return -1;
+            }
+        }
+
+        public NDArray Calculate(float[] lambda) {
+            if (IsSet) {
+                var kronProd = np.array(lambda).flat;
+                var result = np.dot(kronProd, _wTensor);
+
+                return result;
             }
 
-
+            return null;
         }
 
-        private void InitializeVertices() {
-            Basis0.ForEach(b => Pairs.Add(b, null));
+        public void Calculate(params float[][] lambdas) {
+            var b11 = new Entity(new SKPoint(1, 2));
+            var b12 = new Entity(new SKPoint(3, 4));
+            var b13 = new Entity(new SKPoint(5, 6));
+            var basis1 = np.array(new Entity[] { b11, b12, b13 });
+
+            var b21 = new Entity(new SKPoint(11, 12));
+            var b22 = new Entity(new SKPoint(13, 14));
+            var b23 = new Entity(new SKPoint(15, 16));
+            var basis2 = np.array(new Entity[] { b21, b22, b23 });
+
+
+            var layers = new List<Layer>();
+            var shape = layers.Select(l => l.Entities.Count).ToArray();
+            var wTensor = np.ndarray(shape);
+
+            var lambda1T = np.array(new float[] { 1, 0, 0 }).transpose();
+            var lambda2T = np.array(new float[] { 0, 1, 0 }).transpose();
+
+            var lambdasList = new List<NDArray>();
+            NDArray kronProd = null;
+
+            for(var idx = 0; idx < lambdas.Length; ++ idx) {
+                if (idx == 0) {
+                    kronProd = np.array(lambdas[idx]);
+                }
+                else {
+                    kronProd = np.outer(kronProd, np.array(lambdas[idx]));
+                }
+            }
+
+            kronProd = kronProd.flat;
+
+            var result = np.dot(kronProd, wTensor);
         }
-
-        public void AddTarget(NDArray target, int[] index) {
-            // Confirm shape be [1, ], a.k.a. 1D
-            target.reshape(new int[] { 1 });
-
-            _tensor.itemset(index, target);
-        }
-
-        
 
         public Dictionary<Entity, float> GetLambdas(SKPoint p) {
-            // When full set
             var results = new Dictionary<Entity, float>();
 
-            foreach(var b in Basis) {
-                results.Add(b, 0.0f);
-            }
+            Basis.ForEach(b => results.Add(b, 0.0f));
 
             foreach(var bary in Barys) {
                 var basis = bary.Basis;
                 var lambdas = bary.GetLambdas(p);
+
+                if (lambdas.Any(e => e < 0.0f)) {
+                    lambdas = bary.GetZeroLambdas();
+                }
 
                 for(var idx = 0; idx < basis.Count; ++idx) {
                     results[basis[idx]] += lambdas[idx];
@@ -191,12 +249,9 @@ namespace TaskMaker.SimplicialMapping {
         }
 
         public void Interpolate(SKPoint p) {
-            var lambdas = GetLambdas(p);
-            var list = new List<KeyValuePair<Entity, float>>(lambdas);
-
-
-            _tensor.PointwiseMultiply()
-            lambdas
+            var dict = GetLambdas(p);
+            var lambda = Basis.Select(b => dict[b]).ToArray();
+            var result = Calculate(lambda);
         }
     }
 

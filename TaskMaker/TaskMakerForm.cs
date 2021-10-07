@@ -269,7 +269,8 @@ namespace TaskMaker {
                     e.Handled = true;
                     break;
                 case Keys.P:
-                    canvasControl1.Pair();
+                    canvasControl1.PairAll();
+                    //canvasControl1.Pair();
                     e.Handled = true;
                     break;
             }
@@ -406,7 +407,7 @@ namespace TaskMaker {
         }
 
         private void button12_Click(object sender, EventArgs e) {
-            canvasControl1.Pair();
+            //canvasControl1.PairAll();
         }
 
         private void layerToolStripMenuItem_Click(object sender, EventArgs e) {

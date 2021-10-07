@@ -142,7 +142,7 @@ namespace TaskMaker {
 
         #region Data
         public List<Entity> Entities { get; set; } = new List<Entity>();
-        public SimplicialComplex Complex { get; set; } = new SimplicialComplex();
+        public SimplicialComplex Complex { get; set; }
         public Exterior Exterior { get; set; }
         public Target BindedTarget { get; set; }
         #endregion
@@ -180,6 +180,8 @@ namespace TaskMaker {
 
         public Layer(string name) {
             Name = name;
+
+            Complex = new SimplicialComplex(Entities);
         }
 
         public void Add(Layer child) {
@@ -200,6 +202,10 @@ namespace TaskMaker {
             Entities.ForEach(e => e.IsSelected = false);
 
             _children.ForEach(c => c.Reset());
+        }
+
+        public void InterpolateTensor(SKPoint p) {
+            Complex.Interpolate(p);
         }
 
         public void Interpolate(SKPoint p) {
@@ -591,6 +597,8 @@ namespace TaskMaker {
                 }
             }
         }
+
+        public bool IsSet { get; set; } = false;
         public int Index { get; set; }
         public TargetState TargetState { get; set; }
         public Vector<float> Vector => location.ToVector();
@@ -642,8 +650,9 @@ namespace TaskMaker {
                 fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Chocolate, 0.8f);
             }
             else {
-                if (TargetState != null)
+                if (IsSet)
                     fillPaint.Color = SKColors.Gold.WithAlpha(0.8f);
+                //if (TargetState != null)
                 //if (this.Pair.IsPaired) {
                 //    this.fillPaint.Color = SkiaHelper.ConvertColorWithAlpha(SKColors.Red, 0.8f);
                 //}
@@ -708,6 +717,7 @@ namespace TaskMaker {
         //public bool IsPaired => this.Pairs.IsFullyPaired;
         //public Pairs Pairs { get; set; } = new Pairs();
         public SimplicalMap Map { get; set; } = new SimplicalMap();
+        public SimplexBary Bary { get; set; }
 
         private SKPaint fillPaint = new SKPaint {
             IsAntialias = true,
@@ -727,8 +737,7 @@ namespace TaskMaker {
 
         public Simplex(ICollection<Entity> entities) {
             Vertices.AddRange(entities);
-            //this.Pairs.AddRange(entities.Select(e => e.Pair).ToArray());
-            //this.Pairs.TaskBary.AddRange(this.Vertices.Select(v => v.Vector).ToArray());
+            Bary = new SimplexBary(entities);
         }
 
         public Simplex() { }
@@ -817,6 +826,12 @@ namespace TaskMaker {
         private CircularList<Entity> _extremes = new CircularList<Entity>();
         private VoronoiRegions voronoiRegions = new VoronoiRegions();
 
+        public ComplexBary Bary;
+
+        public SimplicialComplex(List<Entity> entities) {
+            Bary = new ComplexBary(entities);
+        }
+
         public new void Add(Simplex simplex) {
             var edge0 = new Edge_v2();
             var edge1 = new Edge_v2();
@@ -825,8 +840,6 @@ namespace TaskMaker {
             edge0.Add(simplex.Vertices[0], simplex.Vertices[1]);
             edge1.Add(simplex.Vertices[1], simplex.Vertices[2]);
             edge2.Add(simplex.Vertices[2], simplex.Vertices[0]);
-
-
 
             if (!edges.Any(e => e.SetEquals(edge0)))
                 edges.Add(edge0);
@@ -837,6 +850,7 @@ namespace TaskMaker {
             if (!edges.Any(e => e.SetEquals(edge2)))
                 edges.Add(edge2);
 
+            Bary.Simplices.Add(simplex);
             base.Add(simplex);
         }
 
@@ -943,6 +957,10 @@ namespace TaskMaker {
 
         public Exterior CreateExterior() => Exterior.CreateExterior(_extremes.Select(e => e.Value).ToArray(), ToArray());
 
+
+        public void Interpolate(SKPoint p) {
+            Bary.Interpolate(p);
+        }
 
         public Vector<float> GetInterpolatedConfigs(SKPoint p) {
             var values = new List<Vector<float>>();
