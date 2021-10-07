@@ -37,6 +37,20 @@ namespace TaskMaker {
             return values.Sum();
         }
 
+        public Vector<float> GetInterpolatedLambdas(SKPoint p) {
+            var columns = new List<Vector<float>>();
+
+            foreach(var r in Regions) {
+                var target = r.Contains(p) ? r.GetInterpolatedLambdas(p) : r.GetZeroLambdas(p);
+
+                columns.Add(target);
+            }
+
+            var mat = Matrix<float>.Build.DenseOfColumnVectors(columns.ToArray());
+
+            return Vector<float>.Build.DenseOfArray(mat.AsColumnMajorArray());
+        }
+
         public static Exterior CreateExterior(Entity[] extremes, Simplex[] simplices) {
             var ccw = new CircularList<Entity>(extremes);
             var exterior = new Exterior();

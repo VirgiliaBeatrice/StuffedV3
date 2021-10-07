@@ -16,7 +16,7 @@ namespace TaskMaker {
                 selectedMode = value;
             }
         }
-        //public Layer SelectedLayer => _canvas.SelectedLayer;
+        public Layer SelectedLayer => _canvas.SelectedLayer;
 
         private SKGLControl skControl;
         private SKImageInfo imageInfo;

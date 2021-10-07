@@ -213,6 +213,11 @@ namespace TaskMaker {
             BindedTarget.FromVector(complexConfigs + exteriorConfigs);
         }
 
+        public void GetLambdas(SKPoint p) {
+            var complexLambdas = Complex.GetInterpolatedLambdas(p);
+            var exteriorLambdas = Exterior.GetInterpolatedLambdas(p);
+        }
+
         public void ShowController() {
             Controller.IsVisible = true;
         }
@@ -362,7 +367,9 @@ namespace TaskMaker {
     public class CompositeLayer {
         public List<Layer> Layers { get; set; } = new List<Layer>();
 
-        public void Tensor() { }
+        public void Tensor() {
+            //var lambdasCollection = Layers.Select(l => l.)
+        }
     }
 
 
@@ -727,7 +734,7 @@ namespace TaskMaker {
         public Simplex() { }
 
         public bool Contains(SKPoint p) {
-            var ret = GetLambdas_v1(p);
+            var ret = GetLambdas(p);
 
             return ret.All(e => e >= 0);
         }
@@ -736,7 +743,9 @@ namespace TaskMaker {
             Vertices.ForEach(e => e.IsSelected = false);
         }
 
-        public Vector<float> GetLambdas_v1(SKPoint p) => Map.GetLambdas(p.ToVector());
+        public Vector<float> GetLambdas(SKPoint p) => Map.GetLambdas(p.ToVector());
+
+        public Vector<float> GetZeroLambdas(SKPoint p) => Map.GetLambdas(p.ToVector()).Multiply(0.0f);
 
         public Vector<float> GetInterpolatedTargetVector(SKPoint p) => Map.Map(p.ToVector());
 
@@ -945,6 +954,20 @@ namespace TaskMaker {
             }
 
             return values.Sum();
+        }
+
+        public Vector<float> GetInterpolatedLambdas(SKPoint p) {
+            var columns = new List<Vector<float>>();
+
+            foreach(var s in this) {
+                var lambdas = s.Contains(p) ? s.GetLambdas(p) : s.GetZeroLambdas(p);
+
+                columns.Add(lambdas);
+            }
+
+            var mat = Matrix<float>.Build.DenseOfColumnVectors(columns.ToArray());
+
+            return Vector<float>.Build.DenseOfArray(mat.AsColumnMajorArray());
         }
 
         public void Draw(SKCanvas sKCanvas) {

@@ -62,10 +62,11 @@ namespace TaskMaker {
         }
 
         public override Vector<float> ToVector() {
-            var columns = Layers.Select(l => l.ControllerVector);
-            var mat = Matrix<float>.Build.DenseOfColumnVectors(columns);
+            //var columns = Layers.Select(l => l.ControllerVector);
+            //var mat = Matrix<float>.Build.DenseOfColumnVectors(columns);
 
-            return Vector<float>.Build.DenseOfArray(mat.AsColumnMajorArray());
+            //return Vector<float>.Build.DenseOfArray(mat.AsColumnMajorArray());
+            return null;
         }
 
         public override void FromVector(Vector<float> vector) {
