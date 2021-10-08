@@ -77,11 +77,12 @@ namespace TaskMaker {
         }
 
         public void Draw(SKCanvas sKCanvas) {
-            foreach(var l in Layers) {
-                if (l.IsVisible) {
-                    l.Draw(sKCanvas);
-                }
-            }
+            //foreach(var l in Layers) {
+            //if (l.IsVisible) {
+            //    l.Draw(sKCanvas);
+            //}
+            //}
+            SelectedLayer.Draw(sKCanvas);
 
             if (SelectionTool != null) {
                 SelectionTool.DrawThis(sKCanvas);
