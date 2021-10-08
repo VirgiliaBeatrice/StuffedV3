@@ -192,9 +192,13 @@ namespace TaskMaker.SimplicialMapping {
         public NDArray Calculate(float[] lambda) {
             if (IsSet) {
                 var kronProd = np.array(lambda).flat;
-                var result = np.dot(kronProd, _wTensor);
+                var elements = new List<float>();
 
-                return result;
+                for(var idx = 0; idx < _wTensor.shape[0]; ++idx) {
+                    elements.Add((float)np.dot(kronProd, _wTensor[$"{idx},:"]).GetDouble());
+                }
+
+                return np.array(elements);
             }
 
             return null;
