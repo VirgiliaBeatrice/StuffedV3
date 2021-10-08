@@ -10,6 +10,7 @@ using TaskMaker.MementoPattern;
 
 namespace TaskMaker {
     public abstract class Target : IVectorizable, IReflectable {
+        public abstract int Dimension { get; }
         public abstract Vector<float> ToVector();
         public abstract void FromVector(Vector<float> vector);
         public TargetState CreateTargetState() => new TargetState(this);
@@ -19,6 +20,7 @@ namespace TaskMaker {
     }
 
     public class MotorTarget : Target {
+        public override int Dimension => Motors.Count;
         public List<Motor> Motors { get; set; } = new List<Motor>();
 
         public MotorTarget() { }
@@ -50,6 +52,8 @@ namespace TaskMaker {
     }
 
     public class LayerTarget : Target {
+        public override int Dimension => Layers.Count * 2;
+
         public List<Layer> Layers { get; set; } = new List<Layer>();
         public LayerTarget() { }
 

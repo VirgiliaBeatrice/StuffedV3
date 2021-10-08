@@ -119,8 +119,14 @@ namespace TaskMaker.Geometry {
                     var next = points[i + 1];
                     var it = points[i];
 
-                    c = it + (next - prev).DivideBy((next - prev).Length).Multiply(factor * (it - next).Length);
-                    c_inv = it + (next - prev).DivideBy((next - prev).Length).Multiply(-factor * (it - prev).Length);
+                    if ((next - prev).Length == 0) {
+                        c = it;
+                        c_inv = it;
+                    }
+                    else {
+                        c = it + (next - prev).DivideBy((next - prev).Length).Multiply(factor * (it - next).Length);
+                        c_inv = it + (next - prev).DivideBy((next - prev).Length).Multiply(-factor * (it - prev).Length);
+                    }
                 }
 
                 controls.Add((c, c_inv));

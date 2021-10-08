@@ -187,7 +187,8 @@ namespace TaskMaker {
             if (PairingStart) {
                 SelectedLayer.Entities[0].IsSelected = true;
                 PairingStart = false;
-                SelectedLayer.Bary.BeginSetting(2);
+                SelectedLayer.Bary.BeginSetting(SelectedLayer.BindedTarget.Dimension);
+                //SelectedLayer.Bary.BeginSetting(2);
 
                 var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
 
