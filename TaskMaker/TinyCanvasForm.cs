@@ -105,7 +105,8 @@ namespace TaskMaker {
                     //_controller.Location = wP;
 
                     // Interpolation
-                    _layer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
+                    //_layer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
+                    _layer.InterpolateTensor(wP);
                 }
             }
         }
