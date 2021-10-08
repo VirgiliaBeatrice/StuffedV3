@@ -14,7 +14,8 @@ namespace TaskMaker.Geometry {
         public static int GetSide(SKPoint o, SKPoint a, SKPoint b) {
             var oa = a - o;
             var ob = b - o;
-            var ret = Math.Asin(oa.Cross(ob) / (oa.Length * ob.Length));
+            var value = oa.Cross(ob) / (oa.Length * ob.Length);
+            var ret = Math.Asin((double)new decimal(value));
 
             return Math.Sign(ret);
         }

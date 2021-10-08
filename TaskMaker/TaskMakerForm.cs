@@ -397,7 +397,7 @@ namespace TaskMaker {
         }
 
         private void button10_Click(object sender, EventArgs e) {
-            Services.Canvas.SelectedLayer.Triangulate();
+            SelectedLayer.Triangulate();
             //canvasControl1.Triangulate();
         }
 

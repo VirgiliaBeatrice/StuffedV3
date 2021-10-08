@@ -260,6 +260,10 @@ namespace TaskMaker.SimplicialMapping {
                 }
             }
 
+            //Console.WriteLine(string.Join(", ", results.Keys.Select(k => results[k])));
+            if (!results.All(e => e.Value == 0))
+                return results;
+
             foreach(var r in Exterior.Regions) {
                 if (r.GetType() == typeof(VoronoiRegion_Rect)) {
                     var bary = r.GetBary();
@@ -314,6 +318,7 @@ namespace TaskMaker.SimplicialMapping {
                 }
             }
 
+            //Console.WriteLine(string.Join(", ", results.Keys.Select(k => results[k])));
             return results;
         }
 

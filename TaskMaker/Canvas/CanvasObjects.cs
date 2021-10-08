@@ -412,8 +412,8 @@ namespace TaskMaker {
         }
 
         public override void Draw(SKCanvas sKCanvas) {
-            var points = _path.Points.Where((p, idx) => idx % 4 == 0);
-            var curve = Geometry.BezierCurve.GetBezierCurve(points, 0.4f);
+            var points = _path.Points.Where((p, idx) => idx % 2 == 0);
+            var curve = Geometry.BezierCurve.GetBezierCurve(points, 0.2f);
 
             //sKCanvas.DrawPath(_path, _strokePaint);
             sKCanvas.DrawPath(curve, _strokePaint);
@@ -825,6 +825,11 @@ namespace TaskMaker {
         //public ComplexBary Bary;
 
         public SimplicialComplex() { }
+
+        public new void Clear() {
+            base.Clear();
+            _extremes.Clear();
+        }
 
         public new void Add(Simplex simplex) {
             var edge0 = new Edge_v2();

@@ -33,7 +33,7 @@ namespace TaskMaker {
 
             // Reset entities' states
             Invalidate();
-
+            Reset();
 
             Triangulate(selectedEntities);
         }

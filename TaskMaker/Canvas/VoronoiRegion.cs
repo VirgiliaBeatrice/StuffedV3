@@ -22,6 +22,7 @@ namespace TaskMaker {
     }
 
     public class VoronoiRegion_Rect : VoronoiRegion {
+        public float Factor { get; set; } = 200.0f;
         public Simplex Governor { get; set; }
         public Entity E0 { get; set; }
         public Entity E1 { get; set; }
@@ -45,7 +46,16 @@ namespace TaskMaker {
         }
 
         public override bool Contains(SKPoint p) {
-            return this.rect.Contains(p.X, p.Y);
+            //var l03 = (this[0], this[3]);
+            //var l01 = (this[0], this[1]);
+            //var l12 = (this[1], this[2]);
+
+            var sideL03 = Geometry.LineSegment.GetSide(this[0], this[3], p);
+            var sideL01 = Geometry.LineSegment.GetSide(this[0], this[1], p);
+            var sideL12 = Geometry.LineSegment.GetSide(this[1], this[2], p);
+
+            return sideL03 <= 0 & sideL01 >= 0 & sideL12 >= 0;
+            //return this.rect.Contains(p.X, p.Y);
         }
 
         public VoronoiRegion_Rect(Entity it, Entity next, Simplex governor) {
@@ -68,14 +78,12 @@ namespace TaskMaker {
         }
 
         private SKPoint[] GetVerticesFromEdge(SKPoint a, SKPoint b) {
-            var factor = 120.0f;
-
             var dir = b - a;
             var unitDir = dir.DivideBy(dir.Length);
             // ccw
             var perp = SKMatrix.CreateRotationDegrees(90).MapPoint(unitDir);
-            var aP = a + perp.Multiply(factor);
-            var bP = b + perp.Multiply(factor);
+            var aP = a + perp.Multiply(Factor);
+            var bP = b + perp.Multiply(Factor);
 
             return new SKPoint[] { a, b, bP, aP };
         }
@@ -151,7 +159,11 @@ namespace TaskMaker {
         }
 
         public override bool Contains(SKPoint p) {
-            return this.circularSector.Contains(p.X, p.Y);
+            var sideRay0 = Geometry.LineSegment.GetSide(this[0], this[1], p);
+            var sideRay1 = Geometry.LineSegment.GetSide(this[0], this[4], p);
+
+            return sideRay0 <= 0 & sideRay1 >= 0;
+            //return this.circularSector.Contains(p.X, p.Y);
         }
 
         public VoronoiRegion_CircularSector(Entity o, SKPoint a, SKPoint i, SKPoint b) {
@@ -187,7 +199,7 @@ namespace TaskMaker {
         public (float, float) GetFactors(SKPoint p) {
             var o = this[0];
             var a = this[1];
-            var b = this[2];
+            var b = this[4];
 
             var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
             var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
