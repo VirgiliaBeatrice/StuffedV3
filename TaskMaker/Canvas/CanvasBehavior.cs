@@ -57,7 +57,7 @@ namespace TaskMaker {
                 Complex.AddExtreme(e);
             }
 
-            Exterior = Complex.CreateExterior();
+            CreateExterior();
         }
 
         private void Triangulate_Simplices(List<Entity> entities) {
@@ -108,7 +108,7 @@ namespace TaskMaker {
                 Complex.AddComplexEdge(edge.First());
             }
 
-            Exterior = Complex.CreateExterior();
+            CreateExterior();
         }
 
         private void Triangulate(List<Entity> entities) { }

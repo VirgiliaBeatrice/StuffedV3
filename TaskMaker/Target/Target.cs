@@ -69,8 +69,8 @@ namespace TaskMaker {
         }
 
         public override void FromVector(Vector<float> vector) {
-            //var mat = Matrix<float>.Build.DenseOfColumnVectors(vector);
-            //mat = mat.Resize(2, vector.Count / 2);
+            var mat = Matrix<float>.Build.DenseOfColumnVectors(vector);
+            mat = mat.Resize(2, vector.Count / 2);
 
             //for (int i = 0; i < vector.Count / 2; ++i) {
             //    var colVector = mat.Column(i);
@@ -80,12 +80,10 @@ namespace TaskMaker {
             //    }
             //}
 
-            //for (int i = 0; i < vector.Count / 2; ++i) {
-            //    //Layers[i].Pointer.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
-            //    Layers[i].Controller.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
-            //    //Layers[i].Interpolate(Layers[i].Pointer.Location);
-            //    Layers[i].Interpolate(Layers[i].Controller.Location);
-            //}
+            for (int i = 0; i < vector.Count / 2; ++i) {
+                Layers[i].Controller.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
+                //Layers[i].Interpolate(Layers[i].Controller.Location);
+            }
         }
 
         public override IMemento Save() {

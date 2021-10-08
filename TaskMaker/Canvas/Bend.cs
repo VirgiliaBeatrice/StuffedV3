@@ -12,18 +12,8 @@ namespace TaskMaker {
         public Exterior() { }
 
         public void Draw(SKCanvas sKCanvas) {
-            this.Regions.ForEach(r => r.Draw(sKCanvas));
+            Regions.ForEach(r => r.Draw(sKCanvas));
         }
-
-        //public Vector<float> Interpolate(SKPoint p) {
-        //    var ret = Vector<float>.Build.Random(0);
-
-        //    foreach (var v in Regions.Select(r => r.Interpolate(p))) {
-        //        ret.Concatenate(v);
-        //    }
-
-        //    return ret;
-        //}
 
         public Vector<float> GetInterpolatedConfigs(SKPoint p) {
             var values = new List<Vector<float>>();

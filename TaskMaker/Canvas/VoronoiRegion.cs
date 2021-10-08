@@ -18,6 +18,7 @@ namespace TaskMaker {
         public abstract Vector<float> GetInterpolatedTargetVector(SKPoint p);
         public abstract Vector<float> GetInterpolatedLambdas(SKPoint p);
         public abstract Vector<float> GetZeroLambdas(SKPoint p);
+        public abstract SimplexBary GetBary();
     }
 
     public class VoronoiRegion_Rect : VoronoiRegion {
@@ -106,6 +107,10 @@ namespace TaskMaker {
             sKCanvas.DrawPath(rect, stroke);
         }
 
+        public override SimplexBary GetBary() {
+            return Governor.Bary;
+        }
+
         public override Vector<float> GetZeroTargetVector() => Governor.GetZeroTargetVector();
 
         public override Vector<float> GetInterpolatedTargetVector(SKPoint p) => Governor.GetInterpolatedTargetVector(p);
@@ -166,6 +171,29 @@ namespace TaskMaker {
                     SKColors.ForestGreen.WithAlpha(0.2f),
                     SKColors.White.WithAlpha(0.5f)},
                 SKShaderTileMode.Clamp);
+        }
+
+        public bool IsSingleGovernor => Governor1 == null;
+
+        public (SimplexBary, SimplexBary) GetBarys() {
+            return (Governor0.Bary, Governor1.Bary);
+        }
+
+        // TODO
+        public override SimplexBary GetBary() {
+            return Governor0.Bary;
+        }
+
+        public (float, float) GetFactors(SKPoint p) {
+            var o = this[0];
+            var a = this[1];
+            var b = this[2];
+
+            var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
+            var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
+            var theta = theta0 + theta1;
+
+            return ((float)(theta1 / theta), (float)(theta0 / theta));
         }
 
         public override Vector<float> Interpolate(SKPoint p) {
@@ -249,6 +277,8 @@ namespace TaskMaker {
         public override Vector<float> GetZeroLambdas(SKPoint p) {
             return Governor0.GetZeroLambdas(p);
         }
+
+
     }
 
     public class VoronoiRegions : List<IVoronoiRegion> { }

@@ -57,7 +57,8 @@ namespace TaskMaker {
             if (ModifierKeys == Keys.None) {
                 if (e.Button == MouseButtons.Left) {
                     pointer = null;
-                    _controller = null;
+                    //_layer.Controller.IsVisible = false;
+
                 }
                 else if (e.Button == MouseButtons.Right) {
                     Reset();
@@ -77,13 +78,13 @@ namespace TaskMaker {
                     var wP = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
                     pointer = new CrossPointer(wP);
 
-                    //var controller = _layer.Complexes.Where(c => c.Controller.Contains(wP));
+                    _layer.Controller.IsVisible = true;
 
-                    var controller = _layer.Controller.Contains(wP)? _layer.Controller : null;
+                    //var controller = _layer.Controller.Contains(wP)? _layer.Controller : null;
 
-                    if(controller != null) {
-                        _controller = controller;
-                    }
+                    //if(controller != null) {
+                    //    _controller = controller;
+                    //}
                 }
             }
         }
@@ -99,6 +100,8 @@ namespace TaskMaker {
                     var wP = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
                     pointer.Location = wP;
+                    _layer.Controller.Location = wP;
+
                     //_controller.Location = wP;
 
                     // Interpolation

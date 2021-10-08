@@ -135,17 +135,20 @@ namespace TaskMaker.SimplicialMapping {
 
     public class ComplexBary {
         public bool IsSet { get; set; } = false;
-        public List<Entity> Basis { get; private set; } = new List<Entity>();
-        public List<Simplex> Simplices { get; set; } = new List<Simplex>();
+        public List<Entity> Basis { get; private set; }
+        public List<Simplex> Complex { get; private set; }
         public Exterior Exterior { get; set; }
 
-        private SimplexBary[] Barys => Simplices.Select(s => s.Bary).ToArray();
+        private SimplexBary[] Barys => Complex.Select(s => s.Bary).ToArray();
         private int[] _shape;
         private NDArray _wTensor;
         private int _cursor = 0;
 
-        public ComplexBary(List<Entity> basis) {
+        public ComplexBary(List<Entity> basis, List<Simplex> complex, Exterior exterior) {
             Basis = basis;
+            Complex = complex;
+            Exterior = exterior;
+
             _shape = new int[] { Basis.Count };
             _wTensor = np.ndarray(_shape);
         }
@@ -186,7 +189,6 @@ namespace TaskMaker.SimplicialMapping {
                 
                 return -1;
             }
-
         }
 
         public NDArray Calculate(float[] lambda) {
@@ -258,13 +260,69 @@ namespace TaskMaker.SimplicialMapping {
                 }
             }
 
+            foreach(var r in Exterior.Regions) {
+                if (r.GetType() == typeof(VoronoiRegion_Rect)) {
+                    var bary = r.GetBary();
+                    var basis = bary.Basis;
+                    var lambdas = bary.GetLambdas(p);
+
+                    if (!r.Contains(p)) {
+                        lambdas = bary.GetZeroLambdas();
+                    }
+
+                    for(var idx = 0; idx < basis.Count; ++idx) {
+                        results[basis[idx]] += lambdas[idx];
+                    }
+                }
+                else if (r.GetType() == typeof(VoronoiRegion_CircularSector)) {
+                    if ((r as VoronoiRegion_CircularSector).IsSingleGovernor) {
+                        var bary = r.GetBary();
+                        var basis = bary.Basis;
+                        var lambdas = bary.GetLambdas(p);
+
+                        if (!r.Contains(p)) {
+                            lambdas = bary.GetZeroLambdas();
+                        }
+
+                        for (var idx = 0; idx < basis.Count; ++idx) {
+                            results[basis[idx]] += lambdas[idx];
+                        }
+                    }
+                    else {
+
+                        var (bary0, bary1) = (r as VoronoiRegion_CircularSector).GetBarys();
+                        var basis0 = bary0.Basis;
+                        var basis1 = bary1.Basis;
+                        var lambdas0 = bary0.GetLambdas(p);
+                        var lambdas1 = bary1.GetLambdas(p);
+                        var (f0, f1) = (r as VoronoiRegion_CircularSector).GetFactors(p);
+
+                        if (!r.Contains(p)) {
+                            lambdas0 = bary0.GetZeroLambdas();
+                            lambdas1 = bary1.GetZeroLambdas();
+                        }
+
+                        for (var idx = 0; idx < basis0.Count; ++idx) {
+                            results[basis0[idx]] += f0 * lambdas0[idx];
+                        }
+
+                        for (var idx = 0; idx < basis0.Count; ++idx) {
+                            results[basis1[idx]] += f1 * lambdas1[idx];
+                        }
+                    }
+
+                }
+            }
+
             return results;
         }
 
-        public void Interpolate(SKPoint p) {
+        public float[] Interpolate(SKPoint p) {
             var dict = GetLambdas(p);
             var lambda = Basis.Select(b => dict[b]).ToArray();
             var result = Calculate(lambda);
+
+            return result.ToArray<float>();
         }
     }
 

@@ -187,7 +187,7 @@ namespace TaskMaker {
             if (PairingStart) {
                 SelectedLayer.Entities[0].IsSelected = true;
                 PairingStart = false;
-                SelectedLayer.Complex.Bary.BeginSetting(2);
+                SelectedLayer.Bary.BeginSetting(2);
 
                 var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
 
@@ -197,7 +197,7 @@ namespace TaskMaker {
                 return;
             }
             else {
-                var bary = SelectedLayer.Complex.Bary;
+                var bary = SelectedLayer.Bary;
                 var target = SelectedLayer.BindedTarget;
                 var nextIdx = bary.SetTensor2D(target.CreateTargetState().ToVector().ToArray());
 
@@ -413,6 +413,7 @@ namespace TaskMaker {
                 //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
+                SelectedLayer.Controller.Location = wLocation;
                 SelectedLayer.InterpolateTensor(wLocation);
                 //_canvas.SelectedLayer.Interpolate(wLocation);
                 _canvas.PointerTrace.Update(wLocation);

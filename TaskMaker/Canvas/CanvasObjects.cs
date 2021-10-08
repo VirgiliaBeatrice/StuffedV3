@@ -147,23 +147,9 @@ namespace TaskMaker {
         public Target BindedTarget { get; set; }
         #endregion
 
-        public object Input { get; set; }
-        public object Output { get; set; }
-
         private List<Layer> _children = new List<Layer>();
 
-
-        //public List<SimplicialComplex> Complexes { get; set; } = new List<SimplicialComplex>();
-        //public Vector<float> ControllerVector {
-        //    get {
-        //        var mat = Matrix<float>.Build.DenseOfColumnVectors(Complexes.Select(c => c.Controller.Location.ToVector()));
-
-        //        return Vector<float>.Build.DenseOfArray(mat.ToColumnMajorArray());
-        //    }
-        //}
- 
-
-        //public List<Exterior> Exteriors { get; set; } = new List<Exterior>();
+        public ComplexBary Bary;
 
         public LayerStatus LayerStatus {
             get {
@@ -181,7 +167,9 @@ namespace TaskMaker {
         public Layer(string name) {
             Name = name;
 
-            Complex = new SimplicialComplex(Entities);
+            Complex = new SimplicialComplex();
+            Exterior = new Exterior();
+            Bary = new ComplexBary(Entities, Complex, Exterior);
         }
 
         public void Add(Layer child) {
@@ -196,6 +184,7 @@ namespace TaskMaker {
 
         public void CreateExterior() {
             Exterior = Complex.CreateExterior();
+            Bary.Exterior = Exterior;
         }
 
         public void Reset() {
@@ -205,7 +194,14 @@ namespace TaskMaker {
         }
 
         public void InterpolateTensor(SKPoint p) {
-            Complex.Interpolate(p);
+            if (BindedTarget == null)
+                return;
+
+            var results = Bary.Interpolate(p);
+
+            BindedTarget.FromVector(Vector<float>.Build.Dense(results));
+            //Complex.Interpolate(p);
+            //Exterior.Interpolate(p);
         }
 
         public void Interpolate(SKPoint p) {
@@ -826,11 +822,9 @@ namespace TaskMaker {
         private CircularList<Entity> _extremes = new CircularList<Entity>();
         private VoronoiRegions voronoiRegions = new VoronoiRegions();
 
-        public ComplexBary Bary;
+        //public ComplexBary Bary;
 
-        public SimplicialComplex(List<Entity> entities) {
-            Bary = new ComplexBary(entities);
-        }
+        public SimplicialComplex() { }
 
         public new void Add(Simplex simplex) {
             var edge0 = new Edge_v2();
@@ -850,7 +844,6 @@ namespace TaskMaker {
             if (!edges.Any(e => e.SetEquals(edge2)))
                 edges.Add(edge2);
 
-            Bary.Simplices.Add(simplex);
             base.Add(simplex);
         }
 
@@ -957,10 +950,6 @@ namespace TaskMaker {
 
         public Exterior CreateExterior() => Exterior.CreateExterior(_extremes.Select(e => e.Value).ToArray(), ToArray());
 
-
-        public void Interpolate(SKPoint p) {
-            Bary.Interpolate(p);
-        }
 
         public Vector<float> GetInterpolatedConfigs(SKPoint p) {
             var values = new List<Vector<float>>();
