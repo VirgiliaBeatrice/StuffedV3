@@ -188,7 +188,12 @@ namespace TaskMaker {
                 SelectedLayer.Entities[0].IsSelected = true;
                 PairingStart = false;
                 SelectedLayer.Complex.Bary.BeginSetting(2);
-                
+
+                var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
+
+                MessageBox.Show($"Next: {content}",
+                "Information",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             else {
@@ -200,7 +205,8 @@ namespace TaskMaker {
                     SelectedLayer.Reset();
                     SelectedLayer.Entities[nextIdx].IsSelected = true;
 
-                    MessageBox.Show($"Next: {SelectedLayer.Entities[nextIdx]}",
+                    var content = $"{SelectedLayer.Entities[nextIdx - 1]} is set. \r\nNext: {SelectedLayer.Entities[nextIdx]}";
+                    MessageBox.Show($"{content}",
                     "Information",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -208,7 +214,7 @@ namespace TaskMaker {
                     SelectedLayer.Reset();
                     PairingStart = true;
 
-                    MessageBox.Show("All paired.",
+                    MessageBox.Show("All entites are paired.",
                     "Information",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } 

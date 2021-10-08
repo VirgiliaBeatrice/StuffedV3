@@ -153,31 +153,40 @@ namespace TaskMaker.SimplicialMapping {
         private bool HasNext() {
             return _cursor < _wTensor.shape[1] - 1;
         }
-        private void MoveNext() {
-            _cursor++;
-        }
 
         public void BeginSetting(int dim) {
             _shape = new int[] { dim, Basis.Count };
             _wTensor = np.ndarray(_shape);
         }
 
+        public int GetCurrentCursor() => _cursor;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns>Next index if this tensor is not fully set.</returns>
         public int SetTensor2D(float[] element) {
             if (HasNext()) {
-                IsSet = false;
                 _wTensor[$":,{_cursor}"] = element;
                 Basis[_cursor].IsSet = true;
-                MoveNext();
-                
+
+                IsSet = false;
+                _cursor++;
+
                 return _cursor;
             }
             else {
-                // Auto reset
-                _cursor = 0;
-                IsSet = true;
+                _wTensor[$":,{_cursor}"] = element;
+                Basis[_cursor].IsSet = true;
 
+                // Auto reset
+                IsSet = true;
+                _cursor = 0;
+                
                 return -1;
             }
+
         }
 
         public NDArray Calculate(float[] lambda) {
