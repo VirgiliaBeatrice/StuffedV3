@@ -3,6 +3,7 @@ using SkiaSharp.Views.Desktop;
 using System;
 using System.Linq;
 using System.Windows.Forms;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace TaskMaker {
     public partial class TinyCanvasForm : Form {
@@ -105,7 +106,10 @@ namespace TaskMaker {
                     //_controller.Location = wP;
 
                     // Interpolation
-                    _layer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
+                    //_layer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
+                    var result = _layer.Bary.Interpolate(wP);
+
+                    _layer.BindedTarget.FromVector(Vector<float>.Build.Dense(result));
                 }
             }
         }

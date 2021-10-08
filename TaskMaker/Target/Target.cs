@@ -86,7 +86,7 @@ namespace TaskMaker {
 
             for (int i = 0; i < vector.Count / 2; ++i) {
                 Layers[i].Controller.Location = new SKPoint(vector[i * 2], vector[i * 2 + 1]);
-                //Layers[i].Interpolate(Layers[i].Controller.Location);
+                Layers[i].InterpolateTensor(Layers[i].Controller.Location);
             }
         }
 
