@@ -9,6 +9,14 @@ using SkiaSharp;
 
 namespace MathNetExtension {
     public static class MyExtension {
+        public static float[] ToArray(this SKPoint p) {
+            return new float[] { p.X, p.Y };
+        }
+
+        public static float[] ToArray(this Point p) {
+            return new float[] { p.X, p.Y };
+        }
+
         public static Vector<float> ToVector(this Point point) {
             return Vector<float>.Build.Dense(new float[] { point.X, point.Y });
         }

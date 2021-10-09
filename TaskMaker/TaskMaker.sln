@@ -5,22 +5,42 @@ VisualStudioVersion = 16.0.31624.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskMaker", "TaskMaker.csproj", "{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskMakerTests", "..\TaskMakerTests\TaskMakerTests.csproj", "{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Debug|x64.ActiveCfg = Debug|x64
+		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Debug|x64.Build.0 = Debug|x64
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Debug|x86.ActiveCfg = Debug|x86
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Debug|x86.Build.0 = Debug|x86
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Release|x64.ActiveCfg = Release|x64
+		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Release|x64.Build.0 = Release|x64
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Release|x86.ActiveCfg = Release|x86
 		{ED5BC79D-BE0C-4465-B486-CC86E5860BAE}.Release|x86.Build.0 = Release|x86
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Debug|x64.ActiveCfg = Debug|x64
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Debug|x64.Build.0 = Debug|x64
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Debug|x86.Build.0 = Debug|Any CPU
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Release|x64.ActiveCfg = Release|x64
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Release|x64.Build.0 = Release|x64
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Release|x86.ActiveCfg = Release|Any CPU
+		{15CB88DB-0D81-40F2-BDBF-9BDD2F22FEBC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

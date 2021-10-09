@@ -13,6 +13,7 @@ using TaskMaker.SimplicialMapping;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using TaskMaker.Mapping;
+using System.Diagnostics;
 
 namespace TaskMaker {
 
@@ -150,7 +151,8 @@ namespace TaskMaker {
 
         private List<Layer> _children = new List<Layer>();
 
-        public ComplexBary Bary;
+        //public ComplexBary Bary;
+        public MultiBary MultiBary;
 
         public LayerStatus LayerStatus {
             get {
@@ -170,7 +172,10 @@ namespace TaskMaker {
 
             Complex = new SimplicialComplex();
             Exterior = new Exterior();
-            Bary = new ComplexBary(Entities, Complex, Exterior);
+            //Bary = new ComplexBary(Entities, Complex, Exterior);
+            MultiBary = new MultiBary();
+
+            MultiBary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
         }
 
         public void Add(Layer child) {
@@ -185,7 +190,7 @@ namespace TaskMaker {
 
         public void CreateExterior() {
             Exterior = Complex.CreateExterior();
-            Bary.Exterior = Exterior;
+            //Bary.Exterior = Exterior;
         }
 
         public void Reset() {
@@ -198,27 +203,12 @@ namespace TaskMaker {
             if (BindedTarget == null)
                 return;
 
-            var results = Bary.Interpolate(p);
+            //var results = Bary.Interpolate(p);
+            var results = MultiBary.Interpolate(p);
 
-            BindedTarget.FromVector(Vector<float>.Build.Dense(results));
-            //Complex.Interpolate(p);
-            //Exterior.Interpolate(p);
-        }
+            //Debug.Assert(results.SequenceEqual(resultsNew));
 
-        public void Interpolate(SKPoint p) {
-            if (BindedTarget == null)
-                return;
-
-            // Input ==InputBary.==> Lambdas ==OutputBary.==> Output
-            var complexConfigs = Complex.GetInterpolatedConfigs(p);
-            var exteriorConfigs = Exterior.GetInterpolatedConfigs(p);
-
-            BindedTarget.FromVector(complexConfigs + exteriorConfigs);
-        }
-
-        public void GetLambdas(SKPoint p) {
-            var complexLambdas = Complex.GetInterpolatedLambdas(p);
-            var exteriorLambdas = Exterior.GetInterpolatedLambdas(p);
+            BindedTarget.FromVector(Vector<float>.Build.Dense(results.Select(r => (float)r).ToArray()));
         }
 
         public void ShowController() {

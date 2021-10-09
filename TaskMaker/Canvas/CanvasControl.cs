@@ -187,8 +187,9 @@ namespace TaskMaker {
             if (PairingStart) {
                 SelectedLayer.Entities[0].IsSelected = true;
                 PairingStart = false;
-                SelectedLayer.Bary.BeginSetting(SelectedLayer.BindedTarget.Dimension);
+                //SelectedLayer.Bary.BeginSetting(SelectedLayer.BindedTarget.Dimension);
                 //SelectedLayer.Bary.BeginSetting(2);
+                SelectedLayer.MultiBary.SetComponent();
 
                 var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
 
@@ -198,15 +199,15 @@ namespace TaskMaker {
                 return;
             }
             else {
-                var bary = SelectedLayer.Bary;
+                var bary = SelectedLayer.MultiBary;
                 var target = SelectedLayer.BindedTarget;
-                var nextIdx = bary.SetTensor2D(target.CreateTargetState().ToVector().ToArray());
+                var cursor = bary.CurrentCursor;
+                var isSet = bary.SetComponent(target.CreateTargetState().ToVector().ToArray());
 
-                if (nextIdx != -1) {
+                if (!isSet) {
                     SelectedLayer.Reset();
-                    SelectedLayer.Entities[nextIdx].IsSelected = true;
 
-                    var content = $"{SelectedLayer.Entities[nextIdx - 1]} is set. \r\nNext: {SelectedLayer.Entities[nextIdx]}";
+                    var content = $"{SelectedLayer.Entities[cursor[0]]} is set. \r\nNext: {SelectedLayer.Entities[cursor[0] + 1]}";
                     MessageBox.Show($"{content}",
                     "Information",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);

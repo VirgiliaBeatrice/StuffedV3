@@ -19,6 +19,7 @@ namespace TaskMaker {
 
             // Clear previous simplicial complex
             Complex.Clear();
+            MultiBary.Clear();
 
             if (selectedEntities.Count() < 3) {
                 return;
@@ -36,6 +37,9 @@ namespace TaskMaker {
             Reset();
 
             Triangulate(selectedEntities);
+
+            // Update multibary
+            MultiBary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
         }
 
         private void Triangulate_Simplex(List<Entity> entities) {
