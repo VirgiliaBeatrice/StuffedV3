@@ -11,13 +11,7 @@ namespace TaskMaker {
     public abstract class VoronoiRegion {
         public abstract SKPoint this[int index] { get; }
         public abstract void Draw(SKCanvas sKCanvas);
-        //public abstract void Interpolate(SKPoint p);
-        public abstract Vector<float> Interpolate(SKPoint p);
         public abstract bool Contains(SKPoint p);
-        public abstract Vector<float> GetZeroTargetVector();
-        public abstract Vector<float> GetInterpolatedTargetVector(SKPoint p);
-        public abstract Vector<float> GetInterpolatedLambdas(SKPoint p);
-        public abstract Vector<float> GetZeroLambdas(SKPoint p);
         public abstract SimplexBary GetBary();
     }
 
@@ -88,12 +82,12 @@ namespace TaskMaker {
             return new SKPoint[] { a, b, bP, aP };
         }
 
-        public override Vector<float> Interpolate(SKPoint p) {
-            if (Contains(p))
-                return Governor.GetInterpolatedTargetVector(p);
-            else
-                return Governor.GetZeroTargetVector();
-        }
+        //public override Vector<float> Interpolate(SKPoint p) {
+        //    if (Contains(p))
+        //        return Governor.GetInterpolatedTargetVector(p);
+        //    else
+        //        return Governor.GetZeroTargetVector();
+        //}
 
 
         // 2-------------------3
@@ -119,17 +113,17 @@ namespace TaskMaker {
             return Governor.Bary;
         }
 
-        public override Vector<float> GetZeroTargetVector() => Governor.GetZeroTargetVector();
+        //public override Vector<float> GetZeroTargetVector() => Governor.GetZeroTargetVector();
 
-        public override Vector<float> GetInterpolatedTargetVector(SKPoint p) => Governor.GetInterpolatedTargetVector(p);
+        //public override Vector<float> GetInterpolatedTargetVector(SKPoint p) => Governor.GetInterpolatedTargetVector(p);
 
-        public override Vector<float> GetInterpolatedLambdas(SKPoint p) {
-            return Governor.GetLambdas(p);
-        }
+        //public override Vector<float> GetInterpolatedLambdas(SKPoint p) {
+        //    return Governor.GetLambdas(p);
+        //}
 
-        public override Vector<float> GetZeroLambdas(SKPoint p) {
-            return Governor.GetZeroLambdas(p);
-        }
+        //public override Vector<float> GetZeroLambdas(SKPoint p) {
+        //    return Governor.GetZeroLambdas(p);
+        //}
     }
 
     public class VoronoiRegion_CircularSector : VoronoiRegion {
@@ -208,87 +202,87 @@ namespace TaskMaker {
             return ((float)(theta1 / theta), (float)(theta0 / theta));
         }
 
-        public override Vector<float> Interpolate(SKPoint p) {
-            if (Contains(p)) {
-                if (Governor1 == null) {
-                    return Governor0.GetLambdas(p);
-                    //Console.WriteLine(this);
-                    //Console.WriteLine(this.Governor0.GetLambdasExterior(p));
-                    //Console.WriteLine("---");
-                }
-                else {
-                    var o = this[0];
-                    var a = this[1];
-                    var b = this[2];
+        //public override Vector<float> Interpolate(SKPoint p) {
+        //    if (Contains(p)) {
+        //        if (Governor1 == null) {
+        //            return Governor0.GetLambdas(p);
+        //            //Console.WriteLine(this);
+        //            //Console.WriteLine(this.Governor0.GetLambdasExterior(p));
+        //            //Console.WriteLine("---");
+        //        }
+        //        else {
+        //            var o = this[0];
+        //            var a = this[1];
+        //            var b = this[2];
 
-                    var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
-                    var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
-                    var theta = theta0 + theta1;
-                    var lambdas0 = Governor0.GetLambdas(p);
-                    var lambdas1 = Governor1.GetLambdas(p);
+        //            var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
+        //            var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
+        //            var theta = theta0 + theta1;
+        //            var lambdas0 = Governor0.GetLambdas(p);
+        //            var lambdas1 = Governor1.GetLambdas(p);
 
-                    //Console.WriteLine(this);
-                    //Console.WriteLine(lambdas0);
-                    //Console.WriteLine(lambdas1);
-                    //Console.WriteLine(lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta)));
-                    //Console.WriteLine("---");
-                    return lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta));
-                }
-            }
-            else {
-                return Governor0.Map.MapToZero();
-            }
+        //            //Console.WriteLine(this);
+        //            //Console.WriteLine(lambdas0);
+        //            //Console.WriteLine(lambdas1);
+        //            //Console.WriteLine(lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta)));
+        //            //Console.WriteLine("---");
+        //            return lambdas0.Multiply((float)(theta1 / theta)) + lambdas1.Multiply((float)(theta0 / theta));
+        //        }
+        //    }
+        //    else {
+        //        return Governor0.Map.MapToZero();
+        //    }
 
-        }
+        //}
 
         public override void Draw(SKCanvas sKCanvas) {
             sKCanvas.DrawPath(circularSector, fill);
             sKCanvas.DrawPath(circularSector, stroke);
         }
 
-        public override Vector<float> GetZeroTargetVector() => Governor0.GetZeroTargetVector();
+        //public override Vector<float> GetZeroTargetVector() => Governor0.GetZeroTargetVector();
 
-        public override Vector<float> GetInterpolatedTargetVector(SKPoint p) {
-            if (Governor1 == null) {
-                return Governor0.GetInterpolatedTargetVector(p);
-            }
-            else {
-                var o = this[0];
-                var a = this[1];
-                var b = this[2];
+        //public override Vector<float> GetInterpolatedTargetVector(SKPoint p) {
+        //    if (Governor1 == null) {
+        //        return Governor0.GetInterpolatedTargetVector(p);
+        //    }
+        //    else {
+        //        var o = this[0];
+        //        var a = this[1];
+        //        var b = this[2];
 
-                var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
-                var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
-                var theta = theta0 + theta1;
-                var target0 = Governor0.GetInterpolatedTargetVector(p);
-                var target1 = Governor1.GetInterpolatedTargetVector(p);
+        //        var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
+        //        var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
+        //        var theta = theta0 + theta1;
+        //        var target0 = Governor0.GetInterpolatedTargetVector(p);
+        //        var target1 = Governor1.GetInterpolatedTargetVector(p);
 
-                return target0 * (float)(theta1 / theta) + target1 * (float)(theta0 / theta);
-            }
-        }
+        //        return target0 * (float)(theta1 / theta) + target1 * (float)(theta0 / theta);
+        //    }
+        //}
 
-        public override Vector<float> GetInterpolatedLambdas(SKPoint p) {
-            if (Governor1 == null) {
-                return Governor0.GetLambdas(p);
-            }
-            else {
-                var o = this[0];
-                var a = this[1];
-                var b = this[2];
+        //public override Vector<float> GetInterpolatedLambdas(SKPoint p) {
+        //    if (Governor1 == null) {
+        //        return Governor0.GetLambdas(p);
+        //    }
+        //    else {
+        //        var o = this[0];
+        //        var a = this[1];
+        //        var b = this[2];
 
-                var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
-                var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
-                var theta = theta0 + theta1;
-                var target0 = Governor0.GetLambdas(p);
-                var target1 = Governor1.GetLambdas(p);
+        //        var theta0 = Math.Abs(Math.Asin((a - o).Cross(p - o) / ((a - o).Length * (p - o).Length)));
+        //        var theta1 = Math.Abs(Math.Asin((b - o).Cross(p - o) / ((b - o).Length * (p - o).Length)));
+        //        var theta = theta0 + theta1;
+        //        var target0 = Governor0.GetLambdas(p);
+        //        var target1 = Governor1.GetLambdas(p);
 
-                return target0 * (float)(theta1 / theta) + target1 * (float)(theta0 / theta);
-            }
-        }
+        //        return target0 * (float)(theta1 / theta) + target1 * (float)(theta0 / theta);
+        //    }
+        //}
 
-        public override Vector<float> GetZeroLambdas(SKPoint p) {
-            return Governor0.GetZeroLambdas(p);
-        }
+        //public override Vector<float> GetZeroLambdas(SKPoint p) {
+        //    return Governor0.GetZeroLambdas(p);
+        //}
 
 
     }

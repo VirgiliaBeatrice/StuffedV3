@@ -98,10 +98,7 @@ namespace TaskMaker.SimplicialMapping {
         public List<Entity> Basis;
         public int Dimension => Basis.Count;
 
-        private Matrix<float> A;
-        private Matrix<float> InverseA;
-
-        private NDarray _A;
+        private NDarray A;
 
         public SimplexBary(IEnumerable<Entity> basis) {
             Basis = new List<Entity>(basis);
@@ -112,32 +109,20 @@ namespace TaskMaker.SimplicialMapping {
             var basis = np.array(iter).T;
             var affineFactor = np.ones(Dimension);
 
-            _A = np.vstack(affineFactor, basis);
-
-            //var vBasis = Basis.Select(b => b.ToVector()).ToList();
-            //A = Matrix<float>.Build.DenseOfColumnVectors(vBasis);
-            //A = A.InsertRow(0, Vector<float>.Build.Dense(Dimension, 1.0f));
-
-            //InverseA = A.Inverse();
+            A = np.vstack(affineFactor, basis);
         }
 
         public double[] GetLambdas(SKPoint p) {
             InitializeA();
 
             var b = np.array(p.ToArray());
-            var exB = np.hstack(np.ones(1), b);
+            var B = np.hstack(np.ones(1), b);
 
-            return np.linalg.solve(_A, exB).GetData<double>();
-
-            //var vP = p.ToVector().ToColumnMatrix();
-            //vP = vP.InsertRow(0, Vector<float>.Build.Dense(1, 1.0f));
-
-            //return A.Solve(vP.Column(0)).ToArray();
+            return np.linalg.solve(A, B).GetData<double>();
         }
 
         public double[] GetZeroLambdas() {
             return np.zeros(Dimension).GetData<double>();
-            //return Vector<float>.Build.Dense(Dimension, 0).ToArray();
         }
     }
 
@@ -363,224 +348,6 @@ namespace TaskMaker.SimplicialMapping {
             var result = Calculate(lambdas.ToArray());
 
             return result.GetData<double>();
-        }
-    }
-
-    public class ComplexBary {
-        public bool IsSet { get; set; } = false;
-        public List<Entity> Basis { get; private set; }
-        public List<Simplex> Complex { get; private set; }
-        public Exterior Exterior { get; set; }
-
-        private SimplexBary[] Barys => Complex.Select(s => s.Bary).ToArray();
-        private int[] _shape;
-        private NDarray _wTensor;
-        private int _cursor = 0;
-
-        public ComplexBary(List<Entity> basis, List<Simplex> complex, Exterior exterior) {
-            Basis = basis;
-            Complex = complex;
-            Exterior = exterior;
-
-            _shape = new int[] { Basis.Count };
-            _wTensor = np.empty(_shape);
-        }
-
-        private bool HasNext() {
-            return _cursor < _wTensor.shape[1] - 1;
-        }
-
-        public void BeginSetting(int dim) {
-            _shape = new int[] { dim, Basis.Count };
-            _wTensor = np.empty(_shape);
-        }
-
-        public int GetCurrentCursor() => _cursor;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="element"></param>
-        /// <returns>Next index if this tensor is not fully set.</returns>
-        public int SetTensor2D(float[] element) {
-            if (HasNext()) {
-                _wTensor[$":,{_cursor}"] = element.Select(e=> (double)e).ToArray();
-                Basis[_cursor].IsSet = true;
-
-                IsSet = false;
-                _cursor++;
-
-                return _cursor;
-            }
-            else {
-                _wTensor[$":,{_cursor}"] = element.Select(e => (double)e).ToArray();
-                Basis[_cursor].IsSet = true;
-
-                // Auto reset
-                IsSet = true;
-                _cursor = 0;
-                
-                return -1;
-            }
-        }
-
-        public NDarray Calculate(double[] lambda) {
-            if (IsSet) {
-                var kronProd = np.array(lambda).flatten();
-                var elements = new List<double>();
-
-                for(var idx = 0; idx < _wTensor.shape[0]; ++idx) {
-                    elements.Add(np.dot(kronProd, _wTensor[$"{idx},:"]).flatten().GetData<double>()[0]);
-                }
-
-                return np.array(elements.ToArray());
-            }
-
-            return null;
-        }
-
-
-
-        public Dictionary<Entity, double> GetLambdas(SKPoint p) {
-            var results = new Dictionary<Entity, double>();
-
-            Basis.ForEach(b => results.Add(b, 0.0f));
-
-            foreach(var bary in Barys) {
-                var basis = bary.Basis;
-                var lambdas = bary.GetLambdas(p);
-
-                if (lambdas.Any(e => e < 0.0f)) {
-                    lambdas = bary.GetZeroLambdas();
-                }
-
-                for(var idx = 0; idx < basis.Count; ++idx) {
-                    results[basis[idx]] += lambdas[idx];
-                }
-            }
-
-            //Console.WriteLine(string.Join(", ", results.Keys.Select(k => results[k])));
-            if (!results.All(e => e.Value == 0))
-                return results;
-
-            foreach(var r in Exterior.Regions) {
-                if (r.GetType() == typeof(VoronoiRegion_Rect)) {
-                    var bary = r.GetBary();
-                    var basis = bary.Basis;
-                    var lambdas = bary.GetLambdas(p);
-
-                    if (!r.Contains(p)) {
-                        lambdas = bary.GetZeroLambdas();
-                    }
-
-                    for(var idx = 0; idx < basis.Count; ++idx) {
-                        results[basis[idx]] += lambdas[idx];
-                    }
-                }
-                else if (r.GetType() == typeof(VoronoiRegion_CircularSector)) {
-                    if ((r as VoronoiRegion_CircularSector).IsSingleGovernor) {
-                        var bary = r.GetBary();
-                        var basis = bary.Basis;
-                        var lambdas = bary.GetLambdas(p);
-
-                        if (!r.Contains(p)) {
-                            lambdas = bary.GetZeroLambdas();
-                        }
-
-                        for (var idx = 0; idx < basis.Count; ++idx) {
-                            results[basis[idx]] += lambdas[idx];
-                        }
-                    }
-                    else {
-
-                        var (bary0, bary1) = (r as VoronoiRegion_CircularSector).GetBarys();
-                        var basis0 = bary0.Basis;
-                        var basis1 = bary1.Basis;
-                        var lambdas0 = bary0.GetLambdas(p);
-                        var lambdas1 = bary1.GetLambdas(p);
-                        var (f0, f1) = (r as VoronoiRegion_CircularSector).GetFactors(p);
-
-                        if (!r.Contains(p)) {
-                            lambdas0 = bary0.GetZeroLambdas();
-                            lambdas1 = bary1.GetZeroLambdas();
-                        }
-
-                        for (var idx = 0; idx < basis0.Count; ++idx) {
-                            results[basis0[idx]] += f0 * lambdas0[idx];
-                        }
-
-                        for (var idx = 0; idx < basis0.Count; ++idx) {
-                            results[basis1[idx]] += f1 * lambdas1[idx];
-                        }
-                    }
-
-                }
-            }
-
-            //Console.WriteLine(string.Join(", ", results.Keys.Select(k => results[k])));
-            return results;
-        }
-
-        public double[] Interpolate(SKPoint p) {
-            var dict = GetLambdas(p);
-            var lambda = Basis.Select(b => dict[b]).ToArray();
-            var result = Calculate(lambda);
-
-            return result.GetData<double>();
-        }
-    }
-
-    public class SimplicalMap {
-        public BarycentricCoordinates InputBary { get; set; }
-        public BarycentricCoordinates OutputBary { get; set; }
-        public List<IVectorizable> Inputs { get; set; } = new List<IVectorizable>();
-        public List<IVectorizable> Outputs { get; set; } = new List<IVectorizable>();
-
-        private int _dimension = 3;
-
-        public SimplicalMap() {
-            InputBary = new BarycentricCoordinates(_dimension);
-            OutputBary = new BarycentricCoordinates(_dimension);
-        }
-
-        private void SetInputBary() {
-            InputBary.UpdateVertices(Inputs.Select(i => i.ToVector()).ToArray());
-        }
-
-        private void SetOutputBary() {
-            OutputBary.UpdateVertices(Outputs.Select(o => o.ToVector()).ToArray());
-        }
-
-        public void Invalidate() {
-            SetInputBary();
-            SetOutputBary();
-        }
-
-        public void Reset() {
-            Inputs.Clear();
-            Outputs.Clear();
-        }
-
-        public void SetPair(IVectorizable input, IVectorizable output) {
-            if (Inputs.Count >= _dimension) {
-                throw new Exception("Map is fully configed.");
-            }
-            else {
-                Inputs.Add(input);
-
-                if (output != null)
-                    Outputs.Add(output);
-
-                Invalidate();
-            }
-        }
-
-        public Vector<float> GetLambdas(Vector<float> input) => InputBary.GetLambdas(input);
-
-        public Vector<float> Map(Vector<float> input) => OutputBary.GetB(GetLambdas(input));
-
-        public Vector<float> MapToZero() {
-            return Vector<float>.Build.Dense(OutputBary.Vertices.First().Count, 0.0f);
         }
     }
 

@@ -703,7 +703,7 @@ namespace TaskMaker {
 
         //public bool IsPaired => this.Pairs.IsFullyPaired;
         //public Pairs Pairs { get; set; } = new Pairs();
-        public SimplicalMap Map { get; set; } = new SimplicalMap();
+        //public SimplicalMap Map { get; set; } = new SimplicalMap();
         public SimplexBary Bary { get; set; }
 
         private SKPaint fillPaint = new SKPaint {
@@ -730,7 +730,7 @@ namespace TaskMaker {
         public Simplex() { }
 
         public bool Contains(SKPoint p) {
-            var ret = GetLambdas(p);
+            var ret = Bary.GetLambdas(p);
 
             return ret.All(e => e >= 0);
         }
@@ -739,25 +739,18 @@ namespace TaskMaker {
             Vertices.ForEach(e => e.IsSelected = false);
         }
 
-        public Vector<float> GetLambdas(SKPoint p) => Map.GetLambdas(p.ToVector());
-
-        public Vector<float> GetZeroLambdas(SKPoint p) => Map.GetLambdas(p.ToVector()).Multiply(0.0f);
-
-        public Vector<float> GetInterpolatedTargetVector(SKPoint p) => Map.Map(p.ToVector());
-
-        public Vector<float> GetZeroTargetVector() => Map.MapToZero();
-
         public bool IsVertex(Entity e) {
             return Vertices.Contains(e);
         }
 
         public void Invalidate() {
-            Map.Reset();
+            //Map.Reset();
 
             // Invalidate all vertices pair
-            foreach (var v in Vertices) {
-                Map.SetPair(v, v.TargetState);
-            }
+
+            //foreach (var v in Vertices) {
+            //    Map.SetPair(v, v.TargetState);
+            //}
         }
 
         public void DrawThis(SKCanvas sKCanvas) {
@@ -945,33 +938,6 @@ namespace TaskMaker {
 
 
         public Exterior CreateExterior() => Exterior.CreateExterior(_extremes.Select(e => e.Value).ToArray(), ToArray());
-
-
-        public Vector<float> GetInterpolatedConfigs(SKPoint p) {
-            var values = new List<Vector<float>>();
-
-            foreach (var s in this) {
-                var target = s.Contains(p) ? s.GetInterpolatedTargetVector(p) : s.GetZeroTargetVector();
-
-                values.Add(target);
-            }
-
-            return values.Sum();
-        }
-
-        public Vector<float> GetInterpolatedLambdas(SKPoint p) {
-            var columns = new List<Vector<float>>();
-
-            foreach(var s in this) {
-                var lambdas = s.Contains(p) ? s.GetLambdas(p) : s.GetZeroLambdas(p);
-
-                columns.Add(lambdas);
-            }
-
-            var mat = Matrix<float>.Build.DenseOfColumnVectors(columns.ToArray());
-
-            return Vector<float>.Build.DenseOfArray(mat.AsColumnMajorArray());
-        }
 
         public void Draw(SKCanvas sKCanvas) {
             ForEach(s => s.DrawThis(sKCanvas));
