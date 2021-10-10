@@ -205,6 +205,15 @@
     <Compile Include="MotorController.Designer.cs">
       <DependentUpon>MotorController.cs</DependentUpon>
     </Compile>
+    <Compile Include="Node\Node.cs" />
+    <Compile Include="Node\NodeEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Node\NodeEditor.Designer.cs">
+      <DependentUpon>NodeEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Node\NodeShape.cs" />
+    <Compile Include="Node\UIComponents.cs" />
     <Compile Include="PCController\Board.cs" />
     <Compile Include="PCController\Boards.cs" />
     <Compile Include="PCController\CommandId.cs" />
@@ -264,6 +273,9 @@
     </Compile>
     <EmbeddedResource Include="MotorController.resx">
       <DependentUpon>MotorController.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Node\NodeEditor.resx">
+      <DependentUpon>NodeEditor.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PCController\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>

@@ -7,6 +7,7 @@ using TaskMaker.SimplicialMapping;
 using MathNetExtension;
 using System;
 using TaskMaker.MementoPattern;
+using Numpy;
 
 namespace TaskMaker {
     public abstract class Target : IVectorizable, IReflectable {

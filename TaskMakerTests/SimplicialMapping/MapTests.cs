@@ -11,10 +11,10 @@ using Numpy;
 namespace TaskMaker.SimplicialMapping.Tests {
     [TestClass()]
     public class MapTests {
-        private readonly MultiBary _multiBary;
+        private readonly NLinearMap _multiBary;
 
         public MapTests() {
-            _multiBary = new MultiBary();
+            _multiBary = new NLinearMap();
 
             var layer = new Layer("Test");
             layer.Entities = GetEntities();
@@ -24,10 +24,10 @@ namespace TaskMaker.SimplicialMapping.Tests {
             layer.Complex = new SimplicialComplex();
             layer.Triangulate();
 
-            _multiBary.AddBary(
-                layer.Entities.ToArray(),
-                layer.Complex.ToArray(),
-                layer.Exterior);
+            //_multiBary.AddBary(
+            //    layer.Entities.ToArray(),
+            //    layer.Complex.ToArray(),
+            //    layer.Exterior);
         }
 
         private List<Entity> GetEntities() {

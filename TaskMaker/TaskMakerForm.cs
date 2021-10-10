@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using TaskMaker.Mapping;
+using TaskMaker.Node;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -272,6 +273,12 @@ namespace TaskMaker {
                     canvasControl1.PairAll();
                     //canvasControl1.Pair();
                     e.Handled = true;
+                    break;
+                case Keys.N:
+                    var form = new NodeEditor();
+
+                    form.ShowDialog();
+                    form.Dispose();
                     break;
             }
 
@@ -543,11 +550,6 @@ namespace TaskMaker {
     }
 
     static public class Services {
-        //public Boards Boards { get; set; } = new Boards();
-        //public Motors Motors { get; set; } = new Motors();
-        //public Layer RootLayer { get; set; }
-        //public Layer SelectedLayer { get; set; }
-
         static public Caretaker Caretaker { get; set; }
         static public Boards Boards { get; set; } = new Boards();
         static public Motors Motors { get; set; } = new Motors();
@@ -555,5 +557,6 @@ namespace TaskMaker {
         static public TreeNode LayerTree { get; set; }
         static public Triangulation TriHandler { get; set; } = new Triangulation();
         static public Canvas Canvas { get; set; } = new Canvas();
+        static public Flow Flow { get; set; }
     }
 }

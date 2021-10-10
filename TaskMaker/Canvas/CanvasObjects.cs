@@ -151,8 +151,8 @@ namespace TaskMaker {
 
         private List<Layer> _children = new List<Layer>();
 
-        //public ComplexBary Bary;
-        public MultiBary MultiBary;
+        public ComplexBary Bary;
+        //public NLinearMap MultiBary;
 
         public LayerStatus LayerStatus {
             get {
@@ -172,10 +172,14 @@ namespace TaskMaker {
 
             Complex = new SimplicialComplex();
             Exterior = new Exterior();
-            //Bary = new ComplexBary(Entities, Complex, Exterior);
-            MultiBary = new MultiBary();
+            Bary = new ComplexBary();
+            //MultiBary = new NLinearMap();
 
-            MultiBary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
+            //MultiBary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
+        }
+
+        public void InvalidateBary() {
+            Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
         }
 
         public void Add(Layer child) {
@@ -199,16 +203,20 @@ namespace TaskMaker {
             _children.ForEach(c => c.Reset());
         }
 
+        public double[] GetLambda() {
+            return Bary.GetLambda(Controller.Location);
+        }
+
         public void InterpolateTensor(SKPoint p) {
             if (BindedTarget == null)
                 return;
 
             //var results = Bary.Interpolate(p);
-            var results = MultiBary.Interpolate(p);
+            //var results = MultiBary.Interpolate(p);
 
             //Debug.Assert(results.SequenceEqual(resultsNew));
 
-            BindedTarget.FromVector(Vector<float>.Build.Dense(results.Select(r => (float)r).ToArray()));
+            //BindedTarget.FromVector(Vector<float>.Build.Dense(results.Select(r => (float)r).ToArray()));
         }
 
         public void ShowController() {

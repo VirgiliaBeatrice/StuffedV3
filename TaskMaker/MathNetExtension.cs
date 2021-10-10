@@ -29,6 +29,10 @@ namespace MathNetExtension {
             return new SKPoint { X = vector[0], Y = vector[1] };
         }
 
+        public static SKPoint ToSKPoint(this Point point) {
+            return new SKPoint { X = point.X, Y = point.Y };
+        }
+
         public static Vector<float> Concatenate(this Vector<float> top, Vector<float> bottom) {
             var resultList = new List<float>();
 
@@ -69,6 +73,8 @@ namespace MathNetExtension {
         public static SKColor WithAlpha(this SKColor color, float percentage) {
             return color.WithAlpha((byte)(int)(percentage * 256));
         }
+
+        public static SKPoint GetMid(this SKRect rect) => new SKPoint(rect.MidX, rect.MidY);
 
         public static Vector<float> Sum(this List<Vector<float>> values) {
             var ret = values[0] * 0;

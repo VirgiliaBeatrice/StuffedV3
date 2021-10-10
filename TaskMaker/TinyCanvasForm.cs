@@ -108,9 +108,9 @@ namespace TaskMaker {
                     // Interpolation
                     //_layer.Interpolate(ViewportToWorld().MapPoint(e.Location.ToSKPoint()));
                     if (_layer.BindedTarget != null) {
-                        var result = _layer.MultiBary.Interpolate(wP);
+                        //var result = _layer.MultiBary.Interpolate(wP);
 
-                        _layer.BindedTarget.FromVector(Vector<float>.Build.Dense(result.Cast<float>().ToArray()));
+                        //_layer.BindedTarget.FromVector(Vector<float>.Build.Dense(result.Cast<float>().ToArray()));
                     }
                 }
             }

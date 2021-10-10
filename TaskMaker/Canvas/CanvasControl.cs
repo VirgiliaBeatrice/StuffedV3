@@ -184,43 +184,43 @@ namespace TaskMaker {
                 return;
             }
 
-            if (PairingStart) {
-                SelectedLayer.Entities[0].IsSelected = true;
-                PairingStart = false;
-                //SelectedLayer.Bary.BeginSetting(SelectedLayer.BindedTarget.Dimension);
-                //SelectedLayer.Bary.BeginSetting(2);
-                SelectedLayer.MultiBary.SetComponent();
+            //if (PairingStart) {
+            //    SelectedLayer.Entities[0].IsSelected = true;
+            //    PairingStart = false;
+            //    //SelectedLayer.Bary.BeginSetting(SelectedLayer.BindedTarget.Dimension);
+            //    //SelectedLayer.Bary.BeginSetting(2);
+            //    SelectedLayer.MultiBary.SetComponent();
 
-                var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
+            //    var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
 
-                MessageBox.Show($"Next: {content}",
-                "Information",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            else {
-                var bary = SelectedLayer.MultiBary;
-                var target = SelectedLayer.BindedTarget;
-                var cursor = bary.CurrentCursor;
-                var isSet = bary.SetComponent(target.CreateTargetState().ToVector().ToArray());
+            //    MessageBox.Show($"Next: {content}",
+            //    "Information",
+            //    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //    return;
+            //}
+            //else {
+            //    var bary = SelectedLayer.MultiBary;
+            //    var target = SelectedLayer.BindedTarget;
+            //    var cursor = bary.CurrentCursor;
+            //    var isSet = bary.SetComponent(target.CreateTargetState().ToVector().ToArray());
 
-                if (!isSet) {
-                    SelectedLayer.Reset();
+            //    if (!isSet) {
+            //        SelectedLayer.Reset();
 
-                    var content = $"{SelectedLayer.Entities[cursor[0]]} is set. \r\nNext: {SelectedLayer.Entities[cursor[0] + 1]}";
-                    MessageBox.Show($"{content}",
-                    "Information",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else {
-                    SelectedLayer.Reset();
-                    PairingStart = true;
+            //        var content = $"{SelectedLayer.Entities[cursor[0]]} is set. \r\nNext: {SelectedLayer.Entities[cursor[0] + 1]}";
+            //        MessageBox.Show($"{content}",
+            //        "Information",
+            //        MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //    }
+            //    else {
+            //        SelectedLayer.Reset();
+            //        PairingStart = true;
 
-                    MessageBox.Show("All entites are paired.",
-                    "Information",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                } 
-            }
+            //        MessageBox.Show("All entites are paired.",
+            //        "Information",
+            //        MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //    } 
+            //}
         }
 
         public void Pair() {
