@@ -6359,17 +6359,21 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Haoyan.Li\\.nuget\\packages\\": {}
+    "C:\\Users\\Haoyan.Li\\.nuget\\packages\\": {},
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Haoyan.Li\\Documents\\Repositories\\StuffedV3\\TaskMakerTests\\TaskMakerTests.csproj",
+      "projectUniqueName": "C:\\Users\\Haoyan.Li\\Documents\\repositories\\StuffedV3\\TaskMakerTests\\TaskMakerTests.csproj",
       "projectName": "TaskMakerTests",
-      "projectPath": "C:\\Users\\Haoyan.Li\\Documents\\Repositories\\StuffedV3\\TaskMakerTests\\TaskMakerTests.csproj",
+      "projectPath": "C:\\Users\\Haoyan.Li\\Documents\\repositories\\StuffedV3\\TaskMakerTests\\TaskMakerTests.csproj",
       "packagesPath": "C:\\Users\\Haoyan.Li\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Haoyan.Li\\Documents\\Repositories\\StuffedV3\\TaskMakerTests\\obj\\",
+      "outputPath": "C:\\Users\\Haoyan.Li\\Documents\\repositories\\StuffedV3\\TaskMakerTests\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+      ],
       "configFilePaths": [
         "C:\\Users\\Haoyan.Li\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
@@ -6385,8 +6389,8 @@
         "net5.0": {
           "targetAlias": "net5.0",
           "projectReferences": {
-            "C:\\Users\\Haoyan.Li\\Documents\\Repositories\\StuffedV3\\TaskMaker\\TaskMaker.csproj": {
-              "projectPath": "C:\\Users\\Haoyan.Li\\Documents\\Repositories\\StuffedV3\\TaskMaker\\TaskMaker.csproj"
+            "C:\\Users\\Haoyan.Li\\Documents\\repositories\\StuffedV3\\TaskMaker\\TaskMaker.csproj": {
+              "projectPath": "C:\\Users\\Haoyan.Li\\Documents\\repositories\\StuffedV3\\TaskMaker\\TaskMaker.csproj"
             }
           }
         }
