@@ -19,6 +19,7 @@ namespace TaskMaker.Node {
 
         private List<NodeBaseShape> _shapes = new List<NodeBaseShape>();
         private List<LinkShape> _links = new List<LinkShape>();
+        private IBehavior _behavior;
 
         public NodeEditor() {
             InitializeComponent();
@@ -64,19 +65,27 @@ namespace TaskMaker.Node {
             bLink.Targets = _links;
         }
 
+        private void ChangeBehavior(IBehavior behavior = null) {
+            _behavior?.UnregisterHandler();
+
+            _behavior = behavior;
+            _behavior?.RegisterHandler();
+        }
+
         private void NodeEditor_KeyPress(object sender, KeyPressEventArgs e) {
             switch (e.KeyChar) {
-            case 'i':
-                InitializeNodes();
-                break;
-            case 'm':
-                bMove.BindHandler();
-                bLink.ResetHandler();
-                break;
-            case 'l':
-                bLink.BindHandler();
-                bMove.ResetHandler();
-                break;
+                case 'i':
+                    InitializeNodes();
+                    break;
+                case 'm':
+                    ChangeBehavior(bMove);
+                    break;
+                case 'l':
+                    ChangeBehavior(bLink);
+                    break;
+                case (char)Keys.Escape:
+                    ChangeBehavior();
+                    break;
             }
         }
 
@@ -92,9 +101,39 @@ namespace TaskMaker.Node {
         private void _updateTimer_Tick(object sender, EventArgs e) {
             skglControl1.Invalidate();
         }
+
+        private void button1_Click(object sender, EventArgs e) {
+            InitializeNodes();
+
+        }
+
+        private void button2_Click(object sender, EventArgs e) {
+            var motor = new MotorNodeShape();
+            var motors = _shapes.OfType<MotorNodeShape>().ToArray();
+
+            motor.Label = $"Motor{motors.Count() + 1}";
+            motor.Location = new SKPoint(100, 100);
+
+            _shapes.Add(motor);
+        }
+
+        private void button3_Click(object sender, EventArgs e) {
+            var map = new MapNodeShape();
+            var maps = _shapes.OfType<MapNodeShape>().ToArray();
+
+            map.Label = $"Map{maps.Count() + 1}";
+            map.Location = new SKPoint(200, 200);
+
+            _shapes.Add(map);
+        }
     }
 
-    public class MoveObject {
+    public interface IBehavior {
+        void RegisterHandler();
+        void UnregisterHandler();
+    }
+
+    public class MoveObject : IBehavior {
         public Control Parent { get; set; }
         public List<NodeBaseShape> Shapes { get; set; }
 
@@ -102,7 +141,7 @@ namespace TaskMaker.Node {
         private SKPoint initialLocation;
         private NodeBaseShape shape;
 
-        public void BindHandler() {
+        public void RegisterHandler() {
             Parent.MouseMove += Parent_MouseMove;
             Parent.MouseDown += Parent_MouseDown;
             Parent.MouseUp += Parent_MouseUp;
@@ -144,14 +183,14 @@ namespace TaskMaker.Node {
             }
         }
 
-        public void ResetHandler() {
+        public void UnregisterHandler() {
             Parent.MouseMove -= Parent_MouseMove;
             Parent.MouseDown -= Parent_MouseDown;
             Parent.MouseUp -= Parent_MouseUp;
         }
     }
 
-    public class LinkNode {
+    public class LinkNode : IBehavior {
         public Control Parent { get; set; }
         public List<NodeBaseShape> Shapes { get; set; }
 
@@ -164,13 +203,13 @@ namespace TaskMaker.Node {
         private NodeBaseShape end;
         private LinkShape link;
 
-        public void BindHandler() {
+        public void RegisterHandler() {
             Parent.MouseMove += Parent_MouseMove;
             Parent.MouseDown += Parent_MouseDown;
             Parent.MouseUp += Parent_MouseUp;
         }
 
-        public void ResetHandler() {
+        public void UnregisterHandler() {
             Parent.MouseMove -= Parent_MouseMove;
             Parent.MouseDown -= Parent_MouseDown;
             Parent.MouseUp -= Parent_MouseUp;

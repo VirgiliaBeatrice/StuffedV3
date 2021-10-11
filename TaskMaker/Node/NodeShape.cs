@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SkiaSharp;
+using MathNetExtension;
 
 namespace TaskMaker.Node {
     public class LinkShape {
@@ -13,7 +14,8 @@ namespace TaskMaker.Node {
 
         public void Draw(SKCanvas sKCanvas) {
             var stroke = new SKPaint() {
-                Color = SKColor.Parse("#0F2540"),
+                Color = SKColor.Parse("#0F2540").WithAlpha(0.3f),
+                BlendMode= SKBlendMode.SrcOver,
                 IsAntialias = true,
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = 2.0f,
@@ -49,8 +51,13 @@ namespace TaskMaker.Node {
     public class PortShape {
         public SKPoint Location { get; set; }
         public LinkShape Binding { get; set; }
+        public bool IsVisible { get; set; } = true;
 
         public void Draw(SKCanvas sKCanvas) {
+            if (!IsVisible) {
+                return;
+            }
+
             var iconPaint = new SKPaint() {
                 Color = SKColor.Parse("#434343"),
                 IsAntialias = true,
@@ -77,7 +84,9 @@ namespace TaskMaker.Node {
             SKColor.Parse("#81C7D4")
         };
 
-        public MotorNodeShape() : base() { }
+        public MotorNodeShape() : base() {
+            Connector1.IsVisible = false;
+        }
     }
 
     public class MapNodeShape : NodeBaseShape {
@@ -89,8 +98,8 @@ namespace TaskMaker.Node {
 
     public class LayerNodeShape : NodeBaseShape {
         public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#F75C2F"),
-            SKColor.Parse("#FB966E")
+            SKColor.Parse("#F75C2F").WithAlpha(0.5f),
+            SKColor.Parse("#FB966E").WithAlpha(0.5f)
         };
     }
 
@@ -100,6 +109,10 @@ namespace TaskMaker.Node {
             SKColor.Parse("#1B813E"),
             SKColor.Parse("#5DAC81")
         };
+
+        public ExcuteNodeShape() : base() {
+            Connector0.IsVisible = false;
+        }
     }
 
 
@@ -134,7 +147,8 @@ namespace TaskMaker.Node {
             var iconPaint = new SKPaint() {
                 Color = Colors[0],
                 IsAntialias = true,
-                Style = SKPaintStyle.StrokeAndFill
+                Style = SKPaintStyle.StrokeAndFill,
+                BlendMode = SKBlendMode.SrcOver
             };
 
             var labelRect = new SKRect();
