@@ -24,15 +24,19 @@ namespace TaskMaker.Node {
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            this.components = new System.ComponentModel.Container();
             this.skglControl1 = new SkiaSharp.Views.Desktop.SKGLControl();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.button4 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
+            this.nodeContext = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.connectToMotorsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
+            this.nodeContext.SuspendLayout();
             this.SuspendLayout();
             // 
             // skglControl1
@@ -81,6 +85,16 @@ namespace TaskMaker.Node {
             this.tableLayoutPanel2.Size = new System.Drawing.Size(103, 444);
             this.tableLayoutPanel2.TabIndex = 1;
             // 
+            // button4
+            // 
+            this.button4.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.button4.Location = new System.Drawing.Point(14, 90);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(75, 23);
+            this.button4.TabIndex = 3;
+            this.button4.Text = "Create";
+            this.button4.UseVisualStyleBackColor = true;
+            // 
             // button3
             // 
             this.button3.Anchor = System.Windows.Forms.AnchorStyles.None;
@@ -114,15 +128,19 @@ namespace TaskMaker.Node {
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // button4
+            // nodeContext
             // 
-            this.button4.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.button4.Location = new System.Drawing.Point(14, 211);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(75, 23);
-            this.button4.TabIndex = 3;
-            this.button4.Text = "Add Map";
-            this.button4.UseVisualStyleBackColor = true;
+            this.nodeContext.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.connectToMotorsToolStripMenuItem});
+            this.nodeContext.Name = "nodeContext";
+            this.nodeContext.Size = new System.Drawing.Size(181, 48);
+            // 
+            // connectToMotorsToolStripMenuItem
+            // 
+            this.connectToMotorsToolStripMenuItem.Name = "connectToMotorsToolStripMenuItem";
+            this.connectToMotorsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.connectToMotorsToolStripMenuItem.Text = "Connect to motors";
+            this.connectToMotorsToolStripMenuItem.Click += new System.EventHandler(this.connectToMotorsToolStripMenuItem_Click);
             // 
             // NodeEditor
             // 
@@ -134,6 +152,7 @@ namespace TaskMaker.Node {
             this.Text = "NodeEditor";
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
+            this.nodeContext.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -147,5 +166,7 @@ namespace TaskMaker.Node {
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.ContextMenuStrip nodeContext;
+        private System.Windows.Forms.ToolStripMenuItem connectToMotorsToolStripMenuItem;
     }
 }

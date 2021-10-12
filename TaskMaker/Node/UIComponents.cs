@@ -39,7 +39,7 @@ namespace TaskMaker.Node {
 
                 textBox.Location += Location;
 
-                var mat = Extensions.CreateScaleAt(2.0f, textBox.GetMid());
+                var mat = Extensions.CreateScaleAt(2.0f, 2.0f, textBox.GetMid());
 
                 Bounds = mat.MapRect(textBox);
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using MathNet.Numerics.LinearAlgebra;
 using SkiaSharp;
+using TaskMaker;
 
 namespace MathNetExtension {
     public static class MyExtension {
@@ -72,6 +73,20 @@ namespace MathNetExtension {
 
         public static SKColor WithAlpha(this SKColor color, float percentage) {
             return color.WithAlpha((byte)(int)(percentage * 256));
+        }
+
+        public static SKColor FlattenWithAlpha(this SKColor color, float alpha) {
+            return new SKColor(
+                (byte)(int)(color.Red * alpha + SKColors.White.Red * (1 - alpha)),
+                (byte)(int)(color.Green * alpha + SKColors.White.Green * (1 - alpha)),
+                (byte)(int)(color.Blue * alpha + SKColors.White.Blue * (1 - alpha)));
+            //return color.WithRed((byte)(int)(color.Red * alpha))
+            //    .WithGreen((byte)(int)(color.Green * alpha))
+            //    .WithBlue((byte)(int)(color.Blue * alpha));
+        }
+
+        public static SKRect ScaleAt(this SKRect rect, float sx, float sy, SKPoint pivot) {
+            return Extensions.CreateScaleAt(sx, sy, pivot).MapRect(rect);
         }
 
         public static SKPoint GetMid(this SKRect rect) => new SKPoint(rect.MidX, rect.MidY);

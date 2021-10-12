@@ -7,6 +7,46 @@ using SkiaSharp;
 using MathNetExtension;
 
 namespace TaskMaker.Node {
+    public interface INodeShape {
+        PortShape Connector0 { get; set; }
+        PortShape Connector1 { get; set; }
+        NodeBase Parent { get; }
+        SKPoint Location { get; set; }
+        string Label { get; set; }
+
+        bool Contains(SKPoint p);
+        void Draw(SKCanvas sKCanvas);
+    }
+
+    public class Link {
+        public NodeBase InNode { get; set; }
+        public NodeBase OutNode { get; set; }
+
+        public LinkShape Shape { get; set; }
+
+        public Link() {
+            Shape = new LinkShape();
+        }
+
+        public void SetInNode(NodeBase input) {
+            InNode = input;
+            Shape.P0Ref = input.Shape.Connector0;
+
+            Shape.P1Dummy = new PortShape();
+        }
+
+        public void Update(SKPoint p) {
+            Shape.P1Dummy.Location = p;
+        }
+
+        public void SetOutNode(NodeBase output) {
+            Shape.P1Dummy = null;
+
+            OutNode = output;
+            Shape.P1Ref = OutNode.Shape.Connector1;
+        }
+    }
+
     public class LinkShape {
         public PortShape P0Ref { get; set; }
         public PortShape P1Ref { get; set; }
@@ -14,11 +54,10 @@ namespace TaskMaker.Node {
 
         public void Draw(SKCanvas sKCanvas) {
             var stroke = new SKPaint() {
-                Color = SKColor.Parse("#0F2540").WithAlpha(0.3f),
-                BlendMode= SKBlendMode.SrcOver,
+                Color = SKColor.Parse("#0F2540").FlattenWithAlpha(0.5f),
                 IsAntialias = true,
                 Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2.0f,
+                StrokeWidth = 4.0f,
             };
 
             var path = new SKPath();
@@ -80,56 +119,62 @@ namespace TaskMaker.Node {
 
     public class MotorNodeShape : NodeBaseShape {
         public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#006284"),
-            SKColor.Parse("#81C7D4")
+            SKColor.Parse("#006284").FlattenWithAlpha(0.8f),
+            SKColor.Parse("#81C7D4").FlattenWithAlpha(0.8f)
         };
 
-        public MotorNodeShape() : base() {
+        public MotorNodeShape(NodeBase parent) : base(parent) {
             Connector1.IsVisible = false;
         }
     }
 
     public class MapNodeShape : NodeBaseShape {
+        public MapNodeShape(NodeBase parent) : base(parent) { }
+
         public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#77428D"),
-            SKColor.Parse("#B481BB")
+            SKColor.Parse("#77428D").FlattenWithAlpha(0.8f),
+            SKColor.Parse("#B481BB").FlattenWithAlpha(0.8f)
         };
     }
 
     public class LayerNodeShape : NodeBaseShape {
+        public LayerNodeShape(NodeBase parent) : base(parent) { }
+
         public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#F75C2F").WithAlpha(0.5f),
-            SKColor.Parse("#FB966E").WithAlpha(0.5f)
+            SKColor.Parse("#F75C2F").FlattenWithAlpha(0.8f),
+            SKColor.Parse("#FB966E").FlattenWithAlpha(0.8f)
         };
     }
 
     public class ExcuteNodeShape : NodeBaseShape {
         public override string Label { get; set; } = "Excute";
         public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#1B813E"),
-            SKColor.Parse("#5DAC81")
+            SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
+            SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
         };
 
-        public ExcuteNodeShape() : base() {
+        public ExcuteNodeShape(NodeBase parent) : base(parent) {
             Connector0.IsVisible = false;
         }
     }
 
 
-    public class NodeBaseShape {
+    public class NodeBaseShape : INodeShape {
         public SKPoint Location { get; set; } = new SKPoint();
         public virtual string Label { get; set; } = "Node";
         public SKRect Bounds { get; set; }
         public virtual SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#656765"),
-            SKColor.Parse("#BDC0BA")
+            SKColor.Parse("#656765").FlattenWithAlpha(0.8f),
+            SKColor.Parse("#BDC0BA").FlattenWithAlpha(0.8f)
         };
 
         public PortShape Connector0 { get; set; } = new PortShape();
         public PortShape Connector1 { get; set; } = new PortShape();
         public SKTypeface Font { get; set; }
 
-        public NodeBaseShape() { }
+        public NodeBase Parent { get; private set; }
+
+        public NodeBaseShape(NodeBase parent) => Parent = parent;
 
         public bool Contains(SKPoint p) {
             return Bounds.Contains(p);
@@ -139,7 +184,7 @@ namespace TaskMaker.Node {
             var paint = new SKPaint() {
                 TextSize = 20,
                 TextAlign = SKTextAlign.Left,
-                Color = SKColors.Black,
+                Color = SKColors.DarkGray,
                 IsAntialias = true,
                 //Typeface = Font,
                 FakeBoldText = true,
@@ -148,7 +193,6 @@ namespace TaskMaker.Node {
                 Color = Colors[0],
                 IsAntialias = true,
                 Style = SKPaintStyle.StrokeAndFill,
-                BlendMode = SKBlendMode.SrcOver
             };
 
             var labelRect = new SKRect();
@@ -156,13 +200,8 @@ namespace TaskMaker.Node {
 
 
             labelRect.Location += Location;
-            //var t = SKMatrix.CreateScaleTranslation(4.0f, 4.0f, -labelRect.MidX, -labelRect.MidY);
 
-            var t = SKMatrix.CreateTranslation(-labelRect.MidX, -labelRect.MidY);
-            var s = SKMatrix.CreateScale(1.2f, 2.0f);
-            var t_inv = SKMatrix.CreateTranslation(labelRect.MidX, labelRect.MidY);
-
-            var box = t.PostConcat(s).PostConcat(t_inv).MapRect(labelRect);
+            var box = labelRect.ScaleAt(1.2f, 2.0f, labelRect.GetMid());
             var box1 = box;
 
             box1.Size = box.Size + new SKSize(box.Height * 2, 0);

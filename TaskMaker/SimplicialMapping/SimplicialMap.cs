@@ -8,6 +8,7 @@ using SkiaSharp;
 using MathNetExtension;
 //using NumSharp;
 using Numpy;
+using TaskMaker.Node;
 
 namespace TaskMaker.SimplicialMapping {
     public class SimplexBary {
@@ -162,6 +163,7 @@ namespace TaskMaker.SimplicialMapping {
     public class NLinearMap {
         public bool IsSet { get; set; } = false;
         public List<ComplexBary> Barys { get; set; }
+        public NLinearMapNode Node { get; set; }
         //public List<Entity[]> Bases { get; set; }
         //public List<Simplex[]> Complexes { get; set; }
         //public List<Exterior> Exteriors { get; set; }
@@ -174,6 +176,7 @@ namespace TaskMaker.SimplicialMapping {
 
         public NLinearMap() {
             Barys = new List<ComplexBary>();
+            Node = new NLinearMapNode(this);
         }
 
         public void AddBary(ComplexBary bary, int dim = 2) {

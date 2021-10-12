@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using TaskMaker.Mapping;
 using System.Diagnostics;
+using TaskMaker.Node;
 
 namespace TaskMaker {
 
@@ -147,6 +148,7 @@ namespace TaskMaker {
         public SimplicialComplex Complex { get; set; }
         public Exterior Exterior { get; set; }
         public Target BindedTarget { get; set; }
+        public LayerObjectNode Node { get; set; }
         #endregion
 
         private List<Layer> _children = new List<Layer>();
@@ -173,9 +175,8 @@ namespace TaskMaker {
             Complex = new SimplicialComplex();
             Exterior = new Exterior();
             Bary = new ComplexBary();
-            //MultiBary = new NLinearMap();
 
-            //MultiBary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
+            Node = new LayerObjectNode(this);
         }
 
         public void InvalidateBary() {

@@ -1,5 +1,4 @@
-﻿using PCController;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using TaskMaker.MementoPattern;
@@ -10,7 +9,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text;
 using System.Threading.Tasks;
-using TaskMaker.Mapping;
 using TaskMaker.Node;
 
 namespace TaskMaker {
@@ -164,15 +162,6 @@ namespace TaskMaker {
                 return false;
         }
 
-        private void CanvasControl1_LayerConfigured(object sender, EventArgs e) {
-            toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
-        }
-
-        private void CanvasControl1_LayerFocused(object sender, LayerFocusedEventArgs e) {
-            groupBox2.Text = $"Canvas - [{SelectedLayer.Name}]";
-            toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
-        }
-
         private void Timer_Tick(object sender, EventArgs e) {
             UpdateMotorPosition(false);
             
@@ -199,18 +188,6 @@ namespace TaskMaker {
             }
 
             Services.Boards.SendPosDirect(targets);
-        }
-
-        private void CanvasControl1_Interpolated(object sender, InterpolatingEventArgs e) {
-            toolStripStatusLabel3.Text = String.Join(",", e.Values.ToArray());
-        }
-
-        private void CanvasControl1_ModeChanged(object sender, EventArgs e) {
-            toolStripStatusLabel2.Text = canvasControl1.SelectedMode.ToString();
-        }
-
-        private void CanvasControl1_LayerUpdated(object sender, EventArgs e) {
-            //UpdateTreeview();
         }
 
         private void InitializeSkControl() {
@@ -547,16 +524,5 @@ namespace TaskMaker {
         public override object GetState() {
             return (CanvasState, Root);
         }
-    }
-
-    static public class Services {
-        static public Caretaker Caretaker { get; set; }
-        static public Boards Boards { get; set; } = new Boards();
-        static public Motors Motors { get; set; } = new Motors();
-        static public Timer MotorTimer { get; set; } = new Timer() { Interval = 100 };
-        static public TreeNode LayerTree { get; set; }
-        static public Triangulation TriHandler { get; set; } = new Triangulation();
-        static public Canvas Canvas { get; set; } = new Canvas();
-        static public Flow Flow { get; set; }
     }
 }

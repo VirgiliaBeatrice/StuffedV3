@@ -571,14 +571,6 @@ namespace TaskMaker {
         }
     }
 
-    public class LayerFocusedEventArgs : EventArgs {
-        public Layer Layer { get; set; }
-    }
-
-    public class InterpolatingEventArgs : EventArgs {
-        public Vector<float> Values { get; set; }
-    }
-
     public enum EditPhase {
         None,
         Select,
