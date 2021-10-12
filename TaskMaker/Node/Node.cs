@@ -7,6 +7,7 @@ using TaskMaker.SimplicialMapping;
 using PCController;
 using SkiaSharp;
 using Numpy;
+using MathNetExtension;
 
 namespace TaskMaker.Node {
     public interface IOperation {
@@ -14,18 +15,59 @@ namespace TaskMaker.Node {
     }
 
     public class Flow {
-        public List<NodeBase> Nodes { get; set; } = new List<NodeBase>();
+        public List<NodeBase> Nodes { get; private set; } = new List<NodeBase>();
         public List<Link> Links { get; set; } = new List<Link>();
 
-        private LinkedList<int>[] _adj;
+        public LinkedList<int>[] _adj;
         private int _count => Nodes.Count;
 
-        public Flow() {
-            Nodes.Add(new ExecuteNode());
+        public List<MotorNode> Motors { get; set; } = new List<MotorNode>();
+        public List<LayerNode> Layers { get; set; } = new List<LayerNode>();
+
+        public SplitNode _split = new SplitNode(); 
+        public JoinNode _join = new JoinNode();
+        public NLinearMapNode _map = new NLinearMapNode();
+
+        public INode[] GetNodes() {
+            var ret = new List<INode>();
+
+            ret.Add(_split);
+            ret.Add(_join);
+            ret.Add(_map);
+
+            ret.AddRange(Motors);
+            ret.AddRange(Layers);
+
+            return ret.ToArray();
         }
+
+        public Flow() {}
 
         public Flow(NodeBase[] nodes) {
             Nodes.AddRange(nodes);
+        }
+
+        public void AddNode(NodeBase node) {
+            node.Parent = this;
+            Nodes.Add(node);
+        }
+
+        public void RemoveNode(NodeBase node) {
+            node.Parent = null;
+            Nodes.Remove(node);
+        }
+
+        public void AddSource(LayerNode node) {
+            _join.Inputs.Add(node);
+        }
+
+        public void AddSink<T>(T node) {
+            _split.Outputs.Add(node);
+        }
+
+
+        public void ConfigMap() {
+            _join.Inputs.ForEach(l => _map.Map.AddBary(l.Layer.Bary, 2));
         }
 
         public void SetAdjacencyList() {
@@ -34,6 +76,12 @@ namespace TaskMaker.Node {
             for(int i = 0; i < _adj.Length; ++i) {
                 _adj[i] = new LinkedList<int>();
             }
+        }
+
+        public NodeBase[] GetAdjacencyList(NodeBase node) {
+            var idx = Nodes.IndexOf(node);
+
+            return _adj[idx].Select(e => Nodes[e]).ToArray();
         }
 
         /// <summary>
@@ -100,6 +148,129 @@ namespace TaskMaker.Node {
         }
     }
 
+    public interface INode {
+        INodeShape Shape { get; set; }
+
+    }
+
+    public class JoinNode : INode {
+        public INodeShape Shape { get; set; }
+
+        public List<LayerNode> Inputs { get; set; }
+
+        public double[][] Outputs { get; private set; }
+
+        public JoinNode() {
+            Shape = new JoinNodeShape(this);
+            Inputs = new List<LayerNode>();
+        }
+
+        public void Process() {
+            var output = Inputs.Select(l => l.Layer.Controller.Location.ToArray<double>()).ToArray();
+
+            Outputs = output;
+        }
+    }
+
+    public class SplitNode : INode {
+        public INodeShape Shape { get; set; }
+
+        public List<object> Outputs { get; private set; }
+
+        public SplitNode() {
+            Shape = new SplitNodeShape(this);
+            Outputs = new List<object>();
+        }
+
+        public void Process(double[] data) {
+            var idx = 0;
+
+            foreach(var o in Outputs) {
+                if (o.GetType() == typeof(LayerNode)) {
+                    var partial = data.Skip(idx).Take(2).ToArray();
+
+                    idx += 2;
+                    (o as LayerNode).Process(data);
+                }
+                else if (o.GetType() == typeof(MotorNode)) {
+                    var partial = data.Skip(idx).Take(1).ToArray();
+
+                    idx += 1;
+                    (o as MotorNode).Process(data);
+                }
+            }
+        }
+    }
+
+
+    public class LayerNode : INode {
+        public Layer Layer { get; set; }
+        public INodeShape Shape { get; set; }
+
+        public List<JoinNode> Outputs { get; private set; }
+
+
+        public LayerNode(Layer parent) {
+            Layer = parent;
+            Shape = new LayerNodeShape(this);
+            Shape.Label = Layer.Name;
+        }
+
+        public void Process(double[] data) {
+            var location = new SKPoint((float)data[0], (float)data[1]);
+
+            Layer.Controller.Location = location;
+
+            if (Outputs.Count != 0) {
+                Outputs.ForEach(o => o.Process());
+            }
+        }
+    }
+
+    public class MotorNode : INode {
+        public Motor Motor { get; set; }
+        public INodeShape Shape { get; set; }
+
+
+        public MotorNode(Motor parent) {
+            Motor = parent;
+            Shape = new MotorNodeShape(this);
+            Shape.Label = "Motor";
+        }
+
+        public void Process(double[] data) {
+            var value = (int) data[0];
+
+            Motor.Value = value;
+        }
+    }
+
+    public class NLinearMapNode : INode {
+        public NLinearMap Map { get; set; }
+        public INodeShape Shape { get; set; }
+
+        public JoinNode Input { get; set; }
+        public SplitNode Output { get; set; }
+
+        public NLinearMapNode(NLinearMap parent) {
+            Map = parent;
+            Shape = new MapNodeShape(this);
+            Shape.Label = "Map";
+        }
+
+        public NLinearMapNode() {
+            Map = new NLinearMap();
+            Shape = new MapNodeShape(this);
+            Shape.Label = "Map";
+        }
+
+        public void Process(double[][] data) {
+            var lambda = Map.MapTo(data);
+
+            Output.Process(lambda);
+        }
+    }
+
 
     //public class Port {
     //    public NodeBase Parent { get; set; }
@@ -116,119 +287,134 @@ namespace TaskMaker.Node {
     //}
 
     public abstract class NodeBase : IOperation {
-        public object Payload { get; set; }
+        public Flow Parent { get; set; }
+        public object Input { get; set; }
+        public object Output { get; set; }
         //public virtual List<InputPort> Inputs { get; set; }
         //public virtual List<OutputPort> Outputs { get; set; }
 
-        public virtual List<NodeBase> InputNodes { get; set; }
-        public virtual List<NodeBase> OutputNodes { get; set; }
         public INodeShape Shape { get; set; }
 
         public abstract object Invoke(object data);
-    }
 
-    public class ExecuteNode : NodeBase {
-        public ExecuteNode() {
-            Shape = new ExcuteNodeShape(this);
-        }
-
-        public override object Invoke(object data) {
-            return true;
+        public bool Invoke() {
+            throw new NotImplementedException();
         }
     }
 
-    public class LayerObjectNode : NodeBase {
-        public Layer Layer { get; }
+    //public class ExecuteNode : NodeBase {
+    //    public ExecuteNode() {
+    //        Shape = new ExcuteNodeShape(this);
+    //    }
 
-        public LayerObjectNode(Layer parent) {
-            Layer = parent;
+    //    public override object Invoke(object data) {
+    //        return true;
+    //    }
+    //}
 
-            Shape = new LayerNodeShape(this) {
-                Label = Layer.Name,
-            };
-        }
+    //public class LayerObjectNode : NodeBase {
+    //    public Layer Layer { get; }
 
-        public override object Invoke(object data) {
-            try {
-                // Collect data from Inputs
-                double[] input;
+    //    public LayerObjectNode(Layer parent) {
+    //        Layer = parent;
 
-                if (InputNodes.Count == 0) {
-                    input = new double[] { Layer.Controller.Location.X, Layer.Controller.Location.X };
-                }
-                else {
-                    input = (double[])data;
-                }
+    //        Shape = new LayerNodeShape(this) {
+    //            Label = Layer.Name,
+    //        };
+    //    }
 
-                // Process
-                var point = new SKPoint((float)input[0], (float)input[1]);
-                Layer.Controller.Location = point;
-                var lambda = Layer.GetLambda();
+    //    public override object Invoke(object data) {
+    //        try {
+    //            // Collect data from Inputs
+    //            double[] input;
+    //            var adjNodes = Parent.GetAdjacencyList(this);
 
-                // Dispatch data to Outputs
-                return lambda;
-            }
-            catch(InvalidCastException) {
-                return false;
-            }
-        }
-    }
+    //            if (adjNodes.Length == 0) {
+    //                input = new double[] { Layer.Controller.Location.X, Layer.Controller.Location.X };
+    //            }
+    //            else {
+    //                input = (double[])data;
+    //            }
 
-    public class NLinearMapNode : NodeBase {
-        public NLinearMap Map { get; }
+    //            // Process
+    //            var point = new SKPoint((float)input[0], (float)input[1]);
+    //            Layer.Controller.Location = point;
+    //            var lambda = Layer.GetLambda();
 
-        public NLinearMapNode(NLinearMap parent) {
-            Map = parent;
 
-            Shape = new MapNodeShape(this);
-        }
+    //            Output = lambda;
+    //            // Dispatch data to Outputs
+    //            return lambda;
+    //        }
+    //        catch(InvalidCastException) {
+    //            return false;
+    //        }
+    //    }
+    //}
 
-        public override object Invoke(object data) {
-            try {
-                // Collect data from Inputs
-                var lamdas = InputNodes.Select(i => (double[])i.Payload).ToArray();
+    //public class NLinearMapNode : NodeBase {
+    //    public NLinearMap Map { get; }
 
-                // Process data
-                var output = Map.MapTo(lamdas);
+    //    public NLinearMapNode(NLinearMap parent) {
+    //        Map = parent;
 
-                // Dispatch data to Outputs
-                Payload = output;
+    //        Shape = new MapNodeShape(this);
+    //    }
 
-                for(var i = 0; i < OutputNodes.Count; ++i) {
-                    OutputNodes[i].Payload = np.array(output).reshape(OutputNodes.Count, output.Length / OutputNodes.Count)[$"{i},:"].GetData<double>();
-                }
+    //    public override object Invoke(object data) {
+    //        throw new NotImplementedException();
+    //    }
 
-                return true;
-            }
-            catch (InvalidCastException) {
-                return false;
-            }
+    //    //public override object Invoke(object data) {
+    //    //    try {
+    //    //        // Collect data from Inputs
+    //    //        var adjNodes = Parent.GetAdjacencyList(this);
 
-        }
-    }
+    //    //        var lambdas = adjNodes.Select(n => (double[])n.Output).ToArray();
+    //    //        //var lamdas = InputNodes.Select(i => (double[])i.Payload).ToArray();
 
-    public class MotorNode : NodeBase {
-        public bool IsConnected => Motor == null;
-        public Motor Motor { get; set; }
+    //    //        // Process data
+    //    //        var output = Map.MapTo(lambdas);
 
-        public MotorNode() {
-            Shape = new MotorNodeShape(this);
-        }
+    //    //        // Dispatch data to Outputs
+    //    //        Payload = output;
 
-        public override object Invoke(object data) {
-            try {
-                // Collect data from Inputs
-                var input = (int)InputNodes[0].From.Payload;
+    //    //        for(var i = 0; i < OutputNodes.Count; ++i) {
+    //    //            OutputNodes[i].Payload = np.array(output).reshape(OutputNodes.Count, output.Length / OutputNodes.Count)[$"{i},:"].GetData<double>();
+    //    //        }
 
-                // Process data
-                if (IsConnected)
-                    Motor.Value = input;
+    //    //        return true;
+    //    //    }
+    //    //    catch (InvalidCastException) {
+    //    //        return false;
+    //    //    }
 
-                return true;
-            }
-            catch (InvalidCastException) {
-                return false;
-            }
-        }
-    }
+    //    //}
+    //}
+
+    //public class MotorNode : NodeBase {
+    //    public bool IsConnected => Motor == null;
+    //    public Motor Motor { get; set; }
+
+    //    public MotorNode() {
+    //        Shape = new MotorNodeShape(this);
+    //    }
+
+    //    public override object Invoke(object data) {
+    //        return null;
+    //        //try {
+    //        //    // Collect data from Inputs
+    //        //    //var input = (int)InputNodes[0].From.Payload;
+
+    //        //    // Process data
+    //        //    if (IsConnected)
+    //        //        Motor.Value = input;
+
+    //        //    return true;
+    //        //}
+    //        //catch (InvalidCastException) {
+    //        //    return false;
+    //        //}
+    //    }
+    //}
 }

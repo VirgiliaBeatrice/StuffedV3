@@ -14,6 +14,10 @@ namespace MathNetExtension {
             return new float[] { p.X, p.Y };
         }
 
+        public static T[] ToArray<T>(this SKPoint p) {
+            return new T[] { (T)(object)p.X, (T)(object)p.Y };
+        }
+
         public static float[] ToArray(this Point p) {
             return new float[] { p.X, p.Y };
         }

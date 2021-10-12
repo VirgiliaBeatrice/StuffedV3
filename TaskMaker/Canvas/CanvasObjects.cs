@@ -148,7 +148,7 @@ namespace TaskMaker {
         public SimplicialComplex Complex { get; set; }
         public Exterior Exterior { get; set; }
         public Target BindedTarget { get; set; }
-        public LayerObjectNode Node { get; set; }
+        //public LayerObjectNode Node { get; set; }
         #endregion
 
         private List<Layer> _children = new List<Layer>();
@@ -176,7 +176,7 @@ namespace TaskMaker {
             Exterior = new Exterior();
             Bary = new ComplexBary();
 
-            Node = new LayerObjectNode(this);
+            //Node = new LayerObjectNode(this);
         }
 
         public void InvalidateBary() {

@@ -10,7 +10,7 @@ namespace TaskMaker.Node {
     public interface INodeShape {
         PortShape Connector0 { get; set; }
         PortShape Connector1 { get; set; }
-        NodeBase Parent { get; }
+        INode Parent { get; }
         SKPoint Location { get; set; }
         string Label { get; set; }
 
@@ -19,8 +19,8 @@ namespace TaskMaker.Node {
     }
 
     public class Link {
-        public NodeBase InNode { get; set; }
-        public NodeBase OutNode { get; set; }
+        public INode In { get; private set; }
+        public INode Out { get; private set; }
 
         public LinkShape Shape { get; set; }
 
@@ -28,9 +28,9 @@ namespace TaskMaker.Node {
             Shape = new LinkShape();
         }
 
-        public void SetInNode(NodeBase input) {
-            InNode = input;
-            Shape.P0Ref = input.Shape.Connector0;
+        public void SetOut(INode output) {
+            Out = output;
+            Shape.P0Ref = output.Shape.Connector1;
 
             Shape.P1Dummy = new PortShape();
         }
@@ -39,11 +39,50 @@ namespace TaskMaker.Node {
             Shape.P1Dummy.Location = p;
         }
 
-        public void SetOutNode(NodeBase output) {
+        public void SetIn(INode input) {
             Shape.P1Dummy = null;
 
-            OutNode = output;
-            Shape.P1Ref = OutNode.Shape.Connector1;
+            if (Out.GetType() == typeof(LayerNode)) {
+                if (input.GetType() == typeof(JoinNode)) {
+                    In = input;
+                    Shape.P1Ref = In.Shape.Connector0;
+
+                    Services.Flow.AddSource(Out as LayerNode);
+                    Services.Flow.Links.Add(this);
+                }
+            }
+            else if (Out.GetType() == typeof(JoinNode)) {
+                if (input.GetType() == typeof(NLinearMapNode)) {
+                    In = input;
+                    Shape.P1Ref = In.Shape.Connector0;
+
+                    Services.Flow.Links.Add(this);
+                }
+            }
+            else if (Out.GetType() == typeof(SplitNode)) {
+                if (input.GetType() == typeof(LayerNode)) {
+                    In = input;
+                    Shape.P1Ref = In.Shape.Connector0;
+
+                    Services.Flow.AddSink(Out as LayerNode);
+                    Services.Flow.Links.Add(this);
+                }
+                else if (input.GetType() == typeof(MotorNode)) {
+                    In = input;
+                    Shape.P1Ref = In.Shape.Connector0;
+
+                    Services.Flow.AddSink(Out as MotorNode);
+                    Services.Flow.Links.Add(this);
+                }
+            }
+            else if (Out.GetType() == typeof(NLinearMapNode)) {
+                if (input.GetType() == typeof(SplitNode)) {
+                    In = input;
+                    Shape.P1Ref = In.Shape.Connector0;
+
+                    Services.Flow.Links.Add(this);
+                }
+            }
         }
     }
 
@@ -72,7 +111,7 @@ namespace TaskMaker.Node {
                     path.CubicTo(P0Ref.Location + new SKPoint(40, 0), P1Dummy.Location + new SKPoint(-40, 0), P1Dummy.Location);
                 }
             }
-            else {
+            else if (P1Dummy == null & P1Ref != null) {
                 if (SKPoint.Distance(P0Ref.Location, P1Ref.Location) < 10) {
                     path.LineTo(P1Ref.Location);
                 }
@@ -123,13 +162,13 @@ namespace TaskMaker.Node {
             SKColor.Parse("#81C7D4").FlattenWithAlpha(0.8f)
         };
 
-        public MotorNodeShape(NodeBase parent) : base(parent) {
+        public MotorNodeShape(INode parent) : base(parent) {
             Connector1.IsVisible = false;
         }
     }
 
     public class MapNodeShape : NodeBaseShape {
-        public MapNodeShape(NodeBase parent) : base(parent) { }
+        public MapNodeShape(INode parent) : base(parent) { }
 
         public override SKColor[] Colors { get; set; } = new SKColor[] {
             SKColor.Parse("#77428D").FlattenWithAlpha(0.8f),
@@ -138,7 +177,7 @@ namespace TaskMaker.Node {
     }
 
     public class LayerNodeShape : NodeBaseShape {
-        public LayerNodeShape(NodeBase parent) : base(parent) { }
+        public LayerNodeShape(INode parent) : base(parent) { }
 
         public override SKColor[] Colors { get; set; } = new SKColor[] {
             SKColor.Parse("#F75C2F").FlattenWithAlpha(0.8f),
@@ -146,16 +185,26 @@ namespace TaskMaker.Node {
         };
     }
 
-    public class ExcuteNodeShape : NodeBaseShape {
-        public override string Label { get; set; } = "Excute";
+    public class SplitNodeShape : NodeBaseShape {
+        public override string Label { get; set; } = "Split";
         public override SKColor[] Colors { get; set; } = new SKColor[] {
             SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
             SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
         };
 
-        public ExcuteNodeShape(NodeBase parent) : base(parent) {
-            Connector0.IsVisible = false;
-        }
+        public SplitNodeShape(INode parent) : base(parent) { }
+    }
+
+    public class JoinNodeShape : NodeBaseShape {
+        public override string Label { get; set; } = "Join";
+
+        public JoinNodeShape(INode parent) : base(parent) { }
+
+        public override SKColor[] Colors { get; set; } = new SKColor[] {
+            SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
+            SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
+        };
+
     }
 
 
@@ -172,9 +221,9 @@ namespace TaskMaker.Node {
         public PortShape Connector1 { get; set; } = new PortShape();
         public SKTypeface Font { get; set; }
 
-        public NodeBase Parent { get; private set; }
+        public INode Parent { get; private set; }
 
-        public NodeBaseShape(NodeBase parent) => Parent = parent;
+        public NodeBaseShape(INode parent) => Parent = parent;
 
         public bool Contains(SKPoint p) {
             return Bounds.Contains(p);
@@ -184,7 +233,7 @@ namespace TaskMaker.Node {
             var paint = new SKPaint() {
                 TextSize = 20,
                 TextAlign = SKTextAlign.Left,
-                Color = SKColors.DarkGray,
+                Color = SKColors.Black,
                 IsAntialias = true,
                 //Typeface = Font,
                 FakeBoldText = true,

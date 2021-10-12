@@ -44,7 +44,7 @@ namespace TaskMaker.Node {
             if (Services.Flow == null) {
                 Services.Flow = new Flow();
 
-                Services.Flow.Nodes.AddRange(Services.Canvas.Layers.Select(l => l.Node).ToArray());
+                Services.Canvas.Layers.ForEach(l => Services.Flow.Layers.Add(new LayerNode(l)));
             }
         }
 
@@ -101,8 +101,8 @@ namespace TaskMaker.Node {
 
             canvas.Clear(SKColors.White);
 
-            Services.Flow.Nodes.ForEach(n => n.Shape.Draw(canvas));
-
+            Services.Flow.GetNodes().ToList().ForEach(n => n.Shape.Draw(canvas));
+            Services.Flow.Links.ForEach(l => l.Shape.Draw(canvas));
             //_shapes.ForEach(s => s.Draw(canvas));
             //_links.ForEach(l => l.Draw(canvas));
         }
@@ -116,26 +116,26 @@ namespace TaskMaker.Node {
         }
 
         private void button2_Click(object sender, EventArgs e) {
-            var motor = new MotorNode();
-            var motors = Services.Flow.Nodes.OfType<MotorNode>().ToArray();
+            var motor = new MotorNode(null);
+            var motors = Services.Flow.Motors.OfType<MotorNode>().ToArray();
 
             motor.Shape.Label = $"Motor{motors.Count() + 1}";
             motor.Shape.Location = new SKPoint(100, 100);
 
-            Services.Flow.Nodes.Add(motor);
+            Services.Flow.Motors.Add(motor);
         }
 
         private void button3_Click(object sender, EventArgs e) {
-            Services.Map = new NLinearMap();
-            var map = new NLinearMapNode(Services.Map);
-            var maps = Services.Flow.Nodes.OfType<NLinearMapNode>().ToArray();
+            //Services.Map = new NLinearMap();
+            //var map = new NLinearMapNode(Services.Map);
+            //var maps = Services.Flow.Nodes.OfType<NLinearMapNode>().ToArray();
 
-            map.Shape.Label = $"Map{maps.Count() + 1}";
-            map.Shape.Location = new SKPoint(200, 200);
+            //map.Shape.Label = $"Map{maps.Count() + 1}";
+            //map.Shape.Location = new SKPoint(200, 200);
 
-            Services.Flow.Nodes.Add(map);
+            //Services.Flow.Nodes.Add(map);
 
-            (sender as Button).Enabled = false;
+            //(sender as Button).Enabled = false;
         }
 
         private void connectToMotorsToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -150,11 +150,11 @@ namespace TaskMaker.Node {
 
     public class MoveObject : IBehavior {
         public Control Parent { get; set; }
-        private List<INodeShape> Shapes => Services.Flow.Nodes.Select(n => n.Shape).ToList();
+        private List<INode> Nodes => Services.Flow.GetNodes().ToList();
 
         private SKPoint origin;
         private SKPoint initialLocation;
-        private INodeShape shape;
+        private INode node;
 
         public void RegisterHandler() {
             Parent.MouseMove += Parent_MouseMove;
@@ -167,9 +167,9 @@ namespace TaskMaker.Node {
                 var p = e.Location.ToSKPoint();
                 var offset = p - origin;
 
-                if (shape != null) {
-                    shape.Location = initialLocation + offset;
-                    shape = null;
+                if (node != null) {
+                    node.Shape.Location = initialLocation + offset;
+                    node = null;
                 }
             }
         }
@@ -177,12 +177,12 @@ namespace TaskMaker.Node {
         private void Parent_MouseDown(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 var p = e.Location.ToSKPoint();
-                var target = Shapes.FirstOrDefault(s => s.Contains(p));
+                var target = Nodes.FirstOrDefault(s => s.Shape.Contains(p));
 
-                if (Shapes.Contains(target)) {
+                if (Nodes.Contains(target)) {
                     origin = p;
-                    initialLocation = target.Location;
-                    shape = target;
+                    initialLocation = target.Shape.Location;
+                    node = target;
                 }
             }
         }
@@ -192,8 +192,8 @@ namespace TaskMaker.Node {
                 var p = e.Location.ToSKPoint();
                 var offset = p - origin;
 
-                if (shape != null) {
-                    shape.Location = initialLocation + offset;
+                if (node != null) {
+                    node.Shape.Location = initialLocation + offset;
                 }
             }
         }
@@ -207,15 +207,10 @@ namespace TaskMaker.Node {
 
     public class LinkNode : IBehavior {
         public Control Parent { get; set; }
-        private List<INodeShape> Shapes => Services.Flow.Nodes.Select(n => n.Shape).ToList();
+        private List<INode> Nodes => Services.Flow.GetNodes().ToList();
 
-        private List<Link> Links => Services.Flow.Links;
-
-        //private SKPoint origin;
-        //private SKPoint initialLocation;
-
-        private INodeShape start;
-        private INodeShape end;
+        private INode @in;
+        private INode @out;
         private Link _link;
 
         public void RegisterHandler() {
@@ -233,21 +228,16 @@ namespace TaskMaker.Node {
         private void Parent_MouseUp(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 var p = e.Location.ToSKPoint();
-                var target = Shapes.Find(s => s.Contains(p));
+                var target = Nodes.Find(s => s.Shape.Contains(p));
 
-                if (Shapes.Contains(target) & target != start) {
-                    end = target;
+                if (Nodes.Contains(target) & target != @out) {
+                    @in = target;
 
-                    var outNode = Services.Flow.Nodes.Find(n => n.Shape == target);
-
-                    _link.SetOutNode(outNode);
-
-                    //target.Connector0.Binding = _link;
-
-                    Services.Flow.AddLink(_link.InNode, _link.OutNode);
+                    _link.SetIn(@in);
+                    _link = null;
                 }
                 else {
-                    Links.Remove(_link);
+                    Services.Flow.Links.Remove(_link);
                     _link = null;
                 }
             }
@@ -256,20 +246,16 @@ namespace TaskMaker.Node {
         private void Parent_MouseDown(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 var p = e.Location.ToSKPoint();
-                var target = Shapes.FirstOrDefault(s => s.Contains(p));
+                var target = Nodes.FirstOrDefault(s => s.Shape.Contains(p));
 
-                if (Shapes.Contains(target)) {
-                    start = target;
-                    //link = new LinkShape();
-                    //link.P0Ref = target.Connector1;
-                    //link.P1Dummy = new PortShape() { Location = p };
-                    //target.Connector1.Binding = link;
+
+                if (Nodes.Contains(target)) {
+                    @out = target;
+
                     _link = new Link();
-                    //target.Connector1.Binding = _link.Shape;
-                    var inNode = Services.Flow.Nodes.Find(n => n.Shape == target);
+                    _link.SetOut(@out);
 
-                    _link.SetInNode(inNode);
-                    Links.Add(_link);
+                    Services.Flow.Links.Add(_link);
                 }
             }
             //else if (e.Button == MouseButtons.Right) {
