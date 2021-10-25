@@ -145,44 +145,97 @@ namespace TaskMaker.Node {
     ////}
 
     public interface IInput {
-        List<IOutput> Out { get; set; }
+        List<Link> Outs { get; set; }
     }
 
     public interface IOutput {
-        List<IInput> In { get; set; }
+        List<Link> Ins { get; set; }
     }
 
-    public class PointerNode : IInput {
-        public List<IOutput> Out { get; set; }
+    public interface ILink {
+        object Source { get; set; }
+        object Destination { get; set; }
+        bool Validated { get; }
     }
 
-    public class MotorNode : IOutput {
-        public List<IInput> In { get; set; }
+    public abstract class Node {
+        public virtual bool HasInputs { get; set; }
+        public virtual bool HasOutputs { get; set; }
+        public abstract void Invalidate();
     }
 
-    public class MapNode : IInput, IOutput {
-        public List<IInput> In { get; set; }
-        public List<IOutput> Out { get; set; }
+    public class Link : ILink {
+        public object Source { get; set; }
+        public object Destination { get; set; }
+        public bool Validated => _payload != null;
+        private object _payload;
+
+        public void Push(object payload) {
+            _payload = payload;
+        }
+
+        public object Pop() {
+            var payload = _payload;
+            _payload = null;
+
+            return payload;
+        }
+    }
+
+    public class PointerNode : Node, IInput {
+        public List<Link> Outs { get; set; }
+        public SKPoint Pointer { get; set; }
+
+        public override void Invalidate() {
+            foreach(var o in Outs) {
+                o.Push(Pointer);
+            }
+        }
+    }
+
+    public class MotorNode : Node, IOutput {
+        public List<Link> Ins { get; set; }
+        public float Value { get; set; }
+
+        public MotorNode() {
+            Ins = new List<Link>(1);
+        }
+
+        public override void Invalidate() {
+            Value = (float)Ins.First().Pop();
+        }
+    }
+
+    public class MapNode : Node, IInput, IOutput {
+        public List<Link> Ins { get; set; }
+        public List<Link> Outs { get; set; }
         public NLinearMap Map { get; set; }
+        public double[] Values { get; set; }
 
         private List<int> _shapes { get; set; }
 
-        public void Initialize() {
-            // Check output shape
-            _shapes = new List<int>();
-
-            foreach(var o in Out) {
-                if (o.GetType() == typeof(MotorNode)) {
-                    _shapes.Add(1);
-                }
-                else if (o.GetType() == typeof(MapNode)) {
-                    _shapes.Add(2);
-                }
-            }
+        public MapNode() {
+            Ins = new List<Link>();
+            Outs = new List<Link>();
         }
 
-        public void Validate() {
+        public override void Invalidate() {
+            var inputs = new List<double[]>();
 
+            foreach(var i in Ins) {
+                inputs.Add((double[])i.Pop());
+            }
+
+            var result = new Stack<double>(Map.MapTo(inputs.ToArray()));
+
+            foreach(var o in Outs) {
+                if (o.Destination.GetType() == typeof(MapNode)) {
+                    o.Push(new double[] { result.Pop(), result.Pop() });
+                }
+                else if (o.Destination.GetType() == typeof(MotorNode)) {
+                    o.Push(result.Pop());
+                }
+            }
         }
     }
 

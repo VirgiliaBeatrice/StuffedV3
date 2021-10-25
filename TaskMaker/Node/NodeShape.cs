@@ -5,12 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using SkiaSharp;
 using MathNetExtension;
+using System.Windows.Forms;
 
 namespace TaskMaker.Node {
     public interface INodeShape {
         PortShape Connector0 { get; set; }
         PortShape Connector1 { get; set; }
-        INode Parent { get; }
+        Node Parent { get; }
         SKPoint Location { get; set; }
         string Label { get; set; }
 
@@ -18,17 +19,14 @@ namespace TaskMaker.Node {
         void Draw(SKCanvas sKCanvas);
     }
 
-    public class Link {
-        public INode In { get; private set; }
-        public INode Out { get; private set; }
-
+    public class LinkShape {
         public LinkShape Shape { get; set; }
 
-        public Link() {
+        public LinkShape() {
             Shape = new LinkShape();
         }
 
-        public void SetOut(INode output) {
+        public void SetOut(Node output) {
             Out = output;
             Shape.P0Ref = output.Shape.Connector1;
 
@@ -162,13 +160,13 @@ namespace TaskMaker.Node {
             SKColor.Parse("#81C7D4").FlattenWithAlpha(0.8f)
         };
 
-        public MotorNodeShape(INode parent) : base(parent) {
+        public MotorNodeShape(Node parent) : base(parent) {
             Connector1.IsVisible = false;
         }
     }
 
     public class MapNodeShape : NodeBaseShape {
-        public MapNodeShape(INode parent) : base(parent) { }
+        public MapNodeShape(Node parent) : base(parent) { }
 
         public override SKColor[] Colors { get; set; } = new SKColor[] {
             SKColor.Parse("#77428D").FlattenWithAlpha(0.8f),
@@ -176,36 +174,36 @@ namespace TaskMaker.Node {
         };
     }
 
-    public class LayerNodeShape : NodeBaseShape {
-        public LayerNodeShape(INode parent) : base(parent) { }
+    //public class LayerNodeShape : NodeBaseShape {
+    //    public LayerNodeShape(INode parent) : base(parent) { }
 
-        public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#F75C2F").FlattenWithAlpha(0.8f),
-            SKColor.Parse("#FB966E").FlattenWithAlpha(0.8f)
-        };
-    }
+    //    public override SKColor[] Colors { get; set; } = new SKColor[] {
+    //        SKColor.Parse("#F75C2F").FlattenWithAlpha(0.8f),
+    //        SKColor.Parse("#FB966E").FlattenWithAlpha(0.8f)
+    //    };
+    //}
 
-    public class SplitNodeShape : NodeBaseShape {
-        public override string Label { get; set; } = "Split";
-        public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
-            SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
-        };
+    //public class SplitNodeShape : NodeBaseShape {
+    //    public override string Label { get; set; } = "Split";
+    //    public override SKColor[] Colors { get; set; } = new SKColor[] {
+    //        SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
+    //        SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
+    //    };
 
-        public SplitNodeShape(INode parent) : base(parent) { }
-    }
+    //    public SplitNodeShape(INode parent) : base(parent) { }
+    //}
 
-    public class JoinNodeShape : NodeBaseShape {
-        public override string Label { get; set; } = "Join";
+    //public class JoinNodeShape : NodeBaseShape {
+    //    public override string Label { get; set; } = "Join";
 
-        public JoinNodeShape(INode parent) : base(parent) { }
+    //    public JoinNodeShape(INode parent) : base(parent) { }
 
-        public override SKColor[] Colors { get; set; } = new SKColor[] {
-            SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
-            SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
-        };
+    //    public override SKColor[] Colors { get; set; } = new SKColor[] {
+    //        SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
+    //        SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
+    //    };
 
-    }
+    //}
 
 
     public class NodeBaseShape : INodeShape {
@@ -221,9 +219,14 @@ namespace TaskMaker.Node {
         public PortShape Connector1 { get; set; } = new PortShape();
         public SKTypeface Font { get; set; }
 
-        public INode Parent { get; private set; }
+        public Node Parent { get; private set; }
 
-        public NodeBaseShape(INode parent) => Parent = parent;
+        public NodeBaseShape(Node parent) => Parent = parent;
+
+        public MouseEventHandler MouseMove;
+        public MouseEventHandler MouseUp;
+        public MouseEventHandler MouseDown;
+        public MoveBehavior Behavior { get; set; }
 
         public bool Contains(SKPoint p) {
             return Bounds.Contains(p);
@@ -284,6 +287,56 @@ namespace TaskMaker.Node {
 
             paint.Dispose();
             iconPaint.Dispose();
+        }
+    }
+
+    public class MoveBehavior {
+        private NodeBaseShape _target;
+        private SKPoint _start = new SKPoint();
+        private SKPoint _origin = new SKPoint();
+
+        public MoveBehavior(NodeBaseShape target) {
+            _target = target;
+
+            Register();
+        }
+
+        public void Register() {
+            _target.MouseDown += Move_MouseDown;
+            _target.MouseUp += Move_MouseUp;
+            _target.MouseMove += Move_MouseMove;
+        }
+
+        public void Move_MouseDown(object sender, MouseEventArgs e) {
+            var location = e.Location.ToSKPoint();
+
+            if (e.Button == MouseButtons.Left) {
+                _start = location;
+                _origin = location;
+            }
+        }
+
+        public void Move_MouseUp(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                _start = new SKPoint();
+                _origin = new SKPoint();
+            }
+        }
+        
+        public void Move_MouseMove(object sender, MouseEventArgs e) {
+            var location = e.Location.ToSKPoint();
+
+            if (e.Button == MouseButtons.Left) {
+                _target.Location = _origin + location - _start;
+            }
+        }
+
+        public void Unregister(NodeBaseShape target) {
+            target.MouseDown -= Move_MouseDown;
+            target.MouseUp -= Move_MouseUp;
+            target.MouseMove -= Move_MouseMove;
+
+            _target = null;
         }
     }
 }
