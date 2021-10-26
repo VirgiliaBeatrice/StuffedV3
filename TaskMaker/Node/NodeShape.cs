@@ -221,7 +221,7 @@ namespace TaskMaker.Node {
                 Color = Colors[1],
                 IsAntialias = true,
                 Style = SKPaintStyle.Stroke,
-                StrokeWidth = 4,
+                StrokeWidth = 1,
             };
             var paint = new SKPaint() {
                 TextSize = 20,
@@ -269,9 +269,12 @@ namespace TaskMaker.Node {
             canvas.DrawRoundRect(round, iconPaint);
             iconPaint.Color = Colors[1];
 
-            if (IsSelected) {
+            //if (IsSelected) {
+            //    canvas.DrawRoundRect(round, boxPaint);
+            //} else {
+                boxPaint.Color = SKColors.Gray;
                 canvas.DrawRoundRect(round, boxPaint);
-            }
+            //}
 
             canvas.DrawRect(labelBox, iconPaint);
 
@@ -292,11 +295,12 @@ namespace TaskMaker.Node {
 
         public void Draw(SKCanvas sKCanvas) {
             var picPaint = new SKPaint() {
+                IsAntialias = true,
                 ImageFilter = SKImageFilter.CreateDropShadow(
-                    2.0f,
-                    2.0f,
-                    2.0f,
-                    2.0f,
+                    0.0f,
+                    0.0f,
+                    10.0f,
+                    10.0f,
                     SKColors.Gray)};
             var pic = DrawThis();
             sKCanvas.Save();
@@ -313,7 +317,15 @@ namespace TaskMaker.Node {
             var mat = sKCanvas.TotalMatrix;
             Bounds = mat.MapRect(_localBounds);
 
-            sKCanvas.DrawPicture(pic, IsDragOver? picPaint : null);
+            if (IsSelected) {
+                picPaint.ImageFilter = SKImageFilter.CreateDropShadow(
+                    0.0f,
+                    0.0f,
+                    5.0f,
+                    5.0f,
+                    SKColors.Cyan);
+            }
+            sKCanvas.DrawPicture(pic, picPaint);
             sKCanvas.Restore();
 
             pic.Dispose();
