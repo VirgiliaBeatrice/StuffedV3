@@ -14,15 +14,10 @@ using TaskMaker.SimplicialMapping;
 namespace TaskMaker.Node {
     public partial class NodeEditor : Form {
         public NodeBaseShape Target { get; set; }
+        public SKPoint Mid => new SKPoint(ClientSize.Width / 2, ClientSize.Height / 2);
 
         private Timer _updateTimer;
-        private MoveObject bMove;
-        private LinkNode bLink;
-
-
-        //private List<NodeBaseShape> _shapes = new List<NodeBaseShape>();
-        //private List<LinkShape> _links = new List<LinkShape>();
-        private IBehavior _behavior;
+        private EditorEventManager _eventManager;
 
         public NodeEditor() {
             InitializeComponent();
@@ -31,32 +26,23 @@ namespace TaskMaker.Node {
             _updateTimer.Interval = 1;
             _updateTimer.Tick += _updateTimer_Tick;
 
+            _eventManager = new EditorEventManager(this);
+
             skglControl1.PaintSurface += SkglControl1_PaintSurface;
 
             KeyPreview = true;
             KeyPress += NodeEditor_KeyPress;
 
-            bMove = new MoveObject();
-            bMove.Parent = skglControl1;
-            bLink = new LinkNode();
-            bLink.Parent = skglControl1;
-
             _updateTimer.Start();
-
-            //if (Services.Flow == null) {
-            //    Services.Flow = new Flow();
-
-            //    Services.Canvas.Layers.ForEach(l => Services.Flow.Layers.Add(new LayerNode(l)));
-            //}
         }
 
-        public void InitializeNodes() { }
+        public void InitializeNodes() {
+            var node = new MotorNode();
+            node.Shape.Location = Mid;
+            node.Shape.RegisterEvents(_eventManager);
 
-        private void ChangeBehavior(IBehavior behavior = null) {
-            _behavior?.UnregisterHandler();
-
-            _behavior = behavior;
-            _behavior?.RegisterHandler();
+            Services.Graph = new Graph();
+            Services.Graph.AddNode(node);
         }
 
         private void NodeEditor_KeyPress(object sender, KeyPressEventArgs e) {
@@ -65,13 +51,13 @@ namespace TaskMaker.Node {
                     InitializeNodes();
                     break;
                 case 'm':
-                    ChangeBehavior(bMove);
+
                     break;
                 case 'l':
-                    ChangeBehavior(bLink);
+
                     break;
                 case (char)Keys.Escape:
-                    ChangeBehavior();
+
                     break;
             }
         }
@@ -79,12 +65,18 @@ namespace TaskMaker.Node {
         private void SkglControl1_PaintSurface(object sender, SkiaSharp.Views.Desktop.SKPaintGLSurfaceEventArgs e) {
             var canvas = e.Surface.Canvas;
 
-            canvas.Clear(SKColors.White);
+            canvas.Clear(SKColors.LightGray);
 
-            Services.Flow.GetNodes().ToList().ForEach(n => n.Shape.Draw(canvas));
-            Services.Flow.Links.ForEach(l => l.Shape.Draw(canvas));
-            //_shapes.ForEach(s => s.Draw(canvas));
-            //_links.ForEach(l => l.Draw(canvas));
+            DrawNodes(canvas);
+        }
+
+        private void DrawNodes(SKCanvas sKCanvas) {
+            if (Services.Graph == null)
+                return;
+
+            foreach(var node in Services.Graph.Nodes) {
+                node.Shape.Draw(sKCanvas);
+            }
         }
 
         private void _updateTimer_Tick(object sender, EventArgs e) {
@@ -105,202 +97,153 @@ namespace TaskMaker.Node {
         }
     }
 
-    public interface IBehavior {
-        void RegisterHandler();
-        void UnregisterHandler();
+
+
+    public class EditorEventManager {
+        public NodeEditor Editor { get; set; }
+        public object Target { get; set; }
+
+        public event EventHandler<EditorMouseEventArgs> Click;
+        public event EventHandler<EditorDragEventArgs> DragStart;
+        public event EventHandler<EditorDragEventArgs> DragOver;
+        public event EventHandler<EditorDragEventArgs> DragEnd;
+
+
+        //public event MouseEventHandler OnClicked;
+        //public event MouseEventHandler OnClicked;
+
+        private bool _isDrag = false;
+        private bool _isPressed = false;
+        private SKPoint _start;
+        private float _delta = 6.0f;
+        private Timer _timer;
+
+        public EditorEventManager(NodeEditor editor) {
+            Editor = editor;
+
+            _timer = new Timer();
+            _timer.Interval = 100;
+
+            BindOriginalEventHandlers();
+        }
+
+        public void BindOriginalEventHandlers() {
+            Editor.skglControl1.MouseDown += Editor_MouseDown;
+            Editor.skglControl1.MouseUp += Editor_MouseUp;
+            Editor.skglControl1.MouseMove += Editor_MouseMove;
+
+
+            // For debug
+            //Click += OnClick;
+            //DragStart += OnDragStart;
+            //DragOver += OnDragOver;
+            //DragEnd += OnDragEnd;
+        }
+
+        private void Editor_MouseMove(object sender, MouseEventArgs e) {
+            var diff = e.Location.ToSKPoint() - _start;
+
+            if (!_isPressed)
+                return;
+
+            if (!_isDrag) {
+                if (Math.Abs(diff.X) > _delta | Math.Abs(diff.Y) > _delta) {
+                    var args = e.ToEditorEvent(_start, diff);
+
+                    DragStart?.Invoke(this, args);
+
+                    if (args.Target != null) {
+                        _isDrag = true;
+                        Target = args.Target;
+                    }
+
+                }
+                else
+                    return;
+            }
+            else {
+                var args = e.ToEditorEvent(_start, diff);
+                args.Target = Target;
+
+                DragOver?.Invoke(this, args);
+            }
+        }
+
+        private void Editor_MouseUp(object sender, MouseEventArgs e) {
+            if (_isDrag) {
+                var diff = e.Location.ToSKPoint() - _start;
+                var args = e.ToEditorEvent(_start, diff);
+                args.Target = Target;
+
+                DragEnd?.Invoke(this, args);
+
+                Target = null;
+            }
+            else {
+                var args = e.ToEditorEvent();
+
+                Click?.Invoke(this, args);
+
+                //if (args.Handled) {
+                //    Target
+                //}
+            }
+
+            _isDrag = false;
+            _isPressed = false;
+            _start = SKPoint.Empty;
+        }
+
+        private void Editor_MouseDown(object sender, MouseEventArgs e) {
+            _start = e.Location.ToSKPoint();
+            _isPressed = true;
+        }
+
+        public virtual void OnClick(object sender, EditorMouseEventArgs e) {
+            var isHit = e.Location;
+            
+            Console.WriteLine("OnClick");
+        }
+
+        public virtual void OnDragStart(object sender, EditorMouseEventArgs e) {
+            Console.WriteLine("OnDragStart");
+        }
+
+        public virtual void OnDragOver(object sender, EditorDragEventArgs e) {
+            Console.WriteLine("OnDragOver");
+        }
+
+        public virtual void OnDragEnd(object sender, EditorMouseEventArgs e) {
+            Console.WriteLine("OnDragEnd");
+        }
     }
 
-    public class DefaultBehavior : IBehavior {
-        public NodeEditor Parent { get; set; }
-        public List<NodeBaseShape> Objects { get; set; }
+    public class EditorMouseEventArgs : EventArgs {
+        public MouseButtons Button { get; private set; }
+        public SKPoint Location { get; private set; }
+        public bool Handled { get; set; } = false;
+        public object Target { get; set; } = null;
 
-        public void RegisterHandler() {
-            Parent.MouseClick += Parent_MouseClickNoTarget;
-        }
-
-        private void Parent_MouseClickNoTarget(object sender, MouseEventArgs e) {
-            var location = e.Location.ToSKPoint();
-
-            if (e.Button == MouseButtons.Left) {
-                var result = Objects.FirstOrDefault(o => o.Contains(location));
-
-                if (Objects.Contains(result)) {
-                    Parent.Target = result;
-
-                    Parent.Target.Behavior = new MoveBehavior(Parent.Target);
-                    Parent.MouseClick -= Parent_MouseClickNoTarget;
-                    Parent.MouseDown += Parent_MouseDown;
-                    Parent.MouseMove += Parent_MouseMove;
-                    Parent.MouseUp += Parent_MouseUp;
-                }
-            }
-        }
-
-        private void Parent_MouseUp(object sender, MouseEventArgs e) {
-            Parent.Target.MouseUp.Invoke(sender, e);
-        }
-
-        private void Parent_MouseMove(object sender, MouseEventArgs e) {
-            Parent.Target.MouseMove.Invoke(sender, e);
-        }
-
-        private void Parent_MouseDown(object sender, MouseEventArgs e) {
-            Parent.Target.MouseDown.Invoke(sender, e);
-        }
-
-        private void Parent_MouseClickHasTarget(object sender, MouseEventArgs e) {
-            var location = e.Location.ToSKPoint();
-
-            if (e.Button == MouseButtons.Left) {
-                Parent.Target = null;
-
-                Parent.MouseClick -= Parent_MouseClickNoTarget;
-                Parent.MouseDown += Parent_MouseDown;
-                Parent.MouseMove += Parent_MouseMove;
-                Parent.MouseUp += Parent_MouseUp;
-            }
-        }
-
-        public void UnregisterHandler() {
-            Parent.MouseClick -= Parent_MouseClick;
-        }
+        public EditorMouseEventArgs(MouseButtons button, SKPoint location) =>
+            (Button, Location) = (button, location);
     }
 
-    public class MoveObject : IBehavior {
-        public Control Parent { get; set; }
-        private List<Node> Nodes;
+    public class EditorDragEventArgs : EventArgs {
+        public MouseButtons Button { get; private set; }
+        public SKPoint Start { get; private set; }
+        public SKPoint Delta { get; private set; }
+        //public bool Handled { get; set; } = false;
+        public object Target { get; set; } = null;
 
-        private SKPoint origin;
-        private SKPoint initialLocation;
-
-        public void RegisterHandler() {
-            Parent.MouseMove += Parent_MouseMove;
-            Parent.MouseDown += Parent_MouseDown;
-            Parent.MouseUp += Parent_MouseUp;
-        }
-
-        private void Parent_MouseUp(object sender, MouseEventArgs e) {
-            //if (e.Button == MouseButtons.Left) {
-            //    var p = e.Location.ToSKPoint();
-            //    var offset = p - origin;
-
-            //    if (node != null) {
-            //        node.Shape.Location = initialLocation + offset;
-            //        node = null;
-            //    }
-            //}
-        }
-
-        private void Parent_MouseDown(object sender, MouseEventArgs e) {
-            //if (e.Button == MouseButtons.Left) {
-            //    var p = e.Location.ToSKPoint();
-            //    var target = Nodes.FirstOrDefault(s => s.Shape.Contains(p));
-
-            //    if (Nodes.Contains(target)) {
-            //        origin = p;
-            //        initialLocation = target.Shape.Location;
-            //        node = target;
-            //    }
-            //}
-        }
-
-        private void Parent_MouseMove(object sender, MouseEventArgs e) {
-            //if (e.Button == MouseButtons.Left) {
-            //    var p = e.Location.ToSKPoint();
-            //    var offset = p - origin;
-
-            //    if (node != null) {
-            //        node.Shape.Location = initialLocation + offset;
-            //    }
-            //}
-        }
-
-        public void UnregisterHandler() {
-            Parent.MouseMove -= Parent_MouseMove;
-            Parent.MouseDown -= Parent_MouseDown;
-            Parent.MouseUp -= Parent_MouseUp;
-        }
+        public EditorDragEventArgs(MouseButtons button, SKPoint start, SKPoint delta) =>
+            (Button, Start, Delta) = (button, start, delta);
     }
 
-    public class LinkNode : IBehavior {
-        public Control Parent { get; set; }
-        private List<INode> Nodes => Services.Flow.GetNodes().ToList();
+    public static class Extension {
+        public static EditorMouseEventArgs ToEditorEvent(this MouseEventArgs args) =>
+            new EditorMouseEventArgs(args.Button, args.Location.ToSKPoint());
 
-        private INode @in;
-        private INode @out;
-        private LinkShape _link;
-
-        public void RegisterHandler() {
-            Parent.MouseMove += Parent_MouseMove;
-            Parent.MouseDown += Parent_MouseDown;
-            Parent.MouseUp += Parent_MouseUp;
-        }
-
-        public void UnregisterHandler() {
-            Parent.MouseMove -= Parent_MouseMove;
-            Parent.MouseDown -= Parent_MouseDown;
-            Parent.MouseUp -= Parent_MouseUp;
-        }
-
-        private void Parent_MouseUp(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                var p = e.Location.ToSKPoint();
-                var target = Nodes.Find(s => s.Shape.Contains(p));
-
-                if (Nodes.Contains(target) & target != @out) {
-                    @in = target;
-
-                    _link.SetIn(@in);
-                    _link = null;
-                }
-                else {
-                    Services.Flow.Links.Remove(_link);
-                    _link = null;
-                }
-            }
-        }
-
-        private void Parent_MouseDown(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                var p = e.Location.ToSKPoint();
-                var target = Nodes.FirstOrDefault(s => s.Shape.Contains(p));
-
-
-                if (Nodes.Contains(target)) {
-                    @out = target;
-
-                    _link = new LinkShape();
-                    _link.SetOut(@out);
-
-                    Services.Flow.Links.Add(_link);
-                }
-            }
-            //else if (e.Button == MouseButtons.Right) {
-            //    var p = e.Location.ToSKPoint();
-            //    var target = Shapes.FirstOrDefault(s => s.Contains(p));
-
-            //    if (Shapes.Contains(target)) {
-            //        var link = target.Connector1.Binding;
-
-            //        if (link != null) {
-            //            link.P0Ref.Binding = null;
-            //            link.P1Ref.Binding = null;
-            //            Links.Remove(_link);
-            //        }
-            //    }
-            //}
-        }
-
-        private void Parent_MouseMove(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                var p = e.Location.ToSKPoint();
-
-                if (_link != null) {
-                    _link.Update(p);
-                }
-            }
-        }
-
-
+        public static EditorDragEventArgs ToEditorEvent(this MouseEventArgs args, SKPoint start, SKPoint delta) =>
+            new EditorDragEventArgs(args.Button, start, delta);
     }
 }

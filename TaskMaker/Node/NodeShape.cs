@@ -19,142 +19,72 @@ namespace TaskMaker.Node {
         void Draw(SKCanvas sKCanvas);
     }
 
-    public class LinkShape {
-        public LinkShape Shape { get; set; }
-
-        public LinkShape() {
-            Shape = new LinkShape();
-        }
-
-        public void SetOut(Node output) {
-            Out = output;
-            Shape.P0Ref = output.Shape.Connector1;
-
-            Shape.P1Dummy = new PortShape();
-        }
-
-        public void Update(SKPoint p) {
-            Shape.P1Dummy.Location = p;
-        }
-
-        public void SetIn(INode input) {
-            Shape.P1Dummy = null;
-
-            if (Out.GetType() == typeof(LayerNode)) {
-                if (input.GetType() == typeof(JoinNode)) {
-                    In = input;
-                    Shape.P1Ref = In.Shape.Connector0;
-
-                    Services.Flow.AddSource(Out as LayerNode);
-                    Services.Flow.Links.Add(this);
-                }
-            }
-            else if (Out.GetType() == typeof(JoinNode)) {
-                if (input.GetType() == typeof(NLinearMapNode)) {
-                    In = input;
-                    Shape.P1Ref = In.Shape.Connector0;
-
-                    Services.Flow.Links.Add(this);
-                }
-            }
-            else if (Out.GetType() == typeof(SplitNode)) {
-                if (input.GetType() == typeof(LayerNode)) {
-                    In = input;
-                    Shape.P1Ref = In.Shape.Connector0;
-
-                    Services.Flow.AddSink(Out as LayerNode);
-                    Services.Flow.Links.Add(this);
-                }
-                else if (input.GetType() == typeof(MotorNode)) {
-                    In = input;
-                    Shape.P1Ref = In.Shape.Connector0;
-
-                    Services.Flow.AddSink(Out as MotorNode);
-                    Services.Flow.Links.Add(this);
-                }
-            }
-            else if (Out.GetType() == typeof(NLinearMapNode)) {
-                if (input.GetType() == typeof(SplitNode)) {
-                    In = input;
-                    Shape.P1Ref = In.Shape.Connector0;
-
-                    Services.Flow.Links.Add(this);
-                }
-            }
-        }
-    }
-
-    public class LinkShape {
-        public PortShape P0Ref { get; set; }
-        public PortShape P1Ref { get; set; }
-        public PortShape P1Dummy { get; set; }
-
-        public void Draw(SKCanvas sKCanvas) {
-            var stroke = new SKPaint() {
-                Color = SKColor.Parse("#0F2540").FlattenWithAlpha(0.5f),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 4.0f,
-            };
-
-            var path = new SKPath();
-
-            path.MoveTo(P0Ref.Location);
-
-            if (P1Dummy != null) {
-                if (SKPoint.Distance(P0Ref.Location, P1Dummy.Location) < 10) {
-                    path.LineTo(P1Dummy.Location);
-                }
-                else {
-                    path.CubicTo(P0Ref.Location + new SKPoint(40, 0), P1Dummy.Location + new SKPoint(-40, 0), P1Dummy.Location);
-                }
-            }
-            else if (P1Dummy == null & P1Ref != null) {
-                if (SKPoint.Distance(P0Ref.Location, P1Ref.Location) < 10) {
-                    path.LineTo(P1Ref.Location);
-                }
-                else {
-                    path.CubicTo(P0Ref.Location + new SKPoint(40, 0), P1Ref.Location + new SKPoint(-40, 0), P1Ref.Location);
-                }
-
-            }
-
-
-            sKCanvas.DrawPath(path, stroke);
-        }
+    public enum AnchorTypes {
+        LeftTop,
+        LeftMid,
+        LeftBottom,
+        MidTop,
+        Center,
+        MidBottom,
+        RightTop,
+        RightMid,
+        RightBottom
     }
 
     public class PortShape {
         public SKPoint Location { get; set; }
-        public LinkShape Binding { get; set; }
+        public SKRect Bounds { get; set; } = new SKRect() { Size = new SKSize(10, 10) };
+        public AnchorTypes Anchor { get; set; } = AnchorTypes.Center;
+        //public LinkShape Binding { get; set; }
         public bool IsVisible { get; set; } = true;
 
-        public void Draw(SKCanvas sKCanvas) {
-            if (!IsVisible) {
-                return;
-            }
+        private SKPoint _anchor;
 
+        public SKPicture DrawThis() {
             var iconPaint = new SKPaint() {
                 Color = SKColor.Parse("#434343"),
                 IsAntialias = true,
                 Style = SKPaintStyle.StrokeAndFill
             };
 
-            var anchor = SKMatrix.CreateTranslation(-10 / 2, -10 / 2);
-            var box = new SKRect() {
-                Size = new SKSize(10, 10),
-                Location = Location,
-            };
+            //_anchor = SKPoint.Empty;
+            if (Anchor == AnchorTypes.Center) {
+                _anchor = new SKPoint(Bounds.Left, Bounds.MidY);
+            }
 
-            box = anchor.MapRect(box);
+            // Prepare canvas
+            var recorder = new SKPictureRecorder();
+            var canvas = recorder.BeginRecording(Bounds);
 
-            sKCanvas.DrawRect(box, iconPaint);
+            canvas.DrawRect(Bounds, iconPaint);
+
+            var pic = recorder.EndRecording();
 
             iconPaint.Dispose();
+            recorder.Dispose();
+
+            return pic;
+        } 
+
+
+        public void Draw(SKCanvas sKCanvas) {
+            if (!IsVisible) {
+                return;
+            }
+
+            var pic = DrawThis();
+
+            sKCanvas.Save();
+            sKCanvas.Translate(Location);
+            sKCanvas.Translate(-_anchor.X, -_anchor.Y);
+            sKCanvas.DrawPicture(pic);
+            sKCanvas.Restore();
         }
     }
 
     public class MotorNodeShape : NodeBaseShape {
+        public override string Label { get; set; } = "Motor";
+
         public override SKColor[] Colors { get; set; } = new SKColor[] {
             SKColor.Parse("#006284").FlattenWithAlpha(0.8f),
             SKColor.Parse("#81C7D4").FlattenWithAlpha(0.8f)
@@ -207,7 +137,10 @@ namespace TaskMaker.Node {
 
 
     public class NodeBaseShape : INodeShape {
+        public bool IsSelected { get; set; } = false;
+        public bool IsDragOver { get; set; } = false;
         public SKPoint Location { get; set; } = new SKPoint();
+        public SKPoint Anchor { get; set; } = new SKPoint();
         public virtual string Label { get; set; } = "Node";
         public SKRect Bounds { get; set; }
         public virtual SKColor[] Colors { get; set; } = new SKColor[] {
@@ -221,18 +154,75 @@ namespace TaskMaker.Node {
 
         public Node Parent { get; private set; }
 
+        private SKPoint _dragStart;
+        private SKRect _localBounds;
+
         public NodeBaseShape(Node parent) => Parent = parent;
 
-        public MouseEventHandler MouseMove;
-        public MouseEventHandler MouseUp;
-        public MouseEventHandler MouseDown;
-        public MoveBehavior Behavior { get; set; }
+        //public NodeBaseShape(Node parent) {
+        //    Parent = parent;
+        //}
+
+        public void RegisterEvents(EditorEventManager manager) {
+            manager.Click += Manager_Click;
+            manager.DragStart += Manager_DragStart;
+            manager.DragOver += Manager_DragOver;
+            manager.DragEnd += Manager_DragEnd;
+        }
+
+        private void Manager_DragEnd(object sender, EditorDragEventArgs e) {
+            if (Parent == e.Target) {
+                Location = e.Delta + _dragStart;
+                _dragStart = SKPoint.Empty;
+
+                IsSelected = false;
+                IsDragOver = false;
+            }
+        }
+
+        private void Manager_DragOver(object sender, EditorDragEventArgs e) {
+            if (Parent == e.Target) {
+                Location = e.Delta + _dragStart;
+            }
+        }
+
+        private void Manager_DragStart(object sender, EditorDragEventArgs e) {
+            if (e.Target != null & e.Target != Parent)
+                return;
+
+            if (Contains(e.Start)) {
+                IsDragOver = true;
+                e.Target = Parent;
+                _dragStart = Location;
+
+                IsSelected = true;
+            }
+        }
+
+        private void Manager_Click(object sender, EditorMouseEventArgs e) {
+            if (e.Handled)
+                return;
+
+            if (Contains(e.Location)) {
+                e.Handled = true;
+                e.Target = Parent;
+
+                IsSelected = !IsSelected;
+            }
+        }
 
         public bool Contains(SKPoint p) {
             return Bounds.Contains(p);
         }
 
-        public void Draw(SKCanvas sKCanvas) {
+        public SKPicture DrawThis() {
+
+            var boxPaint = new SKPaint() {
+                Color = Colors[1],
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 4,
+            };
             var paint = new SKPaint() {
                 TextSize = 20,
                 TextAlign = SKTextAlign.Left,
@@ -250,93 +240,85 @@ namespace TaskMaker.Node {
             var labelRect = new SKRect();
             paint.MeasureText(Label, ref labelRect);
 
+            Anchor = labelRect.GetMid();
 
-            labelRect.Location += Location;
+            var labelBox = labelRect.ScaleAt(1.5f, 2f, labelRect.GetMid());
+            var container = labelRect.ScaleAt(2.5f, 2f, labelRect.GetMid());
 
-            var box = labelRect.ScaleAt(1.2f, 2.0f, labelRect.GetMid());
-            var box1 = box;
+            _localBounds = container;
 
-            box1.Size = box.Size + new SKSize(box.Height * 2, 0);
-            var t1 = SKMatrix.CreateTranslation(-box.Height, 0);
-            box1 = t1.MapRect(box1);
-
-            Bounds = box1;
-
-            var round = new SKRoundRect(box1, 10.0F);
+            var round = new SKRoundRect(container, 10.0F);
 
             var connectorBox0 = new SKRect();
             connectorBox0.Size = new SKSize(10, 10);
-            connectorBox0.Location = new SKPoint(box1.Left, box1.MidY);
+            connectorBox0.Location = new SKPoint(container.Left, container.MidY);
 
             var connectorBox1 = new SKRect();
             connectorBox1.Size = new SKSize(10, 10);
-            connectorBox1.Location = new SKPoint(box1.Right, box1.MidY);
+            connectorBox1.Location = new SKPoint(container.Right, container.MidY);
 
             Connector0.Location = connectorBox0.Location;
             Connector1.Location = connectorBox1.Location;
 
-            sKCanvas.DrawRoundRect(round, iconPaint);
+            // Prepare canvas
+            var recorder = new SKPictureRecorder();
+            var canvas = recorder.BeginRecording(_localBounds);
+
+
+            // Draw objects on canvas
+            canvas.DrawRoundRect(round, iconPaint);
             iconPaint.Color = Colors[1];
 
-            sKCanvas.DrawRect(box, iconPaint);
+            if (IsSelected) {
+                canvas.DrawRoundRect(round, boxPaint);
+            }
 
-            Connector0.Draw(sKCanvas);
-            Connector1.Draw(sKCanvas);
+            canvas.DrawRect(labelBox, iconPaint);
 
-            sKCanvas.DrawText(Label, Location, paint);
+            Connector0.Draw(canvas);
+            Connector1.Draw(canvas);
+
+            canvas.DrawText(Label, SKPoint.Empty, paint);
 
             paint.Dispose();
             iconPaint.Dispose();
-        }
-    }
+            boxPaint.Dispose();
 
-    public class MoveBehavior {
-        private NodeBaseShape _target;
-        private SKPoint _start = new SKPoint();
-        private SKPoint _origin = new SKPoint();
+            var pic = recorder.EndRecording();
 
-        public MoveBehavior(NodeBaseShape target) {
-            _target = target;
-
-            Register();
+            recorder.Dispose();
+            return pic;
         }
 
-        public void Register() {
-            _target.MouseDown += Move_MouseDown;
-            _target.MouseUp += Move_MouseUp;
-            _target.MouseMove += Move_MouseMove;
-        }
+        public void Draw(SKCanvas sKCanvas) {
+            var picPaint = new SKPaint() {
+                ImageFilter = SKImageFilter.CreateDropShadow(
+                    2.0f,
+                    2.0f,
+                    2.0f,
+                    2.0f,
+                    SKColors.Gray)};
+            var pic = DrawThis();
+            sKCanvas.Save();
+            
+            //if (IsDragOver) {
+            //    sKCanvas.RotateDegrees(10);
+            //}
+            // Translate to location
+            sKCanvas.Translate(Location.X, Location.Y);
 
-        public void Move_MouseDown(object sender, MouseEventArgs e) {
-            var location = e.Location.ToSKPoint();
+            // Translate to anchor
+            sKCanvas.Translate(-Anchor.X, -Anchor.Y);
 
-            if (e.Button == MouseButtons.Left) {
-                _start = location;
-                _origin = location;
-            }
-        }
+            var mat = sKCanvas.TotalMatrix;
+            Bounds = mat.MapRect(_localBounds);
 
-        public void Move_MouseUp(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                _start = new SKPoint();
-                _origin = new SKPoint();
-            }
-        }
-        
-        public void Move_MouseMove(object sender, MouseEventArgs e) {
-            var location = e.Location.ToSKPoint();
+            sKCanvas.DrawPicture(pic, IsDragOver? picPaint : null);
+            sKCanvas.Restore();
 
-            if (e.Button == MouseButtons.Left) {
-                _target.Location = _origin + location - _start;
-            }
-        }
-
-        public void Unregister(NodeBaseShape target) {
-            target.MouseDown -= Move_MouseDown;
-            target.MouseUp -= Move_MouseUp;
-            target.MouseMove -= Move_MouseMove;
-
-            _target = null;
+            pic.Dispose();
+            picPaint.Dispose();
+            return;
         }
     }
 }

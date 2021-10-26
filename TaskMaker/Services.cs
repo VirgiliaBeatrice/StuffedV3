@@ -15,6 +15,7 @@ namespace TaskMaker {
         static public Triangulation TriHandler { get; set; } = new Triangulation();
         static public Canvas Canvas { get; set; } = new Canvas();
         static public NLinearMap Map { get; set; }
-        static public Flow Flow { get; set; }
+        static public Graph Graph { get; set; }
+        //static public Flow Flow { get; set; }
     }
 }

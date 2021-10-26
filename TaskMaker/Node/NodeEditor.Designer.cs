@@ -133,12 +133,12 @@ namespace TaskMaker.Node {
             this.nodeContext.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.connectToMotorsToolStripMenuItem});
             this.nodeContext.Name = "nodeContext";
-            this.nodeContext.Size = new System.Drawing.Size(181, 48);
+            this.nodeContext.Size = new System.Drawing.Size(175, 26);
             // 
             // connectToMotorsToolStripMenuItem
             // 
             this.connectToMotorsToolStripMenuItem.Name = "connectToMotorsToolStripMenuItem";
-            this.connectToMotorsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.connectToMotorsToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
             this.connectToMotorsToolStripMenuItem.Text = "Connect to motors";
             this.connectToMotorsToolStripMenuItem.Click += new System.EventHandler(this.connectToMotorsToolStripMenuItem_Click);
             // 
@@ -158,8 +158,6 @@ namespace TaskMaker.Node {
         }
 
         #endregion
-
-        private SkiaSharp.Views.Desktop.SKGLControl skglControl1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.Button button3;
@@ -168,5 +166,6 @@ namespace TaskMaker.Node {
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.ContextMenuStrip nodeContext;
         private System.Windows.Forms.ToolStripMenuItem connectToMotorsToolStripMenuItem;
+        public SkiaSharp.Views.Desktop.SKGLControl skglControl1;
     }
 }

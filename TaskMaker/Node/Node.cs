@@ -161,6 +161,7 @@ namespace TaskMaker.Node {
     public abstract class Node {
         public virtual bool HasInputs { get; set; }
         public virtual bool HasOutputs { get; set; }
+        public NodeBaseShape Shape { get; protected set; }
         public abstract void Invalidate();
     }
 
@@ -197,8 +198,12 @@ namespace TaskMaker.Node {
         public List<Link> Ins { get; set; }
         public float Value { get; set; }
 
+        //public NodeBaseShape Shape { get; private set; }
+
         public MotorNode() {
             Ins = new List<Link>(1);
+
+            Shape = new MotorNodeShape(this);
         }
 
         public override void Invalidate() {
