@@ -69,7 +69,61 @@ namespace TaskMaker.Node {
     //    public static Transform Identity => new Transform(SKMatrix.Identity, SKMatrix.Identity, SKMatrix.Identity, anchor);
     //}
 
+    public class LinkShape {
+        public bool IsDummy { get; set; } = true;
+        public SKPoint InLocation { get; set; }
+        public SKPoint OutLocation { get; set; }
+        public SKRect Bounds { get; set; }
+
+        public void Invalidate() {
+            Bounds = new SKRect(InLocation.X, InLocation.Y, OutLocation.X, OutLocation.Y);
+            Bounds = Bounds.Standardized;
+        }
+
+        public SKPicture DrawThis() {
+            var boxPaint = new SKPaint() {
+                IsAntialias = true,
+                Color = SKColors.Gray,
+                StrokeWidth = 2,
+                Style = SKPaintStyle.Stroke,
+            };
+            var linkPaint = new SKPaint() {
+                IsAntialias = true,
+                Color = SKColors.DarkGray,
+                StrokeWidth = 4,
+                Style = SKPaintStyle.Stroke,
+            };
+            var path = new SKPath();
+
+            path.MoveTo(OutLocation);
+            path.CubicTo(
+                OutLocation + new SKPoint(10, 0), 
+                InLocation + new SKPoint(-10, 0), 
+                InLocation);
+
+            var recorder = new SKPictureRecorder();
+            var canvas = recorder.BeginRecording(Bounds);
+
+            if (IsDummy) {
+                linkPaint.PathEffect = SKPathEffect.CreateDash(new float[] { 5, 5 }, 0);
+            }
+
+            canvas.DrawPath(path, linkPaint);
+            canvas.DrawRect(Bounds, boxPaint);
+
+            var pic = recorder.EndRecording();
+
+            boxPaint.Dispose();
+            linkPaint.Dispose();
+            path.Dispose();
+            recorder.Dispose();
+
+            return pic;
+        }
+    }
+
     public class PortShape {
+        public NodeBaseShape Parent { get; set; }
         public SKPoint Location { get; set; }
         public SKRect Bounds { get; set; } = new SKRect() { Size = new SKSize(10, 10) };
         //public AnchorTypes Anchor { get; set; } = AnchorTypes.Center;
@@ -78,16 +132,62 @@ namespace TaskMaker.Node {
         public bool IsVisible { get; set; } = true;
 
         private SKPoint _anchor;
+        private SKMatrix _transform;
         //public Transform Transform { get; set; } = Transform.Identity;
 
-        public PortShape() {
+        public PortShape(NodeBaseShape parent) {
+            Parent = parent;
+
             Invalidate();
         }
 
+        public void RegisterEvents(EditorEventManager manager) {
+            manager.DragStart += Manager_DragStart;
+            manager.DragOver += Manager_DragOver;
+            manager.DragEnd += Manager_DragEnd;
+        }
+
+        private void Manager_DragEnd(object sender, EditorDragEventArgs e) {
+            if (e.Target == null)
+                return;
+
+            var location = e.Start + e.Delta;
+            var localPos = _transform.MapPoint(location);
+
+
+            if (Contains(localPos) & this != e.Target) {
+                (e.Link as LinkShape).InLocation = Location;
+                (e.Link as LinkShape).IsDummy = false;
+            }
+        }
+
+        private void Manager_DragOver(object sender, EditorDragEventArgs e) {
+            if (this != e.Target)
+                return;
+
+            var location = e.Start + e.Delta;
+
+            (e.Link as LinkShape).InLocation = location;
+        }
+
+        private void Manager_DragStart(object sender, EditorDragEventArgs e) {
+            if (this != e.Target & e.Target != null)
+                return;
+
+            //Invalidate();
+            var localPos = Parent._transform.MapPoint(e.Start);
+
+            if (Contains(localPos)) {
+                e.Target = this;
+                e.Link = new LinkShape() {
+                    OutLocation = (e.Target as PortShape).Location,
+                    InLocation = (e.Target as PortShape).Location,
+                };
+            }
+        }
+
         public bool Contains(SKPoint p) {
-            //var anchor = SKMatrix.CreateTranslation(-_anchor.X, -_anchor.Y);
             var mat = SKMatrix.CreateTranslation(Location.X, Location.Y);
-            //var mat = anchor.PostConcat(translate);
             var toLocal = mat.Invert();
 
             return Bounds.Contains(toLocal.MapPoint(p));
@@ -100,6 +200,10 @@ namespace TaskMaker.Node {
 
             var mat = SKMatrix.CreateTranslation(-_anchor.X, -_anchor.Y);
             Bounds = mat.MapRect(Bounds);
+
+            var translate = SKMatrix.CreateTranslation(Location.X, Location.Y);
+
+            _transform = translate.Invert();
         }
 
         public SKPicture DrawThis() {
@@ -138,7 +242,6 @@ namespace TaskMaker.Node {
             var pic = DrawThis();
 
             sKCanvas.Save();
-            //sKCanvas.Translate(-_anchor.X, -_anchor.Y);
             sKCanvas.Translate(Location);
             sKCanvas.DrawPicture(pic);
             sKCanvas.Restore();
@@ -159,6 +262,8 @@ namespace TaskMaker.Node {
     }
 
     public class MapNodeShape : NodeBaseShape {
+        public override string Label { get; set; } = "Map";
+
         public MapNodeShape(Node parent) : base(parent) { }
 
         public override SKColor[] Colors { get; set; } = new SKColor[] {
@@ -176,32 +281,10 @@ namespace TaskMaker.Node {
     //    };
     //}
 
-    //public class SplitNodeShape : NodeBaseShape {
-    //    public override string Label { get; set; } = "Split";
-    //    public override SKColor[] Colors { get; set; } = new SKColor[] {
-    //        SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
-    //        SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
-    //    };
-
-    //    public SplitNodeShape(INode parent) : base(parent) { }
-    //}
-
-    //public class JoinNodeShape : NodeBaseShape {
-    //    public override string Label { get; set; } = "Join";
-
-    //    public JoinNodeShape(INode parent) : base(parent) { }
-
-    //    public override SKColor[] Colors { get; set; } = new SKColor[] {
-    //        SKColor.Parse("#1B813E").FlattenWithAlpha(0.8f),
-    //        SKColor.Parse("#5DAC81").FlattenWithAlpha(0.8f)
-    //    };
-
-    //}
-
-
     public class NodeBaseShape : INodeShape {
         public bool IsSelected { get; set; } = false;
         public bool IsDragOver { get; set; } = false;
+        public bool IsConnecting { get; set; } = false;
         public SKPoint Location { get; set; } = new SKPoint();
         public SKPoint Anchor { get; set; } = new SKPoint();
         public virtual string Label { get; set; } = "Node";
@@ -211,30 +294,49 @@ namespace TaskMaker.Node {
             SKColor.Parse("#BDC0BA").FlattenWithAlpha(0.8f)
         };
 
-        public PortShape Connector0 { get; set; } = new PortShape();
-        public PortShape Connector1 { get; set; } = new PortShape();
+        public PortShape Connector0 { get; set; }
+        public PortShape Connector1 { get; set; }
+        public LinkShape Link { get; set; }
         public SKTypeface Font { get; set; }
 
         public Node Parent { get; private set; }
 
         private SKPoint _dragStart;
         private SKRect _localBounds;
+        public SKMatrix _transform;
 
-        public NodeBaseShape(Node parent) => Parent = parent;
+        //public NodeBaseShape(Node parent) => Parent = parent;
 
-        //public NodeBaseShape(Node parent) {
-        //    Parent = parent;
-        //}
+        public NodeBaseShape(Node parent) {
+            Parent = parent;
+            Connector0 = new PortShape(this) {
+                AnchorX = AnchorX.Left,
+                AnchorY = AnchorY.Mid
+            };
+
+            Connector1 = new PortShape(this) {
+                AnchorX = AnchorX.Right,
+                AnchorY = AnchorY.Mid
+            };
+
+            Invalidate();
+        }
 
         public void RegisterEvents(EditorEventManager manager) {
             manager.Click += Manager_Click;
             manager.DragStart += Manager_DragStart;
             manager.DragOver += Manager_DragOver;
             manager.DragEnd += Manager_DragEnd;
+
+            Connector0.RegisterEvents(manager);
+            Connector1.RegisterEvents(manager);
         }
 
         private void Manager_DragEnd(object sender, EditorDragEventArgs e) {
-            if (Parent == e.Target) {
+            if (this != e.Target)
+                return;
+
+            if (IsDragOver) {
                 Location = e.Delta + _dragStart;
                 _dragStart = SKPoint.Empty;
 
@@ -244,18 +346,22 @@ namespace TaskMaker.Node {
         }
 
         private void Manager_DragOver(object sender, EditorDragEventArgs e) {
-            if (Parent == e.Target) {
+            if (this != e.Target)
+                return;
+
+            if (IsDragOver)
                 Location = e.Delta + _dragStart;
-            }
         }
 
         private void Manager_DragStart(object sender, EditorDragEventArgs e) {
-            if (e.Target != null & e.Target != Parent)
+            if (this != e.Target & e.Target != null)
                 return;
 
-            if (Contains(e.Start)) {
+            var localPos = _transform.MapPoint(e.Start);
+
+            if (!Connector0.Contains(localPos) & !Connector1.Contains(localPos) & Contains(e.Start)) {
                 IsDragOver = true;
-                e.Target = Parent;
+                e.Target = this;
                 _dragStart = Location;
 
                 IsSelected = true;
@@ -266,23 +372,34 @@ namespace TaskMaker.Node {
             if (e.Handled)
                 return;
 
-            if (Contains(e.Location)) {
-                e.Handled = true;
-                e.Target = Parent;
+            var localPos = _transform.MapPoint(e.Location);
 
-                IsSelected = !IsSelected;
+            if (Contains(e.Location)) {
+                if (Connector0.Contains(localPos)) {
+                    Console.WriteLine("Inside connector0");
+                } else if (Connector1.Contains(localPos)) {
+                    Console.WriteLine("Inside connector1");
+                }
+                else {
+                    e.Handled = true;
+                    e.Target = Parent;
+
+                    IsSelected = !IsSelected;
+                }
             }
         }
 
         public bool Contains(SKPoint p) {
-            var mat = SKMatrix.CreateTranslation(Location.X, Location.Y);
-            if (Connector0.Contains(mat.Invert().MapPoint(p))) {
-
-            }
             return Bounds.Contains(p);
         }
 
+        public void Invalidate() {
+            var translate = SKMatrix.CreateTranslation(Location.X, Location.Y);
+            _transform = translate.Invert();
+        }
+
         public SKPicture DrawThis() {
+            Invalidate();
 
             var boxPaint = new SKPaint() {
                 Color = Colors[1],
@@ -311,6 +428,12 @@ namespace TaskMaker.Node {
 
             var labelBox = labelRect.ScaleAt(1.5f, 2f, labelRect.GetMid());
             var container = labelRect.ScaleAt(2.5f, 2f, labelRect.GetMid());
+            var anchorTranslate = SKMatrix.CreateTranslation(-Anchor.X, -Anchor.Y);
+            var textPosition = SKPoint.Empty;
+
+            container = anchorTranslate.MapRect(container);
+            labelBox = anchorTranslate.MapRect(labelBox);
+            textPosition = anchorTranslate.MapPoint(textPosition);
 
             _localBounds = container;
 
@@ -339,8 +462,8 @@ namespace TaskMaker.Node {
             //if (IsSelected) {
             //    canvas.DrawRoundRect(round, boxPaint);
             //} else {
-                boxPaint.Color = SKColors.Gray;
-                canvas.DrawRoundRect(round, boxPaint);
+            boxPaint.Color = SKColors.Gray;
+            canvas.DrawRoundRect(round, boxPaint);
             //}
 
             canvas.DrawRect(labelBox, iconPaint);
@@ -348,7 +471,7 @@ namespace TaskMaker.Node {
             Connector0.Draw(canvas);
             Connector1.Draw(canvas);
 
-            canvas.DrawText(Label, SKPoint.Empty, paint);
+            canvas.DrawText(Label, textPosition, paint);
 
             paint.Dispose();
             iconPaint.Dispose();
@@ -379,7 +502,7 @@ namespace TaskMaker.Node {
             sKCanvas.Translate(Location.X, Location.Y);
 
             // Translate to anchor
-            sKCanvas.Translate(-Anchor.X, -Anchor.Y);
+            //sKCanvas.Translate(-Anchor.X, -Anchor.Y);
 
             var mat = sKCanvas.TotalMatrix;
             Bounds = mat.MapRect(_localBounds);

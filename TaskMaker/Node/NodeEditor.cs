@@ -51,7 +51,11 @@ namespace TaskMaker.Node {
                     InitializeNodes();
                     break;
                 case 'm':
+                    var node = new MapNode();
+                    node.Shape.Location = Mid;
+                    node.Shape.RegisterEvents(_eventManager);
 
+                    Services.Graph.AddNode(node);
                     break;
                 case 'l':
 
@@ -107,6 +111,9 @@ namespace TaskMaker.Node {
         public event EventHandler<EditorDragEventArgs> DragStart;
         public event EventHandler<EditorDragEventArgs> DragOver;
         public event EventHandler<EditorDragEventArgs> DragEnd;
+        //public event EventHandler<EditorConnectEventArgs> ConnectStart;
+        //public event EventHandler<EditorConnectEventArgs> ConnectOver;
+        //public event EventHandler<EditorConnectEventArgs> ConnectEnd;
 
 
         //public event MouseEventHandler OnClicked;
@@ -114,9 +121,11 @@ namespace TaskMaker.Node {
 
         private bool _isDrag = false;
         private bool _isPressed = false;
+        private bool _isConnect = false;
         private SKPoint _start;
         private float _delta = 6.0f;
         private Timer _timer;
+        private LinkShape _connection;
 
         public EditorEventManager(NodeEditor editor) {
             Editor = editor;
@@ -153,8 +162,17 @@ namespace TaskMaker.Node {
                     DragStart?.Invoke(this, args);
 
                     if (args.Target != null) {
-                        _isDrag = true;
-                        Target = args.Target;
+                        if (args.Target is NodeBaseShape) {
+                            _isDrag = true;
+                            Target = args.Target;
+                        }
+                        else if (args.Target is PortShape) {
+                            _isDrag = true;
+                            Target = args.Target;
+
+                            Services.Graph.LinksS.Add(args.Link as LinkShape);
+                        }
+
                     }
 
                 }
@@ -177,16 +195,18 @@ namespace TaskMaker.Node {
 
                 DragEnd?.Invoke(this, args);
 
+                if (args.Link != null) {
+                    if ((args.Link as LinkShape).IsDummy) {
+                        Services.Graph.LinksS.Remove(args.Link as LinkShape);
+                    }
+                }
+
                 Target = null;
             }
             else {
                 var args = e.ToEditorEvent();
 
                 Click?.Invoke(this, args);
-
-                //if (args.Handled) {
-                //    Target
-                //}
             }
 
             _isDrag = false;
@@ -234,9 +254,17 @@ namespace TaskMaker.Node {
         public SKPoint Delta { get; private set; }
         //public bool Handled { get; set; } = false;
         public object Target { get; set; } = null;
+        public object Link { get; set; } = null;
 
         public EditorDragEventArgs(MouseButtons button, SKPoint start, SKPoint delta) =>
             (Button, Start, Delta) = (button, start, delta);
+    }
+
+    public class EditorConnectEventArgs : EventArgs {
+        public MouseButtons Buttons { get; set; }
+        public PortShape In { get; set; }
+        public PortShape Out { get; set; }
+        public object Target { get; set; }
     }
 
     public static class Extension {

@@ -8,6 +8,7 @@ namespace TaskMaker.Node {
     public class Graph {
         public List<Node> Nodes { get; set; } = new List<Node>();
         public List<Link> Links { get; set; } = new List<Link>();
+        public List<LinkShape> LinksS { get; set; } = new List<LinkShape>();
 
         public Graph() { }
 

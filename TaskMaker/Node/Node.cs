@@ -198,8 +198,6 @@ namespace TaskMaker.Node {
         public List<Link> Ins { get; set; }
         public float Value { get; set; }
 
-        //public NodeBaseShape Shape { get; private set; }
-
         public MotorNode() {
             Ins = new List<Link>(1);
 
@@ -217,11 +215,12 @@ namespace TaskMaker.Node {
         public NLinearMap Map { get; set; }
         public double[] Values { get; set; }
 
-        private List<int> _shapes { get; set; }
 
         public MapNode() {
             Ins = new List<Link>();
             Outs = new List<Link>();
+
+            Shape = new MapNodeShape(this);
         }
 
         public override void Invalidate() {
