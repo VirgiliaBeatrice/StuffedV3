@@ -31,14 +31,76 @@ namespace TaskMaker.Node {
         RightBottom
     }
 
+    public enum AnchorX {
+        Left = 0,
+        Mid = 1,
+        Right = 2,
+    }
+
+    public enum AnchorY {
+        Top = 0,
+        Mid = 1,
+        Bottom = 2,
+    }
+
+    //public struct Transform {
+    //    public SKMatrix Scale;
+    //    public SKMatrix Rotate;
+    //    public SKMatrix Translate;
+    //    public SKPoint Anchor;
+    //    public SKPoint Pivot;
+
+    //    public Transform(SKMatrix s, SKMatrix r, SKMatrix t, SKPoint anchor, SKPoint pivot) {
+    //        Scale = s;
+    //        Rotate = r;
+    //        Translate = t;
+    //        Anchor = anchor;
+    //        Pivot = pivot;
+    //    }
+
+    //    private SKMatrix T => Scale.PostConcat(Rotate).PostConcat(Translate);
+
+    //    private SKMatrix TInv => T.Invert();
+
+    //    public SKPoint LocalToParent(SKPoint point) => T.MapPoint(point);
+
+    //    public SKPoint ParentToLocal(SKPoint point) => TInv.MapPoint(point);
+
+    //    public static Transform Identity => new Transform(SKMatrix.Identity, SKMatrix.Identity, SKMatrix.Identity, anchor);
+    //}
+
     public class PortShape {
         public SKPoint Location { get; set; }
         public SKRect Bounds { get; set; } = new SKRect() { Size = new SKSize(10, 10) };
-        public AnchorTypes Anchor { get; set; } = AnchorTypes.Center;
-        //public LinkShape Binding { get; set; }
+        //public AnchorTypes Anchor { get; set; } = AnchorTypes.Center;
+        public AnchorX AnchorX { get; set; } = AnchorX.Mid;
+        public AnchorY AnchorY { get; set; } = AnchorY.Mid;
         public bool IsVisible { get; set; } = true;
 
         private SKPoint _anchor;
+        //public Transform Transform { get; set; } = Transform.Identity;
+
+        public PortShape() {
+            Invalidate();
+        }
+
+        public bool Contains(SKPoint p) {
+            //var anchor = SKMatrix.CreateTranslation(-_anchor.X, -_anchor.Y);
+            var mat = SKMatrix.CreateTranslation(Location.X, Location.Y);
+            //var mat = anchor.PostConcat(translate);
+            var toLocal = mat.Invert();
+
+            return Bounds.Contains(toLocal.MapPoint(p));
+        }
+
+        private void Invalidate() {
+            _anchor = new SKPoint(
+                Bounds.Left + 0.5f * (int)AnchorX * Bounds.Width,
+                Bounds.Top + 0.5f * (int)AnchorY * Bounds.Height);
+
+            var mat = SKMatrix.CreateTranslation(-_anchor.X, -_anchor.Y);
+            Bounds = mat.MapRect(Bounds);
+        }
 
         public SKPicture DrawThis() {
             var iconPaint = new SKPaint() {
@@ -47,10 +109,11 @@ namespace TaskMaker.Node {
                 Style = SKPaintStyle.StrokeAndFill
             };
 
-            //_anchor = SKPoint.Empty;
-            if (Anchor == AnchorTypes.Center) {
-                _anchor = new SKPoint(Bounds.Left, Bounds.MidY);
-            }
+            //_anchor = new SKPoint(
+            //    Bounds.Left + 0.5f * (int)AnchorX * Bounds.Width,
+            //    Bounds.Top + 0.5f * (int)AnchorY * Bounds.Height);
+            //var mat = SKMatrix.CreateTranslation(-_anchor.X, -_anchor.Y);
+            //Bounds = mat.MapRect(Bounds);
 
             // Prepare canvas
             var recorder = new SKPictureRecorder();
@@ -75,8 +138,8 @@ namespace TaskMaker.Node {
             var pic = DrawThis();
 
             sKCanvas.Save();
+            //sKCanvas.Translate(-_anchor.X, -_anchor.Y);
             sKCanvas.Translate(Location);
-            sKCanvas.Translate(-_anchor.X, -_anchor.Y);
             sKCanvas.DrawPicture(pic);
             sKCanvas.Restore();
         }
@@ -212,6 +275,10 @@ namespace TaskMaker.Node {
         }
 
         public bool Contains(SKPoint p) {
+            var mat = SKMatrix.CreateTranslation(Location.X, Location.Y);
+            if (Connector0.Contains(mat.Invert().MapPoint(p))) {
+
+            }
             return Bounds.Contains(p);
         }
 
