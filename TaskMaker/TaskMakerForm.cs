@@ -87,6 +87,14 @@ namespace TaskMaker {
         }
 
         private void PrepareMap(Layer layer) {
+            if (layer.BindedTarget == null) {
+                MessageBox.Show("No binded target.");
+                return;
+            }
+
+            if (layer.TargetMap != null)
+                return;
+
             var idx = Services.Canvas.Layers.IndexOf(layer);
 
             if (idx == 0)

@@ -27,7 +27,7 @@ namespace TaskMaker.SimplicialMapping {
             var affineFactor = np.ones(Dimension);
 
             //A = np.vstack(affineFactor, basis);
-
+            // TODO: Ugly
             if (Dimension == 2) {
                 A = basis;
             }
@@ -39,15 +39,17 @@ namespace TaskMaker.SimplicialMapping {
         public double[] GetLambdas(SKPoint p) {
             InitializeA();
 
-            var b = np.array(p.ToArray());
+            var b = np.array(p.ToArray().Select(e => Convert.ToDouble(e)).ToArray());
             var B = np.hstack(np.ones(1), b);
             
             if (Dimension == 2) {
                 B = b;
             }
+            // TODO: Ugly
 
-            var ret = np.linalg.solve(A, B).GetData<float>();
-            return ret.Select(e => Convert.ToDouble(e)).ToArray();
+            //var ret = np.linalg.solve(A, B).GetData<float>();
+            //return ret.Select(e => Convert.ToDouble(e)).ToArray();
+            return np.linalg.solve(A, B).GetData<double>();
         }
 
         public double[] GetZeroLambdas() {
@@ -78,7 +80,7 @@ namespace TaskMaker.SimplicialMapping {
                 var sBasis = bary.Basis;
                 var lambdas = bary.GetLambdas(p);
 
-                if (lambdas.Any(e => e < 0.0f)) {
+                if (lambdas.Any(e => Math.Round(e, 4) < 0.0f)) {
                     lambdas = bary.GetZeroLambdas();
                 }
 
@@ -208,8 +210,8 @@ namespace TaskMaker.SimplicialMapping {
         public bool SetComponent(float[] element = null) {
             if (element == null) {
                 // Reset to start
-                //_cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
-                //_cursor.MoveNext();
+                _cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
+                _cursor.MoveNext();
 
                 var idx = _cursor.Current;
                 IsSet = false;

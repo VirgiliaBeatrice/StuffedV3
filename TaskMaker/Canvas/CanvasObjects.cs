@@ -209,21 +209,54 @@ namespace TaskMaker {
             _children.ForEach(c => c.Reset());
         }
 
-        //public double[] GetLambda() {
-            //return Bary.GetLambda(Controller.Location);
-        //}
+        public void Interpolate(SKPoint p) {
+            // TODO: Ugly
+            if (Entities.Count == 2) {
+                // Line
+                var line = new Geometry.LineSegment() {
+                    P0 = Entities[0].Location,
+                    P1 = Entities[1].Location
+                };
+                var dir = line.Direction;
+                var perp = new Geometry.LineSegment() {
+                    P0 = SKMatrix.CreateRotationDegrees(90.0f).MapPoint(dir) + p,
+                    P1 = p,
+                };
 
-        //public void InterpolateTensor(SKPoint p) {
-        //    if (BindedTarget == null)
-        //        return;
+                var (k1, k2) = Geometry.LineSegment.Intersect(line.P0, line.P1, perp.P0, perp.P1);
 
-        //    //var results = Bary.Interpolate(p);
-        //    //var results = MultiBary.Interpolate(p);
+                if (k1 > 1.0f)
+                    k1 = 1.0f;
+                else if (k1 < 0.0f)
+                    k1 = 0.0f;
 
-        //    //Debug.Assert(results.SequenceEqual(resultsNew));
+                var intersection = line.P0 + new SKPoint(k1 * line.Direction.X, k1 * line.Direction.Y);
+                Controller.Location = intersection;
 
-        //    //BindedTarget.FromVector(Vector<float>.Build.Dense(results.Select(r => (float)r).ToArray()));
-        //}
+                var map = TargetMap;
+
+                if (BindedTarget != null) {
+                    var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
+                    var result = map.MapTo(lambdas);
+                    var resultF = result.Select(el => (float)el).ToArray();
+
+                    BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
+                }
+            }
+            else {
+                var map = TargetMap;
+
+                Controller.Location = p;
+
+                if (BindedTarget != null) {
+                    var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
+                    var result = map.MapTo(lambdas);
+                    var resultF = result.Select(el => (float)el).ToArray();
+
+                    BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
+                }
+            }
+        }
 
         public void ShowController() {
             Controller.IsVisible = true;

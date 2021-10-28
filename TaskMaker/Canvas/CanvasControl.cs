@@ -458,6 +458,16 @@ namespace TaskMaker {
         private void ProcessManipulatMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
+
+                foreach(var l in SelectedLayer.TargetMap.Layers) {
+                    var sum = SKPoint.Empty;
+
+                    l.Entities.ForEach(e => sum = sum + e.Location);
+
+                    var centroid = new SKPoint(sum.X / l.Entities.Count, sum.Y / l.Entities.Count);
+
+                    l.Controller.Location = centroid;
+                }
                 //BeginPointerTrace(new Point((int)wLocation.X, (int)wLocation.Y));
             }
         }
@@ -466,58 +476,7 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
-                if (SelectedLayer.Entities.Count == 2) {
-                    // Line
-                    var line = new Geometry.LineSegment() {
-                        P0 = SelectedLayer.Entities[0].Location,
-                        P1 = SelectedLayer.Entities[1].Location
-                    };
-                    var dir = line.Direction;
-                    var perp = new Geometry.LineSegment() {
-                        P0 = SKMatrix.CreateRotationDegrees(90.0f).MapPoint(dir) + wLocation,
-                        P1 = wLocation,
-                    };
-
-                    var (k1, k2) = Geometry.LineSegment.Intersect(line.P0, line.P1, perp.P0, perp.P1);
-
-                    k1 = k1 > 1.0f ? 1.0f : k1;
-                    k1 = k1 < 0.0f ? 0.0f : k1;
-
-                    var intersection = line.P0 + new SKPoint(k1 * line.Direction.X, k1 * line.Direction.Y);
-                    SelectedLayer.Controller.Location = intersection;
-
-                    var map = SelectedLayer.TargetMap;
-
-                    if (SelectedLayer.BindedTarget != null) {
-                        var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
-                        //var lambda = SelectedLayer.Bary.GetLambda(wLocation);
-                        var result = map.MapTo(lambdas);
-                        //var result = (ParentForm as TaskMakerForm).LToMotor.MapTo(lambdas);
-                        var resultF = result.Select(el => (float)el).ToArray();
-
-                        SelectedLayer.BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
-                    }
-                }
-                else {
-                    //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
-
-                    var map = SelectedLayer.TargetMap;
-
-                    SelectedLayer.Controller.Location = wLocation;
-
-                    if (SelectedLayer.BindedTarget != null) {
-                        var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
-                        //var lambda = SelectedLayer.Bary.GetLambda(wLocation);
-                        var result = map.MapTo(lambdas);
-                        //var result = (ParentForm as TaskMakerForm).LToMotor.MapTo(lambdas);
-                        var resultF = result.Select(el => (float)el).ToArray();
-
-                        SelectedLayer.BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
-
-                        //_canvas.PointerTrace.Update(wLocation);
-                    }
-                }
-
+                SelectedLayer.Interpolate(wLocation);
             }
         }
 
