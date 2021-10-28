@@ -83,14 +83,6 @@ namespace TaskMaker {
             LToMotor = new NLinearMap();
             RToMotor = new NLinearMap();
             BiToLR = new NLinearMap();
-
-
-            //LToMotor.AddBary(Services.Canvas.Layers[0].Bary);
-            //RToMotor.AddBary(Services.Canvas.Layers[1].Bary);
-
-            //BiToLR.AddBary(Services.Canvas.Layers[2].Bary);
-            //BiToLR.AddBary(Services.Canvas.Layers[3].Bary);
-            //Services.Canvas.Layers[0].BindedTarget = 
         }
 
         private void ConfigShowcase() {
@@ -298,8 +290,8 @@ namespace TaskMaker {
                     e.Handled = true;
                     break;
                 case Keys.P:
-                    canvasControl1.PairAll();
-                    canvasControl1.PairWithNLinearMap(LToMotor);
+                    //canvasControl1.PairAll();
+                    canvasControl1.PairWithNLinearMap(SelectedLayer.TargetMap);
                     //canvasControl1.Pair();
                     e.Handled = true;
                     break;
