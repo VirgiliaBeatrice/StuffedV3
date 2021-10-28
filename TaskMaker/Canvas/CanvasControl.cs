@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using TaskMaker.SimplicialMapping;
 
 namespace TaskMaker {
     public partial class CanvasControl : UserControl {
@@ -176,6 +177,51 @@ namespace TaskMaker {
 
         public bool PairingStart = true;
 
+        public void PairWithNLinearMap(NLinearMap map) {
+            if (SelectedLayer.BindedTarget == null) {
+                MessageBox.Show("Layer without target.",
+                    "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (PairingStart) {
+                SelectedLayer.Entities[0].IsSelected = true;
+                PairingStart = false;
+
+                map.SetComponent();
+
+                var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
+
+                MessageBox.Show($"Next: {content}",
+                "Information",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            else {
+                var target = SelectedLayer.BindedTarget;
+                var cursor = map.CurrentCursor;
+                var isSet = map.SetComponent(target.CreateTargetState().ToVector().ToArray());
+
+                if (!isSet) {
+                    SelectedLayer.Reset();
+
+                    var content = $"{SelectedLayer.Entities[cursor[0]]} is set. \r\nNext: {SelectedLayer.Entities[cursor[0] + 1]}";
+                    MessageBox.Show($"{content}",
+                    "Information",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else {
+                    SelectedLayer.Reset();
+                    PairingStart = true;
+
+                    MessageBox.Show("All entites are paired.",
+                    "Information",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
         public void PairAll() {
             if (SelectedLayer.BindedTarget == null) {
                 MessageBox.Show("Layer without target.",
@@ -219,7 +265,7 @@ namespace TaskMaker {
             //        MessageBox.Show("All entites are paired.",
             //        "Information",
             //        MessageBoxButtons.OK, MessageBoxIcon.Information);
-            //    } 
+            //    }
             //}
         }
 
@@ -416,7 +462,14 @@ namespace TaskMaker {
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
                 SelectedLayer.Controller.Location = wLocation;
-                SelectedLayer.InterpolateTensor(wLocation);
+
+                var lambda = SelectedLayer.Bary.GetLambda(wLocation);
+                var result = (ParentForm as TaskMakerForm).LToMotor.MapTo(new double[][] { lambda });
+                var resultF = result.Select(el => (float)el).ToArray();
+
+                SelectedLayer.BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
+
+                //SelectedLayer.InterpolateTensor(wLocation);
                 //_canvas.SelectedLayer.Interpolate(wLocation);
                 _canvas.PointerTrace.Update(wLocation);
             }

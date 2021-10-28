@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using TaskMaker.Node;
+using TaskMaker.SimplicialMapping;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -19,6 +20,11 @@ namespace TaskMaker {
         private ToolTip tooltipBtnTargetSelection = new ToolTip();
         private Caretaker _caretaker;
         private TreeNode _root;
+
+
+        public NLinearMap LToMotor; 
+        public NLinearMap RToMotor; 
+        public NLinearMap BiToLR;
 
         private Layer SelectedLayer => Services.Canvas.SelectedLayer;
 
@@ -61,6 +67,51 @@ namespace TaskMaker {
             _root.Nodes.Add(new TreeNode() { Text = Services.Canvas.Layers[0].Name, Tag = Services.Canvas.Layers[0] });
 
             UpdateTreeview();
+            Showcase();
+        }
+
+        private void Showcase() {
+            button5_Click(null, null);
+            button5_Click(null, null);
+            button5_Click(null, null);
+
+            Services.Canvas.Layers[0].Name = "Left";
+            Services.Canvas.Layers[1].Name = "Right";
+            Services.Canvas.Layers[2].Name = "OpenClose";
+            Services.Canvas.Layers[3].Name = "Position";
+
+            LToMotor = new NLinearMap();
+            RToMotor = new NLinearMap();
+            BiToLR = new NLinearMap();
+
+
+            //LToMotor.AddBary(Services.Canvas.Layers[0].Bary);
+            //RToMotor.AddBary(Services.Canvas.Layers[1].Bary);
+
+            //BiToLR.AddBary(Services.Canvas.Layers[2].Bary);
+            //BiToLR.AddBary(Services.Canvas.Layers[3].Bary);
+            //Services.Canvas.Layers[0].BindedTarget = 
+        }
+
+        private void ConfigShowcase() {
+
+        }
+
+        private void PrepareMap(Layer layer) {
+            var idx = Services.Canvas.Layers.IndexOf(layer);
+
+            if (idx == 0)
+                layer.TargetMap = LToMotor;
+            else if (idx == 1)
+                layer.TargetMap = RToMotor;
+            else
+                layer.TargetMap = BiToLR;
+
+            layer.CreateBary();
+
+            var dim = layer.BindedTarget.Dimension;
+            // dim(motors) = 3
+            layer.TargetMap.AddBary(layer.Bary, dim);
         }
 
         private void TreeView1_DragDrop(object sender, DragEventArgs e) {
@@ -248,6 +299,7 @@ namespace TaskMaker {
                     break;
                 case Keys.P:
                     canvasControl1.PairAll();
+                    canvasControl1.PairWithNLinearMap(LToMotor);
                     //canvasControl1.Pair();
                     e.Handled = true;
                     break;
@@ -257,6 +309,10 @@ namespace TaskMaker {
                     form.ShowDialog();
                     form.Dispose();
                     break;
+                case Keys.Q:
+                    PrepareMap(SelectedLayer);
+                    break;
+
             }
 
             if (e.Control && e.KeyCode == Keys.Z) {

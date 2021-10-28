@@ -38,7 +38,8 @@ namespace TaskMaker {
 
         public override void FromVector(Vector<float> vector) {
             for (int i = 0; i < vector.Count; ++i) {
-                Motors[i].position.Value = (int)vector[i];
+                var result = (int)vector[i] < -500 ? -500 : (int)vector[i];
+                Motors[i].position.Value = result;
             }
         }
 

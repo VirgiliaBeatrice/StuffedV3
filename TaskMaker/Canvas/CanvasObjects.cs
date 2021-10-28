@@ -154,7 +154,7 @@ namespace TaskMaker {
         private List<Layer> _children = new List<Layer>();
 
         public ComplexBary Bary;
-        //public NLinearMap MultiBary;
+        public NLinearMap TargetMap;
 
         public LayerStatus LayerStatus {
             get {
@@ -179,9 +179,14 @@ namespace TaskMaker {
             //Node = new LayerObjectNode(this);
         }
 
-        public void InvalidateBary() {
+        public void CreateBary() {
+            Bary = new ComplexBary();
             Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
         }
+
+        //public void InvalidateBary() {
+        //    Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
+        //}
 
         public void Add(Layer child) {
             _children.Add(child);
@@ -204,9 +209,9 @@ namespace TaskMaker {
             _children.ForEach(c => c.Reset());
         }
 
-        public double[] GetLambda() {
-            return Bary.GetLambda(Controller.Location);
-        }
+        //public double[] GetLambda() {
+            //return Bary.GetLambda(Controller.Location);
+        //}
 
         public void InterpolateTensor(SKPoint p) {
             if (BindedTarget == null)
