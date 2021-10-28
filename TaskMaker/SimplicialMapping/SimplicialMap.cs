@@ -136,36 +136,12 @@ namespace TaskMaker.SimplicialMapping {
             //Console.WriteLine(string.Join(", ", results.Keys.Select(k => results[k])));
             return Basis.Select(b => results[b]).ToArray();
         }
-
-        //public double[] Interpolate(SKPoint p) {
-        //    var lambdas = new List<double[]>();
-
-        //    for (var i = 0; i < Dim; ++i) {
-        //        var dict =
-        //            GetLambdas(
-        //                p,
-        //                Bases[i],
-        //                Complexes[i].Select(s => s.Bary).ToArray(),
-        //                Exteriors[i]
-        //            );
-        //        var lambda = Bases[i].Select(b => dict[b]).ToArray();
-
-        //        lambdas.Add(lambda);
-        //    }
-
-        //    var result = Calculate(lambdas.ToArray());
-
-        //    return result.GetData<double>();
-        //}
     }
 
 
     public class NLinearMap {
         public bool IsSet { get; set; } = false;
         public List<ComplexBary> Barys { get; set; }
-        //public List<Entity[]> Bases { get; set; }
-        //public List<Simplex[]> Complexes { get; set; }
-        //public List<Exterior> Exteriors { get; set; }
 
         private NDarray _wTensor;
         private int[] _shape;
@@ -213,7 +189,6 @@ namespace TaskMaker.SimplicialMapping {
                 return values.ToArray();
             }
         }
-
 
         public bool SetComponent(float[] element = null) {
             if (element == null) {
@@ -372,7 +347,6 @@ namespace TaskMaker.SimplicialMapping {
 
         //    return result.GetData<double>();
         //}
-
         public double[] MapTo(double[][] lambdas) {
             var result = Calculate(lambdas);
 

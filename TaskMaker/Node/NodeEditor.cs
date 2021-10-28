@@ -72,6 +72,7 @@ namespace TaskMaker.Node {
             canvas.Clear(SKColors.LightGray);
 
             DrawNodes(canvas);
+            DrawLinks(canvas);
         }
 
         private void DrawNodes(SKCanvas sKCanvas) {
@@ -80,6 +81,15 @@ namespace TaskMaker.Node {
 
             foreach(var node in Services.Graph.Nodes) {
                 node.Shape.Draw(sKCanvas);
+            }
+        }
+
+        private void DrawLinks(SKCanvas sKCanvas) {
+            if (Services.Graph == null)
+                return;
+
+            foreach(var link in Services.Graph.Links) {
+                link.Shape.Draw(sKCanvas);
             }
         }
 
@@ -111,21 +121,24 @@ namespace TaskMaker.Node {
         public event EventHandler<EditorDragEventArgs> DragStart;
         public event EventHandler<EditorDragEventArgs> DragOver;
         public event EventHandler<EditorDragEventArgs> DragEnd;
-        //public event EventHandler<EditorConnectEventArgs> ConnectStart;
-        //public event EventHandler<EditorConnectEventArgs> ConnectOver;
-        //public event EventHandler<EditorConnectEventArgs> ConnectEnd;
+        //public delegate void DelConnectStart(object target, params object[] args);
+        //public delegate void DelConnectOver(object target, params object[] args);
+        //public delegate void DelConnectEnd(object target, params object[] args);
 
-
-        //public event MouseEventHandler OnClicked;
-        //public event MouseEventHandler OnClicked;
+        //public DelConnectStart ConnectStart;
+        //public DelConnectOver ConnectOver;
+        //public DelConnectEnd ConnectEnd;
 
         private bool _isDrag = false;
         private bool _isPressed = false;
-        private bool _isConnect = false;
         private SKPoint _start;
-        private float _delta = 6.0f;
+        private SKPoint _end;
+        private object _upHit;
+        private object _downHit;
+        private Link _link;
+
+        private float _delta = 2.0f;
         private Timer _timer;
-        private LinkShape _connection;
 
         public EditorEventManager(NodeEditor editor) {
             Editor = editor;
@@ -150,73 +163,109 @@ namespace TaskMaker.Node {
         }
 
         private void Editor_MouseMove(object sender, MouseEventArgs e) {
+            // mousemove happene, save mouse state
             var diff = e.Location.ToSKPoint() - _start;
 
+            // Only pressed movements will be handled
             if (!_isPressed)
                 return;
 
+            if (_downHit == null)
+                return;
+
+            // Is dragging?
+            // false
             if (!_isDrag) {
                 if (Math.Abs(diff.X) > _delta | Math.Abs(diff.Y) > _delta) {
                     var args = e.ToEditorEvent(_start, diff);
 
-                    DragStart?.Invoke(this, args);
+                    if (_downHit is Connector) {
+                        _link = new Link(((Connector)_downHit).Parent.Parent);
+                        args.Link = _link;
+                        args.IsConnector = true;
 
-                    if (args.Target != null) {
-                        if (args.Target is NodeBaseShape) {
-                            _isDrag = true;
-                            Target = args.Target;
-                        }
-                        else if (args.Target is PortShape) {
-                            _isDrag = true;
-                            Target = args.Target;
-
-                            Services.Graph.LinksS.Add(args.Link as LinkShape);
-                        }
-
+                        Services.Graph.Links.Add(_link);
+                        DragStart?.Invoke((_downHit as Connector).Parent, args);
+                    }
+                    else {
+                        DragStart?.Invoke(_downHit, args);
                     }
 
+                    _isDrag = true;
                 }
                 else
                     return;
             }
+            // true
             else {
                 var args = e.ToEditorEvent(_start, diff);
-                args.Target = Target;
+                args.Link = _link;
 
-                DragOver?.Invoke(this, args);
+                DragOver?.Invoke(_downHit, args);
             }
         }
 
         private void Editor_MouseUp(object sender, MouseEventArgs e) {
+            // mouseup happened, save mouse state
+            _end = e.Location.ToSKPoint();
+            _isPressed = false;
+
+            // Find hit objects
+            _upHit = Services.Graph.HitTest(_end);
+
             if (_isDrag) {
                 var diff = e.Location.ToSKPoint() - _start;
                 var args = e.ToEditorEvent(_start, diff);
-                args.Target = Target;
+                args.Target = _upHit;
+                args.Link = _link;
 
-                DragEnd?.Invoke(this, args);
+                if (_downHit is Connector) {
+                    DragEnd?.Invoke((_downHit as Connector).Parent, args);
 
-                if (args.Link != null) {
-                    if ((args.Link as LinkShape).IsDummy) {
-                        Services.Graph.LinksS.Remove(args.Link as LinkShape);
+                    if (args.Link.IsDummy) {
+                        Services.Graph.Links.Remove(args.Link);
                     }
+
+                }
+                else {
+                    DragEnd?.Invoke(_downHit, args);
                 }
 
-                Target = null;
+                _isDrag = false;
             }
-            else {
-                var args = e.ToEditorEvent();
+            //if (_isDrag) {
+            //    var diff = e.Location.ToSKPoint() - _start;
+            //    var args = e.ToEditorEvent(_start, diff);
+            //    args.Target = Target;
 
-                Click?.Invoke(this, args);
-            }
+            //    DragEnd?.Invoke(this, args);
 
-            _isDrag = false;
-            _isPressed = false;
-            _start = SKPoint.Empty;
+            //    if (args.Link != null) {
+            //        if ((args.Link as LinkShape).IsDummy) {
+            //            Services.Graph.LinksS.Remove(args.Link as LinkShape);
+            //        }
+            //    }
+
+            //    Target = null;
+            //}
+            //else {
+            //    var args = e.ToEditorEvent();
+
+            //    Click?.Invoke(this, args);
+            //}
+
+            //_isDrag = false;
+            //_isPressed = false;
+            //_start = SKPoint.Empty;
         }
 
         private void Editor_MouseDown(object sender, MouseEventArgs e) {
+            // mousedown happened, save mouse state
             _start = e.Location.ToSKPoint();
             _isPressed = true;
+
+            // Find hit objects
+            _downHit = Services.Graph.HitTest(_start);
         }
 
         public virtual void OnClick(object sender, EditorMouseEventArgs e) {
@@ -253,18 +302,13 @@ namespace TaskMaker.Node {
         public SKPoint Start { get; private set; }
         public SKPoint Delta { get; private set; }
         //public bool Handled { get; set; } = false;
+        //public object Target { get; set; } = null;
         public object Target { get; set; } = null;
-        public object Link { get; set; } = null;
+        public bool IsConnector { get; set; } = false;
+        public Link Link { get; set; } = null;
 
         public EditorDragEventArgs(MouseButtons button, SKPoint start, SKPoint delta) =>
             (Button, Start, Delta) = (button, start, delta);
-    }
-
-    public class EditorConnectEventArgs : EventArgs {
-        public MouseButtons Buttons { get; set; }
-        public PortShape In { get; set; }
-        public PortShape Out { get; set; }
-        public object Target { get; set; }
     }
 
     public static class Extension {

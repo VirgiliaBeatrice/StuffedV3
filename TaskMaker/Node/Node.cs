@@ -153,8 +153,9 @@ namespace TaskMaker.Node {
     }
 
     public interface ILink {
-        object Source { get; set; }
-        object Destination { get; set; }
+        Node Source { get; set; }
+        Node Destination { get; set; }
+        LinkShape Shape { get; set; }
         bool Validated { get; }
     }
 
@@ -165,11 +166,34 @@ namespace TaskMaker.Node {
         public abstract void Invalidate();
     }
 
+    public class DummyNode : Node {
+
+        public DummyNode() {
+            Shape = new NodeBaseShape(null) {
+                IsVisible = false
+            };
+        }
+
+        public override void Invalidate() {
+            throw new NotImplementedException();
+        }
+    }
+
     public class Link : ILink {
-        public object Source { get; set; }
-        public object Destination { get; set; }
+        public Node Source { get; set; }
+        public Node Destination { get; set; }
+        public Node Dummy { get; set; }
+        public bool IsDummy => Dummy != null;
+        public LinkShape Shape { get; set; }
         public bool Validated => _payload != null;
         private object _payload;
+
+        public Link(Node src) {
+            Shape = new LinkShape(this);
+            Source = src;
+            Dummy = new DummyNode();
+        }
+
 
         public void Push(object payload) {
             _payload = payload;
