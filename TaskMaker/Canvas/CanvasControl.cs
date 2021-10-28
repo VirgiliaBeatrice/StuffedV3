@@ -186,12 +186,13 @@ namespace TaskMaker {
             }
 
             if (PairingStart) {
-                SelectedLayer.Entities[0].IsSelected = true;
                 PairingStart = false;
 
                 map.SetComponent();
 
-                var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
+                var content = $"Pairing start from:\r\n" +
+                    $"Entities - ({string.Join(",", map.CurrentCursor)})";
+                //var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
 
                 MessageBox.Show($"Next: {content}",
                 "Information",
@@ -200,13 +201,16 @@ namespace TaskMaker {
             }
             else {
                 var target = SelectedLayer.BindedTarget;
-                var cursor = map.CurrentCursor;
+                var lastCursor = map.CurrentCursor;
                 var isSet = map.SetComponent(target.CreateTargetState().ToVector().ToArray());
 
                 if (!isSet) {
+                    var currCursor = map.CurrentCursor;
                     SelectedLayer.Reset();
 
-                    var content = $"{SelectedLayer.Entities[cursor[0]]} is set. \r\nNext: {SelectedLayer.Entities[cursor[0] + 1]}";
+                    var content = $"Entities - ({string.Join(",", lastCursor)}) are set.\r\n" +
+                        $"Next: Entities - ({string.Join(",", currCursor)})";
+
                     MessageBox.Show($"{content}",
                     "Information",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -452,7 +456,7 @@ namespace TaskMaker {
         private void ProcessManipulatMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                BeginPointerTrace(new Point((int)wLocation.X, (int)wLocation.Y));
+                //BeginPointerTrace(new Point((int)wLocation.X, (int)wLocation.Y));
             }
         }
 
@@ -461,24 +465,29 @@ namespace TaskMaker {
                 //this.canvas.SelectedLayer.Interpolate(e.Location.ToSKPoint());
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
+                var map = SelectedLayer.TargetMap;
+
                 SelectedLayer.Controller.Location = wLocation;
 
-                var lambda = SelectedLayer.Bary.GetLambda(wLocation);
-                var result = (ParentForm as TaskMakerForm).LToMotor.MapTo(new double[][] { lambda });
-                var resultF = result.Select(el => (float)el).ToArray();
+                if (SelectedLayer.BindedTarget != null) {
+                    var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
+                    //var lambda = SelectedLayer.Bary.GetLambda(wLocation);
+                    var result = map.MapTo(lambdas);
+                    //var result = (ParentForm as TaskMakerForm).LToMotor.MapTo(lambdas);
+                    var resultF = result.Select(el => (float)el).ToArray();
 
-                SelectedLayer.BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
+                    SelectedLayer.BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
 
-                //SelectedLayer.InterpolateTensor(wLocation);
-                //_canvas.SelectedLayer.Interpolate(wLocation);
-                _canvas.PointerTrace.Update(wLocation);
+                    //_canvas.PointerTrace.Update(wLocation);
+                }
+
             }
         }
 
 
         private void ProcessManipulateMouseUpEvent(MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
-                EndPointerTrace();
+                //EndPointerTrace();
             }
         }
 

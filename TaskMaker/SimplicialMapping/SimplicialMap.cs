@@ -142,6 +142,7 @@ namespace TaskMaker.SimplicialMapping {
     public class NLinearMap {
         public bool IsSet { get; set; } = false;
         public List<ComplexBary> Barys { get; set; }
+        public List<Layer> Layers { get; set; }
 
         private NDarray _wTensor;
         private int[] _shape;
@@ -151,10 +152,12 @@ namespace TaskMaker.SimplicialMapping {
 
         public NLinearMap() {
             Barys = new List<ComplexBary>();
+            Layers = new List<Layer>();
         }
 
-        public void AddBary(ComplexBary bary, int dim = 2) {
+        public void AddBary(Layer layer, ComplexBary bary, int dim = 2) {
             Barys.Add(bary);
+            Layers.Add(layer);
 
             _shape = Extensions.Concat(new int[] { dim }, Barys.Select(b => b.Basis.Length).ToArray());
             _wTensor = np.zeros(_shape);
@@ -193,6 +196,9 @@ namespace TaskMaker.SimplicialMapping {
         public bool SetComponent(float[] element = null) {
             if (element == null) {
                 // Reset to start
+                //_cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
+                //_cursor.MoveNext();
+
                 var idx = _cursor.Current;
                 IsSet = false;
 
@@ -245,7 +251,7 @@ namespace TaskMaker.SimplicialMapping {
                     }
                 }
 
-                var w = np.dot(_wTensor, kronProd);
+                var w = np.dot(_wTensor.reshape(_shape[0], -1), kronProd);
 
                 return w;
             }

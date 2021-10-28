@@ -85,10 +85,6 @@ namespace TaskMaker {
             BiToLR = new NLinearMap();
         }
 
-        private void ConfigShowcase() {
-
-        }
-
         private void PrepareMap(Layer layer) {
             var idx = Services.Canvas.Layers.IndexOf(layer);
 
@@ -103,7 +99,7 @@ namespace TaskMaker {
 
             var dim = layer.BindedTarget.Dimension;
             // dim(motors) = 3
-            layer.TargetMap.AddBary(layer.Bary, dim);
+            layer.TargetMap.AddBary(layer, layer.Bary, dim);
         }
 
         private void TreeView1_DragDrop(object sender, DragEventArgs e) {
@@ -291,6 +287,7 @@ namespace TaskMaker {
                     break;
                 case Keys.P:
                     //canvasControl1.PairAll();
+                    //PrepareMap()
                     canvasControl1.PairWithNLinearMap(SelectedLayer.TargetMap);
                     //canvasControl1.Pair();
                     e.Handled = true;
