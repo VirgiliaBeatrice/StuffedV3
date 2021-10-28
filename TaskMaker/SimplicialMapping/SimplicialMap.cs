@@ -26,7 +26,14 @@ namespace TaskMaker.SimplicialMapping {
             var basis = np.array(iter).T;
             var affineFactor = np.ones(Dimension);
 
-            A = np.vstack(affineFactor, basis);
+            //A = np.vstack(affineFactor, basis);
+
+            if (Dimension == 2) {
+                A = basis;
+            }
+            else {
+                A = np.vstack(affineFactor, basis);
+            }
         }
 
         public double[] GetLambdas(SKPoint p) {
@@ -34,8 +41,13 @@ namespace TaskMaker.SimplicialMapping {
 
             var b = np.array(p.ToArray());
             var B = np.hstack(np.ones(1), b);
+            
+            if (Dimension == 2) {
+                B = b;
+            }
 
-            return np.linalg.solve(A, B).GetData<double>();
+            var ret = np.linalg.solve(A, B).GetData<float>();
+            return ret.Select(e => Convert.ToDouble(e)).ToArray();
         }
 
         public double[] GetZeroLambdas() {

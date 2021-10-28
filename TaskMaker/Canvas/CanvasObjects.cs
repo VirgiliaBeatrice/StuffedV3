@@ -213,17 +213,17 @@ namespace TaskMaker {
             //return Bary.GetLambda(Controller.Location);
         //}
 
-        public void InterpolateTensor(SKPoint p) {
-            if (BindedTarget == null)
-                return;
+        //public void InterpolateTensor(SKPoint p) {
+        //    if (BindedTarget == null)
+        //        return;
 
-            //var results = Bary.Interpolate(p);
-            //var results = MultiBary.Interpolate(p);
+        //    //var results = Bary.Interpolate(p);
+        //    //var results = MultiBary.Interpolate(p);
 
-            //Debug.Assert(results.SequenceEqual(resultsNew));
+        //    //Debug.Assert(results.SequenceEqual(resultsNew));
 
-            //BindedTarget.FromVector(Vector<float>.Build.Dense(results.Select(r => (float)r).ToArray()));
-        }
+        //    //BindedTarget.FromVector(Vector<float>.Build.Dense(results.Select(r => (float)r).ToArray()));
+        //}
 
         public void ShowController() {
             Controller.IsVisible = true;
@@ -452,24 +452,24 @@ namespace TaskMaker {
         }
     }
 
-    public class Point_v2 : CanvasObject_v2 {
-        private SKPaint fillPaint = new SKPaint {
-            IsAntialias = true,
-            Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
-            Style = SKPaintStyle.Fill
-        };
-        private SKPaint strokePaint = new SKPaint {
-            IsAntialias = true,
-            Color = SKColors.Black,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2
-        };
+    //public class Point_v2 : CanvasObject_v2 {
+    //    private SKPaint fillPaint = new SKPaint {
+    //        IsAntialias = true,
+    //        Color = SkiaHelper.ConvertColorWithAlpha(SKColors.ForestGreen, 0.8f),
+    //        Style = SKPaintStyle.Fill
+    //    };
+    //    private SKPaint strokePaint = new SKPaint {
+    //        IsAntialias = true,
+    //        Color = SKColors.Black,
+    //        Style = SKPaintStyle.Stroke,
+    //        StrokeWidth = 2
+    //    };
 
-        public override void Draw(SKCanvas sKCanvas) {
-            sKCanvas.DrawCircle(Location, 2.0f, fillPaint);
-            sKCanvas.DrawCircle(Location, 2.0f, strokePaint);
-        }
-    }
+    //    public override void Draw(SKCanvas sKCanvas) {
+    //        sKCanvas.DrawCircle(Location, 2.0f, fillPaint);
+    //        sKCanvas.DrawCircle(Location, 2.0f, strokePaint);
+    //    }
+    //}
 
     public class CrossPointer : CanvasObject_v2 {
         private int length = 20;
@@ -771,10 +771,17 @@ namespace TaskMaker {
             var path = new SKPath();
 
             // Triangle only!!!
-            path.MoveTo(Vertices[0].Location);
-            path.LineTo(Vertices[1].Location);
-            path.LineTo(Vertices[2].Location);
-            path.Close();
+            if (Vertices.Count == 2) {
+                path.MoveTo(Vertices[0].Location);
+                path.LineTo(Vertices[1].Location);
+            }
+            else if (Vertices.Count == 3) {
+                path.MoveTo(Vertices[0].Location);
+                path.LineTo(Vertices[1].Location);
+                path.LineTo(Vertices[2].Location);
+                path.Close();
+
+            }
 
             sKCanvas.DrawPath(path, fillPaint);
             sKCanvas.DrawPath(path, strokePaint);
@@ -830,24 +837,29 @@ namespace TaskMaker {
         }
 
         public new void Add(Simplex simplex) {
-            var edge0 = new Edge_v2();
-            var edge1 = new Edge_v2();
-            var edge2 = new Edge_v2();
+            if (simplex.Vertices.Count == 2) {
+                base.Add(simplex);
+            }
+            else {
+                var edge0 = new Edge_v2();
+                var edge1 = new Edge_v2();
+                var edge2 = new Edge_v2();
 
-            edge0.Add(simplex.Vertices[0], simplex.Vertices[1]);
-            edge1.Add(simplex.Vertices[1], simplex.Vertices[2]);
-            edge2.Add(simplex.Vertices[2], simplex.Vertices[0]);
+                edge0.Add(simplex.Vertices[0], simplex.Vertices[1]);
+                edge1.Add(simplex.Vertices[1], simplex.Vertices[2]);
+                edge2.Add(simplex.Vertices[2], simplex.Vertices[0]);
 
-            if (!edges.Any(e => e.SetEquals(edge0)))
-                edges.Add(edge0);
+                if (!edges.Any(e => e.SetEquals(edge0)))
+                    edges.Add(edge0);
 
-            if (!edges.Any(e => e.SetEquals(edge1)))
-                edges.Add(edge1);
+                if (!edges.Any(e => e.SetEquals(edge1)))
+                    edges.Add(edge1);
 
-            if (!edges.Any(e => e.SetEquals(edge2)))
-                edges.Add(edge2);
+                if (!edges.Any(e => e.SetEquals(edge2)))
+                    edges.Add(edge2);
 
-            base.Add(simplex);
+                base.Add(simplex);
+            }
         }
 
         public void AddExtreme(Entity extreme) {

@@ -83,6 +83,7 @@ namespace TaskMaker {
             LToMotor = new NLinearMap();
             RToMotor = new NLinearMap();
             BiToLR = new NLinearMap();
+            InvalidateTreeView();
         }
 
         private void PrepareMap(Layer layer) {
@@ -288,9 +289,14 @@ namespace TaskMaker {
                 case Keys.P:
                     //canvasControl1.PairAll();
                     //PrepareMap()
-                    canvasControl1.PairWithNLinearMap(SelectedLayer.TargetMap);
-                    //canvasControl1.Pair();
-                    e.Handled = true;
+                    if (SelectedLayer.TargetMap == null) {
+                        MessageBox.Show("No target map.");
+                    }
+                    else {
+                        canvasControl1.PairWithNLinearMap(SelectedLayer.TargetMap);
+                        //canvasControl1.Pair();
+                        e.Handled = true;
+                    }
                     break;
                 case Keys.N:
                     var form = new NodeEditor();
