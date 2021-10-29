@@ -147,7 +147,7 @@ namespace TaskMaker {
 
         #region Data
         public List<Entity> Entities { get; set; } = new List<Entity>();
-        public NDarray State { get; set; } = np.empty(); 
+        public NDarray States { get; set; } = np.empty(); 
         public SimplicialComplex Complex { get; set; }
         public Exterior Exterior { get; set; }
         public Target BindedTarget { get; set; }

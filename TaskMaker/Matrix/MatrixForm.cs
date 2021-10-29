@@ -14,22 +14,22 @@ using SkiaSharp.Views.Desktop;
 
 namespace TaskMaker.Matrix {
     public partial class MatrixForm : Form {
+        public NDarray Tensor { get; set; }
         public Timer timer;
         public NDarray<bool> mat;
         public MatrixShape MatrixShape;
 
-        public MatrixForm() {
+        public MatrixForm(NDarray tensor) {
             InitializeComponent();
+
+            Tensor = tensor;
 
             timer = new Timer();
             timer.Interval = 16;
             timer.Tick += Timer_Tick;
             timer.Enabled = true;
 
-            //var table = new bool[4];
-            //mat = np.array(table);
-
-            MatrixShape = new MatrixShape(new int[] { 3, 4 });
+            MatrixShape = new MatrixShape(Tensor.shape.Dimensions.Skip(1).ToArray());
             ClientSize = MatrixShape.Bounds.Size.ToDrawingSize().ToSize();
 
             skglControl1.PaintSurface += SkglControl1_PaintSurface;
@@ -44,7 +44,7 @@ namespace TaskMaker.Matrix {
             MatrixShape.OnDoubleClick(args.Location.ToSKPoint());
         }
 
-        private void SkglControl1_PaintSurface(object sender, SkiaSharp.Views.Desktop.SKPaintGLSurfaceEventArgs e) {
+        private void SkglControl1_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e) {
             var canvas = e.Surface.Canvas;
 
             canvas.Clear(SKColors.White);

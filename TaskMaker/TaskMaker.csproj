@@ -203,6 +203,12 @@
     <Compile Include="Canvas\VoronoiRegion.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="MathNetExtension.cs" />
+    <Compile Include="Matrix\MapSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Matrix\MapSelection.Designer.cs">
+      <DependentUpon>MapSelection.cs</DependentUpon>
+    </Compile>
     <Compile Include="Matrix\MatrixForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -290,6 +296,9 @@
     <Compile Include="TinyCanvasForm.Designer.cs">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Matrix\MapSelection.resx">
+      <DependentUpon>MapSelection.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Matrix\MatrixForm.resx">
       <DependentUpon>MatrixForm.cs</DependentUpon>
     </EmbeddedResource>

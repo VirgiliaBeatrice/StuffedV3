@@ -91,6 +91,10 @@ namespace TaskMaker {
             LToMotor = new NLinearMap();
             RToMotor = new NLinearMap();
             BiToLR = new NLinearMap();
+
+            Services.Maps.Add("LToMotor", LToMotor);
+            Services.Maps.Add("RToMotor", RToMotor);
+            Services.Maps.Add("BiToLR", BiToLR);
             InvalidateTreeView();
         }
 
@@ -377,7 +381,14 @@ namespace TaskMaker {
                     break;
 
                 case Keys.D2:
-                    var form2 = new Matrix.MatrixForm();
+                    var mapSelect = new Matrix.MapSelection();
+                    mapSelect.ShowDialog();
+
+                    var map = Services.Maps[mapSelect.comboBox1.SelectedItem as string];
+                    
+                    mapSelect.Dispose();
+
+                    var form2 = new Matrix.MatrixForm(map.Tensor);
 
                     form2.ShowDialog();
                     form2.Dispose();
