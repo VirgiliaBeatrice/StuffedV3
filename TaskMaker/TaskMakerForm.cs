@@ -363,6 +363,13 @@ namespace TaskMaker {
                 case Keys.Q:
                     PrepareMap(SelectedLayer);
                     break;
+                case Keys.D1:
+                    var form1 = new ControlPanel();
+
+                    form1.ShowDialog();
+                    form1.Dispose();
+                    break;
+
                 case Keys.U:
                     PrepareLayerProperties();
                     break;
