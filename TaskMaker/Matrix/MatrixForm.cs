@@ -30,8 +30,6 @@ namespace TaskMaker.Matrix {
             //mat = np.array(table);
 
             MatrixShape = new MatrixShape(new int[] { 3, 4 });
-            //MatrixShape.Bounds.Size.ToDrawingSize();
-            
             ClientSize = MatrixShape.Bounds.Size.ToDrawingSize().ToSize();
 
             skglControl1.PaintSurface += SkglControl1_PaintSurface;
@@ -105,6 +103,7 @@ namespace TaskMaker.Matrix {
                         var location = start + new SKPoint(j * 40, i * 40);
                         var element = new ElementShape() {
                             Location = location,
+                            Label = $"({i},{j})",
                         };
 
                         Elements.Add(element);
@@ -116,6 +115,7 @@ namespace TaskMaker.Matrix {
                     var location = start + new SKPoint(0, i * 40);
                     var element = new ElementShape() {
                         Location = location,
+                        Label = $"({i})",
                     };
 
                     Elements.Add(element);
@@ -181,6 +181,7 @@ namespace TaskMaker.Matrix {
     }
 
     public class ElementShape {
+        public string Label { get; set; } = "";
         public bool IsSelected { get; set; } = false;
         public SKPoint Location { get; set; } = SKPoint.Empty;
         public SKRect Bounds { get; set; }
@@ -213,6 +214,7 @@ namespace TaskMaker.Matrix {
             var recorder = new SKPictureRecorder();
             var canvas = recorder.BeginRecording(Bounds);
 
+            using(var text = new SKPaint())
             using(var fill = new SKPaint()) 
             using(var stroke = new SKPaint()) {
                 stroke.Color = SKColors.DarkGray;
@@ -224,8 +226,13 @@ namespace TaskMaker.Matrix {
                 else
                     fill.Color = SKColors.Aqua;
 
+                text.Color = SKColors.Black;
+                text.TextSize = 8;
+                text.IsAntialias = true;
+
                 canvas.DrawCircle(SKPoint.Empty, Radius, fill);
                 canvas.DrawCircle(SKPoint.Empty, Radius, stroke);
+                canvas.DrawText(Label, SKPoint.Empty, text);
             }
 
             var pic = recorder.EndRecording();
