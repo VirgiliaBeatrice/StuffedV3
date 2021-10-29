@@ -9,6 +9,8 @@ using MathNetExtension;
 //using NumSharp;
 using Numpy;
 using TaskMaker.Node;
+using System.Windows.Forms;
+using System.Data;
 
 namespace TaskMaker.SimplicialMapping {
     public class SimplexBary {
@@ -155,6 +157,7 @@ namespace TaskMaker.SimplicialMapping {
 
     public class NLinearMap {
         public bool IsSet { get; set; } = false;
+        public bool IsSetNew { get; set; } = false;
         public List<ComplexBary> Barys { get; set; }
         public List<Layer> Layers { get; set; }
 
@@ -163,6 +166,9 @@ namespace TaskMaker.SimplicialMapping {
         private IEnumerator<int[]> _cursor;
         public int Dim => _shape.Skip(1).ToArray().Length;
         public int[] CurrentCursor => _cursor.Current;
+
+        private DataGridView grid;
+        private DataTable table;
 
         public NLinearMap() {
             Barys = new List<ComplexBary>();
@@ -177,6 +183,52 @@ namespace TaskMaker.SimplicialMapping {
             _wTensor = np.zeros(_shape);
             _cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
             _cursor.MoveNext();
+
+            if (_shape.Length == 3) {
+                table = new DataTable();
+                
+                //table.Rows.Add("Row")
+                grid = new DataGridView();
+                grid.RowCount = _shape[1];
+                grid.ColumnCount = _shape[2];
+
+                grid.CellMouseDoubleClick += Grid_CellMouseDoubleClick;
+            }
+        }
+
+        public void ShowPanel() {
+            if (grid == null)
+                return;
+
+            var form = new Form();
+
+            grid.Dock = DockStyle.Fill;
+
+            form.Controls.Add(grid);
+        }
+
+        private void Grid_CellMouseDoubleClick(object sender, DataGridViewCellMouseEventArgs e) {
+            var result = MessageBox.Show("Pair current values?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (result == DialogResult.Yes) {
+                var target = Layers[0].BindedTarget;
+                var idx = new int[] { e.RowIndex, e.ColumnIndex };
+                SetComponentForMatrix(idx, target.CreateTargetState().ToVector().ToArray());
+                grid[e.ColumnIndex, e.RowIndex].Value = "Checked";
+
+                var flag = true;
+                for (int i = 0; i < grid.Columns.Count; ++i) {
+                    for (int j = 0; j < grid.Rows.Count; ++j) {
+                        if (grid[i, j].Value as string == "Checked")
+                            flag = false;
+                            break;
+                    }
+                }
+
+                if (flag) {
+                    IsSetNew = true;
+                }
+            }
         }
 
         public void Clear() {
@@ -205,6 +257,12 @@ namespace TaskMaker.SimplicialMapping {
             else {
                 return values.ToArray();
             }
+        }
+
+        public void SetComponentForMatrix(int[] idx, float[] element) {
+            var slice = $":,{string.Join(",", idx.Select(i => i))}";
+
+            _wTensor[slice] = element.Select(e => (double)e).ToArray();
         }
 
         public bool SetComponent(float[] element = null) {

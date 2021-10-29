@@ -142,6 +142,7 @@ namespace TaskMaker {
         //public bool IsShownPointer { get; set; } = false;
         public bool IsSelected { get; set; } = false;
         public Controller Controller { get; set; } = new Controller();
+        public SKRect Bounds => CalculateBounds();
 
         #region Data
         public List<Entity> Entities { get; set; } = new List<Entity>();
@@ -179,6 +180,14 @@ namespace TaskMaker {
             //Node = new LayerObjectNode(this);
         }
 
+        public SKRect CalculateBounds() {
+            using(var path = new SKPath()) {
+                path.AddPoly(Entities.Select(e => e.Location).ToArray(), true);
+
+                return SKRect.Inflate(path.TightBounds, 200, 200);
+            }
+        }
+
         public void CreateBary() {
             Bary = new ComplexBary();
             Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
@@ -209,7 +218,7 @@ namespace TaskMaker {
             _children.ForEach(c => c.Reset());
         }
 
-        public void Interpolate(SKPoint p) {
+        public double[] Interpolate(SKPoint p) {
             // TODO: Ugly
             if (Entities.Count == 2) {
                 // Line
@@ -241,7 +250,10 @@ namespace TaskMaker {
                     var resultF = result.Select(el => (float)el).ToArray();
 
                     BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
+                    return result;
                 }
+
+                return new double[] { };
             }
             else {
                 var map = TargetMap;
@@ -254,7 +266,10 @@ namespace TaskMaker {
                     var resultF = result.Select(el => (float)el).ToArray();
 
                     BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
+                    return result;
                 }
+
+                return new double[] { };
             }
         }
 

@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TaskMaker.Node;
 using TaskMaker.SimplicialMapping;
+using PCController;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -54,6 +55,7 @@ namespace TaskMaker {
             tooltipBtnTargetSelection.SetToolTip(button9, "Ctrl+T");
 
             canvasControl1.ContextMenuStrip = contextMenuStrip1;
+            canvasControl1.Interpolated += CanvasControl1_Interpolated;
 
             treeView1.AllowDrop = true;
             treeView1.ItemDrag += TreeView1_ItemDrag;
@@ -68,6 +70,12 @@ namespace TaskMaker {
 
             UpdateTreeview();
             Showcase();
+        }
+
+        private void CanvasControl1_Interpolated(object sender, MessageEventArgs e) {
+            var msg = e.Message as string;
+
+            toolStripStatusLabel4.Text = msg;
         }
 
         private void Showcase() {
@@ -109,6 +117,46 @@ namespace TaskMaker {
             var dim = layer.BindedTarget.Dimension;
             // dim(motors) = 3
             layer.TargetMap.AddBary(layer, layer.Bary, dim);
+        }
+
+        private void PrepareLayerProperties() {
+            if (Services.Boards.NMotor == 0) {
+                MessageBox.Show("No motors.");
+            }
+
+            var layers = Services.Canvas.Layers;
+            var left = layers[0];
+            var right = layers[1];
+            var openClose = layers[2];
+            var position = layers[3];
+
+            var motors = new Motor[] {
+                Services.Motors[0],
+                Services.Motors[1],
+                Services.Motors[2]
+            };
+            left.BindedTarget = new MotorTarget();
+            (left.BindedTarget as MotorTarget).Motors.AddRange(motors);
+
+            motors = new Motor[] {
+                Services.Motors[4],
+                Services.Motors[5],
+                Services.Motors[6]
+            };
+            right.BindedTarget = new MotorTarget();
+            (right.BindedTarget as MotorTarget).Motors.AddRange(motors);
+
+            var layerC = new Layer[] { left, right };
+            
+            openClose.BindedTarget = new LayerTarget();
+            (openClose.BindedTarget as LayerTarget).Layers.AddRange(layerC);
+
+            position.BindedTarget = new LayerTarget();
+            (position.BindedTarget as LayerTarget).Layers.AddRange(layerC);
+
+            MessageBox.Show("Layer properties set.");
+            Services.MotorTimer.Enabled = true;
+            Services.MotorTimer.Start();
         }
 
         private void TreeView1_DragDrop(object sender, DragEventArgs e) {
@@ -315,7 +363,9 @@ namespace TaskMaker {
                 case Keys.Q:
                     PrepareMap(SelectedLayer);
                     break;
-
+                case Keys.U:
+                    PrepareLayerProperties();
+                    break;
             }
 
             if (e.Control && e.KeyCode == Keys.Z) {

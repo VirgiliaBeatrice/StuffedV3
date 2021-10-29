@@ -1,4 +1,5 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
+using Numpy;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
@@ -20,6 +21,7 @@ namespace TaskMaker {
             }
         }
         public Layer SelectedLayer => _canvas.SelectedLayer;
+        public event EventHandler<MessageEventArgs> Interpolated;
 
         private SKGLControl skControl;
         private SKImageInfo imageInfo;
@@ -476,7 +478,9 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
-                SelectedLayer.Interpolate(wLocation);
+                var result = SelectedLayer.Interpolate(wLocation);
+
+                Interpolated?.Invoke(null, new MessageEventArgs() { Message = np.array(result).repr });
             }
         }
 
@@ -502,26 +506,29 @@ namespace TaskMaker {
         }
 
         public void SaveAsImage() {
-            using (var bitmap = new SKBitmap(imageInfo.Width, imageInfo.Height)) {
-                var canvas = new SKCanvas(bitmap);
-
+            using (var bitmap = new SKBitmap(imageInfo.Width, imageInfo.Height))
+            using (var canvas = new SKCanvas(bitmap))
+                {
                 canvas.Clear(SKColors.White);
 
                 Draw(canvas);
+                canvas.Translate(SelectedLayer.Bounds.MidX, SelectedLayer.Bounds.MidY);
+                //canvas.ClipRect(SelectedLayer.Bounds);
 
-                var image = SKImage.FromBitmap(bitmap);
+                using (var image = SKImage.FromBitmap(bitmap)) {
+                    var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)}\\TaskMaker\\";
 
-                var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)}\\TaskMaker\\";
+                    Directory.CreateDirectory(path);
+                    var fileName = $"Canvas_{SelectedLayer.Name.Replace(" ", "")}";
+                    fileName = File.Exists(path + fileName + ".png") ? fileName + "_d" : fileName;
 
-                Directory.CreateDirectory(path);
-                var fileName = $"Canvas_{SelectedLayer.Name.Replace(" ", "")}";
-                fileName = File.Exists(path + fileName + ".png") ? fileName + "_d" : fileName;
+                    using (var stream = File.Create(path + fileName + ".png")) {
+                        var data = image.Encode(SKEncodedImageFormat.Png, 100);
 
-                using (var stream = File.Create(path + fileName + ".png")) {
-                    var data = image.Encode(SKEncodedImageFormat.Png, 100);
-
-                    data.SaveTo(stream);
+                        data.SaveTo(stream);
+                    }
                 }
+
             }
         }
 
@@ -633,6 +640,10 @@ namespace TaskMaker {
         None,
         Select,
         Edit,
+    }
+
+    public class MessageEventArgs :  EventArgs {
+        public object Message { get; set; } 
     }
 }
 
