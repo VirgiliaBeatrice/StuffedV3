@@ -131,17 +131,17 @@ namespace TaskMaker {
             var position = layers[3];
 
             var motors = new Motor[] {
-                Services.Motors[0],
-                Services.Motors[1],
-                Services.Motors[2]
+                Services.Motors[4],
+                Services.Motors[5],
+                Services.Motors[6]
             };
             left.BindedTarget = new MotorTarget();
             (left.BindedTarget as MotorTarget).Motors.AddRange(motors);
 
             motors = new Motor[] {
-                Services.Motors[4],
-                Services.Motors[5],
-                Services.Motors[6]
+                Services.Motors[0],
+                Services.Motors[1],
+                Services.Motors[2]
             };
             right.BindedTarget = new MotorTarget();
             (right.BindedTarget as MotorTarget).Motors.AddRange(motors);
@@ -341,6 +341,8 @@ namespace TaskMaker {
                 case Keys.Escape:
                     canvasControl1.BeginNoneMode();
                     e.Handled = true;
+                    break;
+                case Keys.D0:
                     break;
                 case Keys.P:
                     //canvasControl1.PairAll();

@@ -461,15 +461,15 @@ namespace TaskMaker {
             if (ev.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
 
-                foreach(var l in SelectedLayer.TargetMap.Layers) {
-                    var sum = SKPoint.Empty;
+                //foreach(var l in SelectedLayer.TargetMap.Layers) {
+                //    var sum = SKPoint.Empty;
 
-                    l.Entities.ForEach(e => sum = sum + e.Location);
+                //    l.Entities.ForEach(e => sum = sum + e.Location);
 
-                    var centroid = new SKPoint(sum.X / l.Entities.Count, sum.Y / l.Entities.Count);
+                //    var centroid = new SKPoint(sum.X / l.Entities.Count, sum.Y / l.Entities.Count);
 
-                    l.Controller.Location = centroid;
-                }
+                //    l.Controller.Location = centroid;
+                //}
                 //BeginPointerTrace(new Point((int)wLocation.X, (int)wLocation.Y));
             }
         }
