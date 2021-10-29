@@ -478,10 +478,15 @@ namespace TaskMaker {
         }
 
         public override void Draw(SKCanvas sKCanvas) {
-            if (IsVisible) {
+            //if (IsVisible) {
                 sKCanvas.DrawCircle(Location, 5.0f, _fill);
                 sKCanvas.DrawCircle(Location, 5.0f, _stroke);
-            }
+            //}
+        }
+
+        public void DrawThis(SKCanvas sKCanvas) {
+            sKCanvas.DrawCircle(Location, 5.0f, _fill);
+            sKCanvas.DrawCircle(Location, 5.0f, _stroke);
         }
     }
 

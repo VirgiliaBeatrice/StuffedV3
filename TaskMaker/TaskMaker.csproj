@@ -215,6 +215,12 @@
     </Compile>
     <Compile Include="Node\NodeShape.cs" />
     <Compile Include="Node\UIComponents.cs" />
+    <Compile Include="Panel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Panel.Designer.cs">
+      <DependentUpon>Panel.cs</DependentUpon>
+    </Compile>
     <Compile Include="PCController\Board.cs" />
     <Compile Include="PCController\Boards.cs" />
     <Compile Include="PCController\CommandId.cs" />
@@ -278,6 +284,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Node\NodeEditor.resx">
       <DependentUpon>NodeEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Panel.resx">
+      <DependentUpon>Panel.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PCController\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
