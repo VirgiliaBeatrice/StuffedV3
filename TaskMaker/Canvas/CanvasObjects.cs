@@ -15,6 +15,7 @@ using System.Text.Json.Serialization;
 using TaskMaker.Mapping;
 using System.Diagnostics;
 using TaskMaker.Node;
+using Numpy;
 
 namespace TaskMaker {
 
@@ -146,13 +147,12 @@ namespace TaskMaker {
 
         #region Data
         public List<Entity> Entities { get; set; } = new List<Entity>();
+        public NDarray State { get; set; } = np.empty(); 
         public SimplicialComplex Complex { get; set; }
         public Exterior Exterior { get; set; }
         public Target BindedTarget { get; set; }
         //public LayerObjectNode Node { get; set; }
         #endregion
-
-        private List<Layer> _children = new List<Layer>();
 
         public ComplexBary Bary;
         public NLinearMap TargetMap;
@@ -193,20 +193,6 @@ namespace TaskMaker {
             Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
         }
 
-        //public void InvalidateBary() {
-        //    Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
-        //}
-
-        public void Add(Layer child) {
-            _children.Add(child);
-        }
-
-        public void Remove(Layer child) {
-            _children.Remove(child);
-        }
-
-        public Layer[] GetChildren() => _children.ToArray();
-
         public void CreateExterior() {
             Exterior = Complex.CreateExterior();
             //Bary.Exterior = Exterior;
@@ -214,11 +200,13 @@ namespace TaskMaker {
 
         public void Reset() {
             Entities.ForEach(e => e.IsSelected = false);
-
-            _children.ForEach(c => c.Reset());
         }
 
         public double[] Interpolate(SKPoint p) {
+            #if DEBUG
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            #endif
             // TODO: Ugly
             if (Entities.Count == 2) {
                 // Line
@@ -252,8 +240,6 @@ namespace TaskMaker {
                     BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
                     return result;
                 }
-
-                return new double[] { };
             }
             else {
                 var map = TargetMap;
@@ -268,9 +254,15 @@ namespace TaskMaker {
                     BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
                     return result;
                 }
-
-                return new double[] { };
             }
+
+            #if DEBUG
+            timer.Stop();
+            Debug.WriteLine("Time Taken: " + timer.Elapsed.TotalMilliseconds.ToString("#,##0.00 'milliseconds'"));
+            #endif
+
+            return new double[] { };
+
         }
 
         public void ShowController() {

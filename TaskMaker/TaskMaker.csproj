@@ -154,6 +154,9 @@
     <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
     </Reference>
+    <Reference Include="System.Reactive, Version=5.0.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
+      <HintPath>packages\System.Reactive.5.0.0\lib\net472\System.Reactive.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Runtime.CompilerServices.Unsafe.5.0.0\lib\net45\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
@@ -172,6 +175,7 @@
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows" />
     <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -182,6 +186,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Canvas\Bend.cs" />
@@ -198,6 +203,12 @@
     <Compile Include="Canvas\VoronoiRegion.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="MathNetExtension.cs" />
+    <Compile Include="Matrix\MatrixForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Matrix\MatrixForm.Designer.cs">
+      <DependentUpon>MatrixForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Memento\Memento.cs" />
     <Compile Include="MotorController.cs">
       <SubType>UserControl</SubType>
@@ -279,6 +290,9 @@
     <Compile Include="TinyCanvasForm.Designer.cs">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Matrix\MatrixForm.resx">
+      <DependentUpon>MatrixForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MotorController.resx">
       <DependentUpon>MotorController.cs</DependentUpon>
     </EmbeddedResource>

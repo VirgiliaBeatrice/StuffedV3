@@ -375,6 +375,13 @@ namespace TaskMaker {
                 case Keys.U:
                     PrepareLayerProperties();
                     break;
+
+                case Keys.D2:
+                    var form2 = new Matrix.MatrixForm();
+
+                    form2.ShowDialog();
+                    form2.Dispose();
+                    break;
             }
 
             if (e.Control && e.KeyCode == Keys.Z) {
