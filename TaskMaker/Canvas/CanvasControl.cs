@@ -3,7 +3,9 @@ using Numpy;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -34,6 +36,8 @@ namespace TaskMaker {
         private SKRect _window;
         private SKPoint _panCenterInView;
         private SKPoint _panStartInWorld;
+        private Stopwatch _watch = new Stopwatch();
+        private int _count = 100;
 
         public CanvasControl() {
             InitializeComponent();
@@ -493,6 +497,10 @@ namespace TaskMaker {
 
 
         private void SkControl_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e) {
+            _watch.Stop();
+
+            var time = _watch.ElapsedMilliseconds;
+            //fps.Enqueue(_watch.ElapsedMilliseconds);
             var canvas = e.Surface.Canvas;
             var mat = WorldToViewport();
 
@@ -503,6 +511,16 @@ namespace TaskMaker {
             canvas.Clear(SKColors.White);
             canvas.Concat(ref mat);
             Draw(e.Surface.Canvas);
+
+            using (var text = new SKPaint()) {
+                text.Color = SKColors.Black;
+                text.TextSize = 12;
+
+                canvas.DrawText($"FPS: {Math.Round(1000.0 / time, 2)}", new SKPoint(0, 12), text);
+            }
+
+            _watch.Reset();
+            _watch.Start();
         }
 
         public void SaveAsImage() {

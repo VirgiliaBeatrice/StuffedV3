@@ -41,7 +41,7 @@ namespace TaskMaker {
                     var i = exLine0.P0 + exLine0.Direction.Multiply(t0);
                     var governor0 = simplices.Where(s => s.IsVertex(it.E1) & s.IsVertex(it.E0)).FirstOrDefault();
                     var governor1 = simplices.Where(s => s.IsVertex(next.E1) & s.IsVertex(next.E0)).FirstOrDefault();
-                    var cone = new VoronoiRegion_CircularSector(it.E1, it[2], i, next[3]);
+                    var cone = new VoronoiRegion_Sector(it.E1, it[2], i, next[3]);
                     if (governor0 != governor1) {
                         cone.Governor0 = governor0;
                         cone.Governor1 = governor1;

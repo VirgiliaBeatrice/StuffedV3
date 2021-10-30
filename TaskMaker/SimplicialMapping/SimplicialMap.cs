@@ -18,9 +18,13 @@ namespace TaskMaker.SimplicialMapping {
         public int Dimension => Basis.Count;
 
         private NDarray A;
+        private double[] _zeros;
 
         public SimplexBary(IEnumerable<Entity> basis) {
             Basis = new List<Entity>(basis);
+            _zeros = np.zeros(Dimension).GetData<double>();
+
+            InitializeA();
         }
 
         private void InitializeA() {
@@ -39,6 +43,7 @@ namespace TaskMaker.SimplicialMapping {
         }
 
         public double[] GetLambdas(SKPoint p) {
+            // TODO: Performance cost
             InitializeA();
 
             var b = np.array(p.ToArray().Select(e => Convert.ToDouble(e)).ToArray());
@@ -55,7 +60,7 @@ namespace TaskMaker.SimplicialMapping {
         }
 
         public double[] GetZeroLambdas() {
-            return np.zeros(Dimension).GetData<double>();
+            return _zeros;
         }
     }
 
@@ -96,12 +101,12 @@ namespace TaskMaker.SimplicialMapping {
                 return Basis.Select(b => results[b]).ToArray();
 
             foreach (var r in Exterior.Regions) {
-                if (r.GetType() == typeof(VoronoiRegion_Rect)) {
-                    var bary = r.GetBary();
+                if (r is VoronoiRegion_Rect vr) {
+                    var bary = vr.GetBary();
                     var sBasis = bary.Basis;
                     var lambdas = bary.GetLambdas(p);
 
-                    if (!r.Contains(p)) {
+                    if (!vr.Contains(p)) {
                         lambdas = bary.GetZeroLambdas();
                     }
 
@@ -109,13 +114,13 @@ namespace TaskMaker.SimplicialMapping {
                         results[sBasis[idx]] += lambdas[idx];
                     }
                 }
-                else if (r.GetType() == typeof(VoronoiRegion_CircularSector)) {
-                    if ((r as VoronoiRegion_CircularSector).IsSingleGovernor) {
-                        var bary = r.GetBary();
+                else if (r is VoronoiRegion_Sector vs) {
+                    if (vs.IsSingleGovernor) {
+                        var bary = vs.GetBary();
                         var sBasis = bary.Basis;
                         var lambdas = bary.GetLambdas(p);
 
-                        if (!r.Contains(p)) {
+                        if (!vs.Contains(p)) {
                             lambdas = bary.GetZeroLambdas();
                         }
 
@@ -124,15 +129,14 @@ namespace TaskMaker.SimplicialMapping {
                         }
                     }
                     else {
-
-                        var (bary0, bary1) = (r as VoronoiRegion_CircularSector).GetBarys();
+                        var (bary0, bary1) = vs.GetBarys();
                         var basis0 = bary0.Basis;
                         var basis1 = bary1.Basis;
                         var lambdas0 = bary0.GetLambdas(p);
                         var lambdas1 = bary1.GetLambdas(p);
-                        var (f0, f1) = (r as VoronoiRegion_CircularSector).GetFactors(p);
+                        var (f0, f1) = vs.GetFactors(p);
 
-                        if (!r.Contains(p)) {
+                        if (!vs.Contains(p)) {
                             lambdas0 = bary0.GetZeroLambdas();
                             lambdas1 = bary1.GetZeroLambdas();
                         }

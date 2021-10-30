@@ -126,7 +126,7 @@ namespace TaskMaker {
         //}
     }
 
-    public class VoronoiRegion_CircularSector : VoronoiRegion {
+    public class VoronoiRegion_Sector : VoronoiRegion {
         public Simplex Governor0 { get; set; }
         public Simplex Governor1 { get; set; }
         public SKPoint Intersection { get; set; }
@@ -160,7 +160,7 @@ namespace TaskMaker {
             //return this.circularSector.Contains(p.X, p.Y);
         }
 
-        public VoronoiRegion_CircularSector(Entity o, SKPoint a, SKPoint i, SKPoint b) {
+        public VoronoiRegion_Sector(Entity o, SKPoint a, SKPoint i, SKPoint b) {
             circularSector = new SKPath();
             Intersection = i;
             E0 = o;
