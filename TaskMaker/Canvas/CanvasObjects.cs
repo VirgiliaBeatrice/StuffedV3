@@ -190,7 +190,8 @@ namespace TaskMaker {
 
         public void CreateBary() {
             Bary = new ComplexBary();
-            Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
+            Bary.BindLayer(this);
+            //Bary.AddBary(Entities.ToArray(), Complex.ToArray(), Exterior);
         }
 
         public void CreateExterior() {
@@ -235,6 +236,10 @@ namespace TaskMaker {
                 if (BindedTarget != null) {
                     var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
                     var result = map.MapTo(lambdas);
+
+                    if (result == null)
+                        return null;
+
                     var resultF = result.Select(el => (float)el).ToArray();
 
                     BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));
@@ -249,6 +254,10 @@ namespace TaskMaker {
                 if (BindedTarget != null) {
                     var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
                     var result = map.MapTo(lambdas);
+
+                    if (result == null)
+                        return null;
+
                     var resultF = result.Select(el => (float)el).ToArray();
 
                     BindedTarget.FromVector(Vector<float>.Build.Dense(resultF));

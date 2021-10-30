@@ -349,16 +349,20 @@ namespace TaskMaker {
                 case Keys.D0:
                     break;
                 case Keys.P:
+                    // Lock tensor
+                    SelectedLayer.Entities.ForEach(ent => ent.IsSet = true);
+
+                    MessageBox.Show("Lock tensor.");
                     //canvasControl1.PairAll();
                     //PrepareMap()
-                    if (SelectedLayer.TargetMap == null) {
-                        MessageBox.Show("No target map.");
-                    }
-                    else {
-                        canvasControl1.PairWithNLinearMap(SelectedLayer.TargetMap);
-                        //canvasControl1.Pair();
-                        e.Handled = true;
-                    }
+                    //if (SelectedLayer.TargetMap == null) {
+                    //    MessageBox.Show("No target map.");
+                    //}
+                    //else {
+                    //    canvasControl1.PairWithNLinearMap(SelectedLayer.TargetMap);
+                    //    //canvasControl1.Pair();
+                    //    e.Handled = true;
+                    //}
                     break;
                 case Keys.N:
                     var form = new NodeEditor();
@@ -388,10 +392,9 @@ namespace TaskMaker {
                     
                     mapSelect.Dispose();
 
-                    var form2 = new Matrix.MatrixForm(map.Tensor);
+                    var form2 = new Matrix.MatrixForm(map);
 
-                    form2.ShowDialog();
-                    form2.Dispose();
+                    form2.Show();
                     break;
             }
 

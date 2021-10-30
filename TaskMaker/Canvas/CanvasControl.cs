@@ -484,6 +484,9 @@ namespace TaskMaker {
 
                 var result = SelectedLayer.Interpolate(wLocation);
 
+                if (result == null)
+                    return;
+
                 Interpolated?.Invoke(null, new MessageEventArgs() { Message = np.array(result).repr });
             }
         }

@@ -65,20 +65,44 @@ namespace TaskMaker.SimplicialMapping {
     }
 
     public class ComplexBary {
-        public Entity[] Basis { get; set; }
-        public Simplex[] Complex { get; set; }
-        public Exterior Exterior { get; set; }
+        //public Entity[] Basis { get; set; }
+        //public Simplex[] Complex { get; set; }
+        //public Exterior Exterior { get; set; }
+        
+        
+        public Layer Parent { get; set; }
+        public List<Entity> Basis => Parent.Entities;
+        public List<Simplex> Complex => Parent.Complex;
+        public Exterior Exterior => Parent.Exterior;
+
 
         public ComplexBary() { }
+        public ComplexBary(Layer parent) => Parent = parent;
 
-        public void AddBary(Entity[] basis, Simplex[] complex, Exterior exterior) {
-            Basis = basis;
-            Complex = complex;
-            Exterior = exterior;
+
+        public void BindLayer(Layer layer) {
+            Parent = layer;
         }
 
+        //public void AddBary(Entity[] basis, Simplex[] complex, Exterior exterior) {
+        //    Basis = basis;
+        //    Complex = complex;
+        //    Exterior = exterior;
+        //}
+
+        private bool CheckBaryStatus() {
+            if (Parent == null)
+                return false;
+            else
+                return true;
+        }
 
         public double[] GetLambda(SKPoint p) {
+            if (!CheckBaryStatus()) {
+                MessageBox.Show("No layer. Quit.");
+                return null;
+            }
+
             var results = new Dictionary<Entity, double>();
 
             Basis.ToList().ForEach(b => results.Add(b, 0.0f));
@@ -170,6 +194,7 @@ namespace TaskMaker.SimplicialMapping {
         private IEnumerator<int[]> _cursor;
         public int Dim => _shape.Skip(1).ToArray().Length;
         public int[] CurrentCursor => _cursor.Current;
+        public bool isSet => !bool.Parse(np.isnan(_wTensor.sum()).repr);
 
         public NDarray Tensor {
             get => _wTensor;
@@ -184,8 +209,10 @@ namespace TaskMaker.SimplicialMapping {
             Barys.Add(bary);
             Layers.Add(layer);
 
-            _shape = Extensions.Concat(new int[] { dim }, Barys.Select(b => b.Basis.Length).ToArray());
-            _wTensor = np.zeros(_shape);
+            _shape = Extensions.Concat(new int[] { dim }, Barys.Select(b => b.Basis.Count).ToArray());
+            // NaN-lize
+            _wTensor = np.empty(_shape);
+            _wTensor.fill(np.nan);
             _cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
             _cursor.MoveNext();
         }
@@ -291,9 +318,13 @@ namespace TaskMaker.SimplicialMapping {
         }
 
         public double[] MapTo(double[][] lambdas) {
-            var result = Calculate(lambdas);
+            if (isSet) {
+                var result = Calculate(lambdas);
 
-            return result.GetData<double>();
+                return result.GetData<double>();
+            }
+            else
+                return null;
         }
     }
 

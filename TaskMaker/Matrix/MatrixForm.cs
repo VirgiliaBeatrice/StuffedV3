@@ -11,25 +11,25 @@ using Numpy;
 using SkiaSharp;
 using System.Reactive;
 using SkiaSharp.Views.Desktop;
+using TaskMaker.SimplicialMapping;
 
 namespace TaskMaker.Matrix {
     public partial class MatrixForm : Form {
-        public NDarray Tensor { get; set; }
         public Timer timer;
-        public NDarray<bool> mat;
         public MatrixShape MatrixShape;
+        public NLinearMap Map;
 
-        public MatrixForm(NDarray tensor) {
+        public MatrixForm(NLinearMap map) {
             InitializeComponent();
 
-            Tensor = tensor;
+            Map = map;
 
             timer = new Timer();
             timer.Interval = 16;
             timer.Tick += Timer_Tick;
             timer.Enabled = true;
 
-            MatrixShape = new MatrixShape(Tensor.shape.Dimensions.Skip(1).ToArray());
+            MatrixShape = new MatrixShape(Map.Tensor.shape.Dimensions.Skip(1).ToArray(), Map.Tensor);
             ClientSize = MatrixShape.Bounds.Size.ToDrawingSize().ToSize();
 
             skglControl1.PaintSurface += SkglControl1_PaintSurface;
@@ -41,7 +41,12 @@ namespace TaskMaker.Matrix {
         private void SkglControl1_DoubleClick(object sender, EventArgs e) {
             var args = e as MouseEventArgs;
 
-            MatrixShape.OnDoubleClick(args.Location.ToSKPoint());
+            var idx = MatrixShape.OnDoubleClick(args.Location.ToSKPoint());
+        
+            if(idx != null) {
+                var slice = $":,{string.Join(",", idx.AsEnumerable())}";
+                Map.Tensor[slice] = Map.Layers[0].BindedTarget.CreateTargetState().ToVector().ToArray();
+            }
         }
 
         private void SkglControl1_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e) {
@@ -69,29 +74,45 @@ namespace TaskMaker.Matrix {
         public List<ElementShape> Elements { get; set; } = new List<ElementShape>();
 
         private int[] _shape;
+        private NDarray _tensor;
 
-        public MatrixShape(int[] shape) {
+        public MatrixShape(int[] shape, NDarray tensor) {
             _shape = shape;
+            _tensor = tensor;
+
             Initialize();
         }
 
         public int[] IndexOf(ElementShape element) {
             var flatIdx = Elements.IndexOf(element);
 
-            return new int[] {
-                flatIdx / _shape[1] % _shape[0],
-                flatIdx / _shape[0] % _shape[1] };
+            if (_shape.Length == 1) {
+                return new int[] { flatIdx };
+            }
+            else if (_shape.Length == 2){
+                return new int[] {
+                    flatIdx / _shape[1] % _shape[0],
+                    flatIdx / _shape[0] % _shape[1] };
+            }
+            else {
+                throw new ArgumentOutOfRangeException();
+            }
         }
 
-        public void OnDoubleClick(SKPoint p) {
+        public int[] OnDoubleClick(SKPoint p) {
             var local = Transform.MapPoint(p);
 
             var target = Elements.Find(e => e.Contains(p));
 
             if (Elements.Contains(target)) {
                 target.OnDoubleClick(p);
+
                 var idx = IndexOf(target);
+
+                return idx;
             }
+
+            return null;
         }
 
         public void Initialize() {
@@ -101,9 +122,11 @@ namespace TaskMaker.Matrix {
                 for (var i=0;i<_shape[0]; ++i) {
                     for(var j=0;j<_shape[1]; ++j) {
                         var location = start + new SKPoint(j * 40, i * 40);
+                        var isNaN = bool.Parse(np.isnan(_tensor[$":,{i},{j}"].sum()).repr);
                         var element = new ElementShape() {
                             Location = location,
                             Label = $"({i},{j})",
+                            IsSelected = !isNaN,
                         };
 
                         Elements.Add(element);
@@ -113,9 +136,11 @@ namespace TaskMaker.Matrix {
             else if (_shape.Length == 1) {
                 for (var i = 0; i < _shape[0]; ++i) {
                     var location = start + new SKPoint(0, i * 40);
+                    var isNaN = bool.Parse(np.isnan(_tensor[$":,{i}"].sum()).repr);
                     var element = new ElementShape() {
                         Location = location,
                         Label = $"({i})",
+                        IsSelected = !isNaN
                     };
 
                     Elements.Add(element);
