@@ -297,7 +297,7 @@ namespace TaskMaker.SimplicialMapping {
         }
 
         public NDarray Calculate(double[][] lambdas) {
-            if (IsSet) {
+            if (isSet) {
                 NDarray kronProd = null;
 
                 for(int i = 0; i < lambdas.Length; ++i) {
