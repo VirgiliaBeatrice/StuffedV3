@@ -4,6 +4,7 @@ using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
@@ -38,6 +39,7 @@ namespace TaskMaker {
         private SKPoint _panStartInWorld;
         private Stopwatch _watch = new Stopwatch();
         private int _count = 100;
+        private BackgroundWorker worker;
 
         public CanvasControl() {
             InitializeComponent();
@@ -67,8 +69,25 @@ namespace TaskMaker {
             _refreshTimer.Interval = 1;
             _refreshTimer.Tick += Timer_Tick;
 
+            worker = new BackgroundWorker();
+            worker.WorkerSupportsCancellation = true;
+            worker.DoWork += Worker_DoWork;
+            worker.RunWorkerCompleted += Worker_RunWorkerCompleted;
+
             ResetViewport();
             //Services.Canvas.Bounds = _viewport;
+        }
+
+        private void Worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) {
+            //var (result, layer) = ((double[], Layer))e.Result;
+        }
+
+        private void Worker_DoWork(object sender, DoWorkEventArgs e) {
+            //if (!(sender as BackgroundWorker).IsBusy) {
+                var (layer, location) = ((Layer, SKPoint))e.Argument;
+
+                e.Result = (layer.Interpolate(location), layer);
+            //}
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
@@ -482,12 +501,17 @@ namespace TaskMaker {
             if (e.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
 
-                var result = SelectedLayer.Interpolate(wLocation);
-
-                if (result == null)
+                if (worker.IsBusy)
                     return;
+    
+                worker.RunWorkerAsync((SelectedLayer, wLocation));
 
-                Interpolated?.Invoke(null, new MessageEventArgs() { Message = np.array(result).repr });
+                //var result = SelectedLayer.Interpolate(wLocation);
+
+                //if (result == null)
+                //    return;
+
+                //Interpolated?.Invoke(null, new MessageEventArgs() { Message = np.array(result).repr });
             }
         }
 
@@ -665,6 +689,11 @@ namespace TaskMaker {
 
     public class MessageEventArgs :  EventArgs {
         public object Message { get; set; } 
+    }
+
+    public class InterpolationWorker {
+        public SKPoint Location { get; set; }
+        public Layer Layer { get; set; }
     }
 }
 
