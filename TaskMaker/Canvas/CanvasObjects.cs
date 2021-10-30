@@ -188,6 +188,14 @@ namespace TaskMaker {
             }
         }
 
+        public void Clear() {
+            Entities.Clear();
+            Complex.Clear();
+            Bary = null;
+            Exterior = null;
+            TargetMap = null;
+        }
+
         public void CreateBary() {
             Bary = new ComplexBary();
             Bary.BindLayer(this);

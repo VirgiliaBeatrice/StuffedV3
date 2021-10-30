@@ -217,6 +217,31 @@ namespace TaskMaker.SimplicialMapping {
             _cursor.MoveNext();
         }
 
+        public void UpdateMap() {
+            var oldTensor = _wTensor.copy();
+            var oldShape = _shape;
+
+            if (_shape.Length - 1 == 1) {
+                _shape = new[] { _shape[0], Barys[0].Basis.Count };
+                _wTensor = np.empty(_shape);
+                _wTensor.fill(np.nan);
+                _wTensor[$":,0:{oldShape[1]}"] = oldTensor;
+            }
+            else if (_shape.Length - 1 == 2) {
+                _shape = new[] { _shape[0], Barys[0].Basis.Count, Barys[1].Basis.Count };
+                _wTensor = np.empty(_shape);
+                _wTensor.fill(np.nan);
+                _wTensor[$":,0:{oldShape[1]},0:{oldShape[2]}"] = oldTensor;
+            }
+            else {
+                throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public void Load(NDarray tensor) {
+            _wTensor = tensor;
+        }
+
         public void Clear() {
             Barys.Clear();
         }

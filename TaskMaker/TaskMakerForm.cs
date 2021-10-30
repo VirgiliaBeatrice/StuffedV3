@@ -23,8 +23,8 @@ namespace TaskMaker {
         private TreeNode _root;
 
 
-        public NLinearMap LToMotor; 
-        public NLinearMap RToMotor; 
+        public NLinearMap LToMotor;
+        public NLinearMap RToMotor;
         public NLinearMap BiToLR;
 
         private Layer SelectedLayer => Services.Canvas.SelectedLayer;
@@ -98,14 +98,17 @@ namespace TaskMaker {
             InvalidateTreeView();
         }
 
-        private void PrepareMap(Layer layer) {
+        private void PrepareMap(Layer layer, bool force=false) {
             if (layer.BindedTarget == null) {
                 MessageBox.Show("No binded target.");
                 return;
             }
 
-            if (layer.TargetMap != null)
+            if (force | layer.TargetMap != null) {
                 return;
+            }
+            //if (layer.TargetMap != null)
+            //    return;
 
             var idx = Services.Canvas.Layers.IndexOf(layer);
 
@@ -123,9 +126,21 @@ namespace TaskMaker {
             layer.TargetMap.AddBary(layer, layer.Bary, dim);
         }
 
+        private void UpdateMap() {
+            var mapSelect = new Matrix.MapSelection();
+            mapSelect.ShowDialog();
+
+            var map = Services.Maps[mapSelect.comboBox1.SelectedItem as string];
+
+            mapSelect.Dispose();
+            map.UpdateMap();
+        }
+
         private void PrepareLayerProperties() {
             if (Services.Boards.NMotor == 0) {
                 MessageBox.Show("No motors.");
+
+                return;
             }
 
             var layers = Services.Canvas.Layers;
@@ -151,7 +166,7 @@ namespace TaskMaker {
             (right.BindedTarget as MotorTarget).Motors.AddRange(motors);
 
             var layerC = new Layer[] { left, right };
-            
+
             openClose.BindedTarget = new LayerTarget();
             (openClose.BindedTarget as LayerTarget).Layers.AddRange(layerC);
 
@@ -264,7 +279,7 @@ namespace TaskMaker {
 
         private void Timer_Tick(object sender, EventArgs e) {
             UpdateMotorPosition(false);
-            
+
             // Get latest pos from boards
             //for (int i = 0; i < boards.NMotor; ++i) {
             //    txMsg.Text += boards.GetPos(i);
@@ -351,28 +366,16 @@ namespace TaskMaker {
                 case Keys.P:
                     // Lock tensor
                     SelectedLayer.Entities.ForEach(ent => ent.IsSet = true);
+                    break;
+                //case Keys.N:
+                //    var form = new NodeEditor();
 
-                    MessageBox.Show("Lock tensor.");
-                    //canvasControl1.PairAll();
-                    //PrepareMap()
-                    //if (SelectedLayer.TargetMap == null) {
-                    //    MessageBox.Show("No target map.");
-                    //}
-                    //else {
-                    //    canvasControl1.PairWithNLinearMap(SelectedLayer.TargetMap);
-                    //    //canvasControl1.Pair();
-                    //    e.Handled = true;
-                    //}
-                    break;
-                case Keys.N:
-                    var form = new NodeEditor();
-
-                    form.ShowDialog();
-                    form.Dispose();
-                    break;
-                case Keys.Q:
-                    PrepareMap(SelectedLayer);
-                    break;
+                //    form.ShowDialog();
+                //    form.Dispose();
+                //    break;
+                //case Keys.Q:
+                //    PrepareMap(SelectedLayer);
+                //    break;
                 case Keys.D1:
                     var form1 = new ControlPanel();
 
@@ -382,6 +385,10 @@ namespace TaskMaker {
 
                 case Keys.U:
                     PrepareLayerProperties();
+
+                    //Services.Canvas.Layers.ForEach(l => PrepareMap(l));
+
+                    //MessageBox.Show("Prepared layer targets and maps.\r\n");
                     break;
 
                 case Keys.D2:
@@ -389,12 +396,14 @@ namespace TaskMaker {
                     mapSelect.ShowDialog();
 
                     var map = Services.Maps[mapSelect.comboBox1.SelectedItem as string];
-                    
-                    mapSelect.Dispose();
 
                     var form2 = new Matrix.MatrixForm(map);
 
+                    mapSelect.Dispose();
                     form2.Show();
+                    break;
+                case Keys.R:
+                    UpdateMap();
                     break;
             }
 
@@ -521,6 +530,12 @@ namespace TaskMaker {
 
         private void button10_Click(object sender, EventArgs e) {
             SelectedLayer.Triangulate();
+            //PrepareLayerProperties();
+            PrepareMap(SelectedLayer);
+
+            //Services.Canvas.Layers.ForEach(l => PrepareMap(l));
+
+            //MessageBox.Show("Prepared layer targets and maps.\r\n");
             //canvasControl1.Triangulate();
         }
 
@@ -567,7 +582,7 @@ namespace TaskMaker {
 
         private void treeView1_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
             e.Node.Text = e.Label;
-            (e.Node.Tag as Layer).Name = e.Label; 
+            (e.Node.Tag as Layer).Name = e.Label;
 
             groupBox2.Text = $"Canvas - [{e.Node.Text}]";
             toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
@@ -598,12 +613,45 @@ namespace TaskMaker {
 
             dialog.ShowDialog();
 
+            //if (dialog.FileName != "") {
+            //    using (var fs = dialog.OpenFile()) {
+            //        var state = Services.Canvas.Save() as CanvasState;
+            //        var jsonUtf8Bytes = state.ToJsonUtf8Bytes();
+
+            //        await fs.WriteAsync(jsonUtf8Bytes, 0, jsonUtf8Bytes.Length);
+            //    }
+            //}
+
             if (dialog.FileName != "") {
                 using (var fs = dialog.OpenFile()) {
-                    var state = Services.Canvas.Save() as CanvasState;
-                    var jsonUtf8Bytes = state.ToJsonUtf8Bytes();
+                    var entities = Services.Canvas.Layers.Select(l => l.Entities.Select(e => e.Location).ToArray()).ToArray();
+                    var options = new JsonSerializerOptions { WriteIndented = true };
+                    var maps = new Dictionary<string, MapState>();
 
-                    await fs.WriteAsync(jsonUtf8Bytes, 0, jsonUtf8Bytes.Length);
+                    foreach (var pair in Services.Maps) {
+                        var tensor = pair.Value.Tensor;
+
+                        if (tensor != null)
+                            maps.Add(pair.Key, 
+                                new MapState() {
+                                Flatten = pair.Value.Tensor.flatten().GetData<double>(),        Shape = pair.Value.Tensor.shape.Dimensions
+                                });
+                        else
+                            maps.Add(pair.Key,
+                                new MapState() {
+                                    Flatten = pair.Value.Tensor.flatten().GetData<double>(),
+                                    Shape = pair.Value.Tensor.shape.Dimensions
+                                });
+                    }
+
+                    var jsonObject = new JsonFile {
+                        Entites = entities,
+                        Maps = maps
+                    };
+
+                    var bytes = JsonSerializer.SerializeToUtf8Bytes(jsonObject, typeof(JsonFile), options);
+
+                    await fs.WriteAsync(bytes, 0, bytes.Length);
                 }
             }
         }
@@ -618,12 +666,47 @@ namespace TaskMaker {
                 if (dialog.ShowDialog() == DialogResult.OK) {
                     var path = dialog.FileName;
 
+                    //using (var fs = File.OpenText(path)) {
+                    //    var options = new JsonSerializerOptions { WriteIndented = true };
+                    //    var state = await JsonSerializer.DeserializeAsync<CanvasState>(fs.BaseStream, options);
+
+                    //    Services.Canvas.Restore(state);
+                    //}
+
                     using (var fs = File.OpenText(path)) {
                         var options = new JsonSerializerOptions { WriteIndented = true };
-                        var state = await JsonSerializer.DeserializeAsync<CanvasState>(fs.BaseStream, options);
+                        var jsonObject = await JsonSerializer.DeserializeAsync<JsonFile>(fs.BaseStream, options);
 
-                        Services.Canvas.Restore(state);
+                        var entities = jsonObject.Entites;
+                        var mapsState = jsonObject.Maps;
+
+                        var layers = Services.Canvas.Layers;
+                        for (var i = 0; i < layers.Count; ++i) {
+                            var eObjects = entities[i].Select(e => new Entity(e)).ToArray();
+                            layers[i].Clear();
+
+                            layers[i].Entities.AddRange(eObjects);
+
+                            // select all entities
+                            layers[i].Entities.ForEach(e => e.IsSelected = true);
+
+                            layers[i].Triangulate();
+
+                            PrepareLayerProperties();
+
+                            PrepareMap(layers[i], true);
+
+                            MessageBox.Show("Prepared layer targets and maps.\r\n");
+                        }
+
+                        // handle maps' tensor
+                        var maps = Services.Maps;
+
+                        foreach (var map in mapsState) {
+                            maps[map.Key].Load(Numpy.np.array(map.Value.Flatten).reshape(map.Value.Shape));
+                        }
                     }
+
                 }
             }
         }
@@ -664,4 +747,14 @@ namespace TaskMaker {
             return (CanvasState, Root);
         }
     }
+    public class JsonFile {
+        public SkiaSharp.SKPoint[][] Entites { get; set; }
+        public Dictionary<string, MapState> Maps { get; set; }
+    }
+
+    public class MapState {
+        public double[] Flatten { get; set; }
+        public int[] Shape { get; set; }
+    }
+
 }

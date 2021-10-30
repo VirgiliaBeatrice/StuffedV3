@@ -116,6 +116,9 @@ namespace TaskMaker {
         public void BeginAddNodeMode() {
             _canvas.IsShownPointer = true;
             SelectedMode = Modes.AddNode;
+
+            SelectedLayer.Complex.Clear();
+            SelectedLayer.Exterior = null;
         }
 
         public void EndAddNodeMode() {
