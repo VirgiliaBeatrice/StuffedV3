@@ -90,9 +90,13 @@ namespace TaskMaker.Matrix {
                 return new int[] { flatIdx };
             }
             else if (_shape.Length == 2){
+                var row = flatIdx / _shape[1];
+                var col = flatIdx - row * _shape[1];
+                //row * _shape[1] + col = flatIdx;
+
                 return new int[] {
-                    flatIdx / _shape[1] % _shape[0],
-                    flatIdx / _shape[0] % _shape[1] };
+                    row,
+                    col };
             }
             else {
                 throw new ArgumentOutOfRangeException();

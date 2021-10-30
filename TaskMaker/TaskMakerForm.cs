@@ -98,13 +98,20 @@ namespace TaskMaker {
             InvalidateTreeView();
         }
 
+        private void CreateDummyMotors() {
+            Services.Boards.SetNMotor(8);
+
+            for(var i = 0; i < 8; i++)
+                Services.Motors.Add(new Motor());
+        }
+
         private void PrepareMap(Layer layer, bool force=false) {
             if (layer.BindedTarget == null) {
                 MessageBox.Show("No binded target.");
                 return;
             }
 
-            if (force | layer.TargetMap != null) {
+            if (!force | layer.TargetMap != null) {
                 return;
             }
             //if (layer.TargetMap != null)
@@ -405,6 +412,9 @@ namespace TaskMaker {
                 case Keys.R:
                     UpdateMap();
                     break;
+                case Keys.F1:
+                    CreateDummyMotors();
+                    break;
             }
 
             if (e.Control && e.KeyCode == Keys.Z) {
@@ -625,23 +635,27 @@ namespace TaskMaker {
             if (dialog.FileName != "") {
                 using (var fs = dialog.OpenFile()) {
                     var entities = Services.Canvas.Layers.Select(l => l.Entities.Select(e => e.Location).ToArray()).ToArray();
-                    var options = new JsonSerializerOptions { WriteIndented = true };
+                    var options = new JsonSerializerOptions {
+                        WriteIndented = true,
+                        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                    };
                     var maps = new Dictionary<string, MapState>();
 
                     foreach (var pair in Services.Maps) {
                         var tensor = pair.Value.Tensor;
 
                         if (tensor != null)
-                            maps.Add(pair.Key, 
-                                new MapState() {
-                                Flatten = pair.Value.Tensor.flatten().GetData<double>(),        Shape = pair.Value.Tensor.shape.Dimensions
-                                });
-                        else
-                            maps.Add(pair.Key,
+                            maps.Add(
+                                pair.Key, 
                                 new MapState() {
                                     Flatten = pair.Value.Tensor.flatten().GetData<double>(),
-                                    Shape = pair.Value.Tensor.shape.Dimensions
-                                });
+                                    Shape = pair.Value.Tensor.shape.Dimensions});
+                        else
+                            maps.Add(
+                                pair.Key,
+                                new MapState() {
+                                    Flatten = pair.Value.Tensor.flatten().GetData<double>(),
+                                    Shape = pair.Value.Tensor.shape.Dimensions});
                     }
 
                     var jsonObject = new JsonFile {
@@ -674,13 +688,19 @@ namespace TaskMaker {
                     //}
 
                     using (var fs = File.OpenText(path)) {
-                        var options = new JsonSerializerOptions { WriteIndented = true };
+                        var options = new JsonSerializerOptions {
+                            WriteIndented = true,
+                            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals |
+                        JsonNumberHandling.AllowReadingFromString,
+                        };
                         var jsonObject = await JsonSerializer.DeserializeAsync<JsonFile>(fs.BaseStream, options);
 
                         var entities = jsonObject.Entites;
                         var mapsState = jsonObject.Maps;
 
                         var layers = Services.Canvas.Layers;
+                        PrepareLayerProperties();
+
                         for (var i = 0; i < layers.Count; ++i) {
                             var eObjects = entities[i].Select(e => new Entity(e)).ToArray();
                             layers[i].Clear();
@@ -692,7 +712,7 @@ namespace TaskMaker {
 
                             layers[i].Triangulate();
 
-                            PrepareLayerProperties();
+                            
 
                             PrepareMap(layers[i], true);
 

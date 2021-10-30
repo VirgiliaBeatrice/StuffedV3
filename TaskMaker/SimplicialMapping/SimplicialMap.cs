@@ -124,27 +124,14 @@ namespace TaskMaker.SimplicialMapping {
             if (!results.All(e => e.Value == 0))
                 return Basis.Select(b => results[b]).ToArray();
 
-            foreach (var r in Exterior.Regions) {
-                if (r is VoronoiRegion_Rect vr) {
-                    var bary = vr.GetBary();
-                    var sBasis = bary.Basis;
-                    var lambdas = bary.GetLambdas(p);
-
-                    if (!vr.Contains(p)) {
-                        lambdas = bary.GetZeroLambdas();
-                    }
-
-                    for (var idx = 0; idx < sBasis.Count; ++idx) {
-                        results[sBasis[idx]] += lambdas[idx];
-                    }
-                }
-                else if (r is VoronoiRegion_Sector vs) {
-                    if (vs.IsSingleGovernor) {
-                        var bary = vs.GetBary();
+            if (Exterior != null) {
+                foreach (var r in Exterior.Regions) {
+                    if (r is VoronoiRegion_Rect vr) {
+                        var bary = vr.GetBary();
                         var sBasis = bary.Basis;
                         var lambdas = bary.GetLambdas(p);
 
-                        if (!vs.Contains(p)) {
+                        if (!vr.Contains(p)) {
                             lambdas = bary.GetZeroLambdas();
                         }
 
@@ -152,28 +139,42 @@ namespace TaskMaker.SimplicialMapping {
                             results[sBasis[idx]] += lambdas[idx];
                         }
                     }
-                    else {
-                        var (bary0, bary1) = vs.GetBarys();
-                        var basis0 = bary0.Basis;
-                        var basis1 = bary1.Basis;
-                        var lambdas0 = bary0.GetLambdas(p);
-                        var lambdas1 = bary1.GetLambdas(p);
-                        var (f0, f1) = vs.GetFactors(p);
+                    else if (r is VoronoiRegion_Sector vs) {
+                        if (vs.IsSingleGovernor) {
+                            var bary = vs.GetBary();
+                            var sBasis = bary.Basis;
+                            var lambdas = bary.GetLambdas(p);
 
-                        if (!vs.Contains(p)) {
-                            lambdas0 = bary0.GetZeroLambdas();
-                            lambdas1 = bary1.GetZeroLambdas();
+                            if (!vs.Contains(p)) {
+                                lambdas = bary.GetZeroLambdas();
+                            }
+
+                            for (var idx = 0; idx < sBasis.Count; ++idx) {
+                                results[sBasis[idx]] += lambdas[idx];
+                            }
                         }
+                        else {
+                            var (bary0, bary1) = vs.GetBarys();
+                            var basis0 = bary0.Basis;
+                            var basis1 = bary1.Basis;
+                            var lambdas0 = bary0.GetLambdas(p);
+                            var lambdas1 = bary1.GetLambdas(p);
+                            var (f0, f1) = vs.GetFactors(p);
 
-                        for (var idx = 0; idx < basis0.Count; ++idx) {
-                            results[basis0[idx]] += f0 * lambdas0[idx];
-                        }
+                            if (!vs.Contains(p)) {
+                                lambdas0 = bary0.GetZeroLambdas();
+                                lambdas1 = bary1.GetZeroLambdas();
+                            }
 
-                        for (var idx = 0; idx < basis0.Count; ++idx) {
-                            results[basis1[idx]] += f1 * lambdas1[idx];
+                            for (var idx = 0; idx < basis0.Count; ++idx) {
+                                results[basis0[idx]] += f0 * lambdas0[idx];
+                            }
+
+                            for (var idx = 0; idx < basis0.Count; ++idx) {
+                                results[basis1[idx]] += f1 * lambdas1[idx];
+                            }
                         }
                     }
-
                 }
             }
 

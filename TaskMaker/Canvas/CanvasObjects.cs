@@ -212,6 +212,9 @@ namespace TaskMaker {
         }
 
         public double[] Interpolate(SKPoint p) {
+            if (TargetMap == null)
+                return null;
+
             #if DEBUG
             Stopwatch timer = new Stopwatch();
             timer.Start();
@@ -241,7 +244,7 @@ namespace TaskMaker {
 
                 var map = TargetMap;
 
-                if (BindedTarget != null) {
+                if (map.isSet) {
                     var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
                     var result = map.MapTo(lambdas);
 
@@ -259,7 +262,7 @@ namespace TaskMaker {
 
                 Controller.Location = p;
 
-                if (BindedTarget != null) {
+                if (map.isSet) {
                     var lambdas = map.Layers.Select(l => l.Bary.GetLambda(l.Controller.Location)).ToArray();
                     var result = map.MapTo(lambdas);
 
