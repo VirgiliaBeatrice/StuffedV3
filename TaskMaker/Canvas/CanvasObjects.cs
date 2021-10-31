@@ -738,11 +738,16 @@ namespace TaskMaker {
             canvas.DrawCircle(Location, _radius, fillPaint);
             canvas.DrawCircle(Location, _radius, strokePaint);
 
-            var text = new SKPaint() {
-                TextSize = 12.0f,
-                Color = SKColors.Black,
-            };
-            canvas.DrawText($"Entity - {Index}", location, text);
+            if (Services.IsDebug) {
+                var offset = new SKPoint(10, 10);
+                var text = new SKPaint() {
+                    TextSize = 10.0f,
+                    Color = SKColors.Black,
+                };
+                canvas.DrawText($"Entity - {Index}", location + offset, text);
+
+                text.Dispose();
+            }
         }
 
         public IMemento Save() => new EntityState(this);
@@ -849,7 +854,8 @@ namespace TaskMaker {
             }
 
             sKCanvas.DrawPath(path, fillPaint);
-            sKCanvas.DrawPath(path, strokePaint);
+            if (Services.IsDebug)
+                sKCanvas.DrawPath(path, strokePaint);
         }
 
         public IMemento Save() => new SimplexState(this);

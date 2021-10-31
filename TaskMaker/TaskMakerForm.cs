@@ -29,6 +29,7 @@ namespace TaskMaker {
         public NLinearMap BiToLR;
 
         private Layer SelectedLayer => Services.Canvas.SelectedLayer;
+        private bool _isDebugMode => Services.IsDebug;
 
         public delegate void InvalidateDelgate(bool invalidateChildren);
 
@@ -425,6 +426,9 @@ namespace TaskMaker {
                     break;
                 case Keys.F1:
                     CreateDummyMotors();
+                    break;
+                case Keys.F12:
+                    Services.IsDebug = !_isDebugMode;
                     break;
             }
 

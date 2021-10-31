@@ -106,7 +106,9 @@ namespace TaskMaker {
             //            SKShaderTileMode.Clamp);
 
             sKCanvas.DrawPath(rect, fill);
-            sKCanvas.DrawPath(rect, stroke);
+
+            if (Services.IsDebug)
+                sKCanvas.DrawPath(rect, stroke);
         }
 
         public override SimplexBary GetBary() {
@@ -237,7 +239,9 @@ namespace TaskMaker {
 
         public override void Draw(SKCanvas sKCanvas) {
             sKCanvas.DrawPath(circularSector, fill);
-            sKCanvas.DrawPath(circularSector, stroke);
+    
+            if (Services.IsDebug)
+                sKCanvas.DrawPath(circularSector, stroke);
         }
 
         //public override Vector<float> GetZeroTargetVector() => Governor0.GetZeroTargetVector();

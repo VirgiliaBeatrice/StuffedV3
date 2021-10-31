@@ -20,6 +20,8 @@ namespace TaskMaker {
         static public Graph Graph { get; set; }
 
         static public Queue<short[]> MotorValueQueue { get; set; } = new Queue<short[]>(50);
+
+        static public bool IsDebug { get; set; } = true;
         //static public Flow Flow { get; set; }
     }
 }
