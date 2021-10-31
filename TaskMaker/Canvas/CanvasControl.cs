@@ -207,54 +207,54 @@ namespace TaskMaker {
 
         public bool PairingStart = true;
 
-        public void PairWithNLinearMap(NLinearMap map) {
-            if (SelectedLayer.BindedTarget == null) {
-                MessageBox.Show("Layer without target.",
-                    "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+        //public void PairWithNLinearMap(NLinearMap map) {
+        //    if (SelectedLayer.BindedTarget == null) {
+        //        MessageBox.Show("Layer without target.",
+        //            "Error",
+        //            MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return;
+        //    }
 
-            if (PairingStart) {
-                PairingStart = false;
+        //    if (PairingStart) {
+        //        PairingStart = false;
 
-                map.SetComponent();
+        //        map.SetComponent();
 
-                var content = $"Pairing start from:\r\n" +
-                    $"Entities - ({string.Join(",", map.CurrentCursor)})";
-                //var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
+        //        var content = $"Pairing start from:\r\n" +
+        //            $"Entities - ({string.Join(",", map.CurrentCursor)})";
+        //        //var content = $"Pairing start from: {SelectedLayer.Entities[0]}";
 
-                MessageBox.Show($"Next: {content}",
-                "Information",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-            else {
-                var target = SelectedLayer.BindedTarget;
-                var lastCursor = map.CurrentCursor;
-                var isSet = map.SetComponent(target.CreateTargetState().ToVector().ToArray());
+        //        MessageBox.Show($"Next: {content}",
+        //        "Information",
+        //        MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        return;
+        //    }
+        //    else {
+        //        var target = SelectedLayer.BindedTarget;
+        //        var lastCursor = map.CurrentCursor;
+        //        var isSet = map.SetComponent(target.CreateTargetState().ToVector().ToArray());
 
-                if (!isSet) {
-                    var currCursor = map.CurrentCursor;
-                    SelectedLayer.Reset();
+        //        if (!isSet) {
+        //            var currCursor = map.CurrentCursor;
+        //            SelectedLayer.Reset();
 
-                    var content = $"Entities - ({string.Join(",", lastCursor)}) are set.\r\n" +
-                        $"Next: Entities - ({string.Join(",", currCursor)})";
+        //            var content = $"Entities - ({string.Join(",", lastCursor)}) are set.\r\n" +
+        //                $"Next: Entities - ({string.Join(",", currCursor)})";
 
-                    MessageBox.Show($"{content}",
-                    "Information",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else {
-                    SelectedLayer.Reset();
-                    PairingStart = true;
+        //            MessageBox.Show($"{content}",
+        //            "Information",
+        //            MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        }
+        //        else {
+        //            SelectedLayer.Reset();
+        //            PairingStart = true;
 
-                    MessageBox.Show("All entites are paired.",
-                    "Information",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-        }
+        //            MessageBox.Show("All entites are paired.",
+        //            "Information",
+        //            MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        }
+        //    }
+        //}
 
         public void PairAll() {
             if (SelectedLayer.BindedTarget == null) {

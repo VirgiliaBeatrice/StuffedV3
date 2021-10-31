@@ -106,31 +106,33 @@ namespace TaskMaker {
         }
 
         private void PrepareMap(Layer layer, bool force=false) {
+            // 1. Triangulate complex and its bary
+            // 2. Take complex bary and add it into corresponding map
             if (layer.BindedTarget == null) {
                 MessageBox.Show("No binded target.");
                 return;
             }
 
-            if (!force | layer.TargetMap != null) {
-                return;
+            if (layer.TargetMap == null) {
+                var idx = Services.Canvas.Layers.IndexOf(layer);
+
+                if (idx == 0)
+                    layer.TargetMap = LToMotor;
+                else if (idx == 1)
+                    layer.TargetMap = RToMotor;
+                else
+                    layer.TargetMap = BiToLR;
+
+                layer.CreateBary();
+
+                var dim = layer.BindedTarget.Dimension;
+                // dim(motors) = 3
+                // dim(n layers) = 2 * n
+                layer.TargetMap.AddBary(layer, layer.Bary, dim);
             }
-            //if (layer.TargetMap != null)
-            //    return;
-
-            var idx = Services.Canvas.Layers.IndexOf(layer);
-
-            if (idx == 0)
-                layer.TargetMap = LToMotor;
-            else if (idx == 1)
-                layer.TargetMap = RToMotor;
-            else
-                layer.TargetMap = BiToLR;
-
-            layer.CreateBary();
-
-            var dim = layer.BindedTarget.Dimension;
-            // dim(motors) = 3
-            layer.TargetMap.AddBary(layer, layer.Bary, dim);
+            else {
+                layer.TargetMap.UpdateMap();
+            }
         }
 
         private void UpdateMap() {

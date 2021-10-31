@@ -379,7 +379,6 @@ namespace TaskMaker {
             this.treeView1.AllowDrop = true;
             this.treeView1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeView1.HideSelection = false;
-            this.treeView1.LabelEdit = true;
             this.treeView1.Location = new System.Drawing.Point(4, 17);
             this.treeView1.Name = "treeView1";
             this.treeView1.ShowLines = false;
@@ -456,7 +455,7 @@ namespace TaskMaker {
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.propertyToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 48);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(120, 26);
             // 
             // propertyToolStripMenuItem
             // 
@@ -464,7 +463,7 @@ namespace TaskMaker {
             this.layerToolStripMenuItem});
             this.propertyToolStripMenuItem.Enabled = false;
             this.propertyToolStripMenuItem.Name = "propertyToolStripMenuItem";
-            this.propertyToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.propertyToolStripMenuItem.Size = new System.Drawing.Size(119, 22);
             this.propertyToolStripMenuItem.Text = "Property";
             // 
             // layerToolStripMenuItem

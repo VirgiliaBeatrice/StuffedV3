@@ -185,16 +185,15 @@ namespace TaskMaker.SimplicialMapping {
 
 
     public class NLinearMap {
-        public bool IsSet { get; set; } = false;
-        public bool IsSetNew { get; set; } = false;
+        //public bool IsSet { get; set; } = false;
         public List<ComplexBary> Barys { get; set; }
         public List<Layer> Layers { get; set; }
 
         private NDarray _wTensor;
         private int[] _shape;
-        private IEnumerator<int[]> _cursor;
+        //private IEnumerator<int[]> _cursor;
         public int Dim => _shape.Skip(1).ToArray().Length;
-        public int[] CurrentCursor => _cursor.Current;
+        //public int[] CurrentCursor => _cursor.Current;
         public bool isSet => !bool.Parse(np.isnan(_wTensor.sum()).repr);
 
         public NDarray Tensor {
@@ -214,8 +213,8 @@ namespace TaskMaker.SimplicialMapping {
             // NaN-lize
             _wTensor = np.empty(_shape);
             _wTensor.fill(np.nan);
-            _cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
-            _cursor.MoveNext();
+            //_cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
+            //_cursor.MoveNext();
         }
 
         public void UpdateMap() {
@@ -247,80 +246,80 @@ namespace TaskMaker.SimplicialMapping {
             Barys.Clear();
         }
 
-        public static int[][] GetIndices(int[] shape) {
-            var values = new List<int[]>();
+        //public static int[][] GetIndices(int[] shape) {
+        //    var values = new List<int[]>();
 
-            for (var i = 0; i < shape[0]; ++i) {
-                values.Add(new int[] { i });
-            }
+        //    for (var i = 0; i < shape[0]; ++i) {
+        //        values.Add(new int[] { i });
+        //    }
 
-            if (shape.Length != 1) {
-                var ret = GetIndices(shape.Skip(1).ToArray());
-                var newRet = new List<int[]>();
+        //    if (shape.Length != 1) {
+        //        var ret = GetIndices(shape.Skip(1).ToArray());
+        //        var newRet = new List<int[]>();
 
-                foreach (var va in values) {
-                    foreach (var vb in ret) {
-                        newRet.Add(Extensions.Concat(va, vb));
-                    }
-                }
+        //        foreach (var va in values) {
+        //            foreach (var vb in ret) {
+        //                newRet.Add(Extensions.Concat(va, vb));
+        //            }
+        //        }
 
-                return newRet.ToArray();
-            }
-            else {
-                return values.ToArray();
-            }
-        }
+        //        return newRet.ToArray();
+        //    }
+        //    else {
+        //        return values.ToArray();
+        //    }
+        //}
 
-        public void SetComponentForMatrix(int[] idx, float[] element) {
-            var slice = $":,{string.Join(",", idx.Select(i => i))}";
+        //public void SetComponentForMatrix(int[] idx, float[] element) {
+        //    var slice = $":,{string.Join(",", idx.Select(i => i))}";
 
-            _wTensor[slice] = element.Select(e => (double)e).ToArray();
-        }
+        //    _wTensor[slice] = element.Select(e => (double)e).ToArray();
+        //}
 
-        public bool SetComponent(float[] element = null) {
-            if (element == null) {
-                // Reset to start
-                _cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
-                _cursor.MoveNext();
+        //public bool SetComponent(float[] element = null) {
+        //    if (element == null) {
+        //        // Reset to start
+        //        _cursor = GetIndices(_shape.Skip(1).ToArray()).Cast<int[]>().GetEnumerator();
+        //        _cursor.MoveNext();
 
-                var idx = _cursor.Current;
-                IsSet = false;
+        //        var idx = _cursor.Current;
+        //        IsSet = false;
 
-                // Highlight first
-                for (var i = 0; i < Dim; ++i) {
-                    Barys[i].Basis[idx[i]].IsSelected = true;
-                }
-            }
-            else {
-                var idx = _cursor.Current;
-                var slice = $":,{string.Join(",", idx.Select(i => i))}";
+        //        // Highlight first
+        //        for (var i = 0; i < Dim; ++i) {
+        //            Barys[i].Basis[idx[i]].IsSelected = true;
+        //        }
+        //    }
+        //    else {
+        //        var idx = _cursor.Current;
+        //        var slice = $":,{string.Join(",", idx.Select(i => i))}";
 
-                _wTensor[slice] = element.Select(e => (double)e).ToArray();
+        //        _wTensor[slice] = element.Select(e => (double)e).ToArray();
 
-                for (var i = 0; i < Dim; ++i) {
-                    Barys[i].Basis[idx[i]].IsSet = true;
-                }
+        //        for (var i = 0; i < Dim; ++i) {
+        //            Barys[i].Basis[idx[i]].IsSet = true;
+        //        }
 
-                var result = _cursor.MoveNext();
-            
-                if (result) {
-                    var nextIdx = _cursor.Current;
-                    IsSet = false;
+        //        var result = _cursor.MoveNext();
 
-                    // Highlight next component
-                    for (var i = 0; i < Dim; ++i) {
-                        Barys[i].Basis[nextIdx[i]].IsSelected = true;
-                    }
-                }
+        //        if (result) {
+        //            var nextIdx = _cursor.Current;
+        //            IsSet = false;
 
-                IsSet = !result;
+        //            // Highlight next component
+        //            for (var i = 0; i < Dim; ++i) {
+        //                Barys[i].Basis[nextIdx[i]].IsSelected = true;
+        //            }
+        //        }
 
-                if(!result)
-                    _cursor.Dispose();
-            }
+        //        IsSet = !result;
 
-            return IsSet;
-        }
+        //        if(!result)
+        //            _cursor.Dispose();
+        //    }
+
+        //    return IsSet;
+        //}
 
         public NDarray Calculate(double[][] lambdas) {
             if (isSet) {
