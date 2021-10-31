@@ -12,6 +12,7 @@ using SkiaSharp;
 using System.Reactive;
 using SkiaSharp.Views.Desktop;
 using TaskMaker.SimplicialMapping;
+using System.Diagnostics;
 
 namespace TaskMaker.Matrix {
     public partial class MatrixForm : Form {
@@ -184,7 +185,7 @@ namespace TaskMaker.Matrix {
             var rev = Elements.Reverse<ElementShape>().ToList();
             rev.ForEach(e => e.Draw(canvas));
 
-            canvas.DrawRect(Bounds, strokePaint);
+            //canvas.DrawRect(Bounds, strokePaint);
 
             var pic = recorder.EndRecording();
 
@@ -216,9 +217,15 @@ namespace TaskMaker.Matrix {
         public SKRect Bounds { get; set; }
         public float Radius { get; set; } = 20.0f;
         public SKMatrix Transform => SKMatrix.CreateTranslation(Location.X, Location.Y);
+        public SKPoint Click { get; set; } = SKPoint.Empty;
+
+        private Stopwatch _animator;
+        private bool _isPlaying = false;
+        private int _duration = 200;
 
         public ElementShape() {
             Invalidate();
+            _animator = new Stopwatch();
         }
 
         public bool Contains(SKPoint p) {
@@ -228,7 +235,10 @@ namespace TaskMaker.Matrix {
         }
 
         public void OnDoubleClick(SKPoint p) {
+            //Click = Transform.Invert().MapPoint(p);
             IsSelected = true;
+            _animator.Restart();
+            _isPlaying = true;
         }
 
         public void Invalidate() {
@@ -240,6 +250,10 @@ namespace TaskMaker.Matrix {
         }
 
         public SKPicture DrawThis() {
+            _animator.Stop();
+
+            var step = (decimal)_animator.ElapsedMilliseconds / _duration;
+
             var recorder = new SKPictureRecorder();
             var canvas = recorder.BeginRecording(Bounds);
 
@@ -250,23 +264,37 @@ namespace TaskMaker.Matrix {
                 stroke.StrokeWidth = 2;
                 stroke.Style = SKPaintStyle.Stroke;
 
-                if (IsSelected)
-                    fill.Color = SKColors.CadetBlue;
-                else
-                    fill.Color = SKColors.Aqua;
+                fill.IsAntialias = true;
 
-                text.Color = SKColors.Black;
-                text.TextSize = 8;
+                if (IsSelected)
+                    fill.Color = SKColor.Parse("#757de8");
+                else
+                    fill.Color = SKColor.Parse("#3f51b5");
+
+                text.Color = SKColors.White;
+                text.TextSize = 10;
                 text.IsAntialias = true;
 
                 canvas.DrawCircle(SKPoint.Empty, Radius, fill);
-                canvas.DrawCircle(SKPoint.Empty, Radius, stroke);
+                //canvas.DrawCircle(SKPoint.Empty, Radius, stroke);
+
+                if (_isPlaying) {
+                    fill.Color = SKColor.Parse("#002984");
+                    canvas.DrawCircle(Click, (float)step * Radius, fill);
+                }
+
                 canvas.DrawText(Label, SKPoint.Empty, text);
             }
 
             var pic = recorder.EndRecording();
 
             recorder.Dispose();
+
+            if (_animator.ElapsedMilliseconds < _duration)
+               _animator.Start();
+            else {
+                _isPlaying = false;
+            }
 
             return pic;
         }
@@ -277,13 +305,18 @@ namespace TaskMaker.Matrix {
             sKCanvas.Save();
 
             var mat = Transform;
+            //var clip = new SKPath();
+            //clip.AddCircle(0, 0, Radius);
+
 
             sKCanvas.Concat(ref mat);
+            //sKCanvas.ClipPath(clip);
             sKCanvas.DrawPicture(pic);
 
             sKCanvas.Restore();
 
             pic.Dispose();
+            //clip.Dispose();
         }
     }
 }
