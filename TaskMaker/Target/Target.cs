@@ -39,6 +39,7 @@ namespace TaskMaker {
         public override void FromVector(Vector<float> vector) {
             for (int i = 0; i < vector.Count; ++i) {
                 var result = (int)vector[i] < -500 ? -500 : (int)vector[i];
+                result = (int)vector[i] > 30000 ? 30000 : (int)vector[i];
                 Motors[i].position.Value = result;
             }
         }

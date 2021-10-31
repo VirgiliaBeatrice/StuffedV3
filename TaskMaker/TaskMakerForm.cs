@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using TaskMaker.Node;
 using TaskMaker.SimplicialMapping;
 using PCController;
+using MathNetExtension;
 
 namespace TaskMaker {
     public partial class TaskMakerForm : Form {
@@ -705,9 +706,15 @@ namespace TaskMaker {
 
                         for (var i = 0; i < layers.Count; ++i) {
                             var eObjects = entities[i].Select(e => new Entity(e)).ToArray();
+
+                            for(var j =0; j<eObjects.Length; ++j) {
+                                eObjects[j].Index = j;
+                            }
+
                             layers[i].Clear();
 
                             layers[i].Entities.AddRange(eObjects);
+                            layers[i].Controller.Location = layers[i].Bounds.GetMid();
 
                             // select all entities
                             layers[i].Entities.ForEach(e => e.IsSelected = true);
