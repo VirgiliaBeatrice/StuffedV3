@@ -37,11 +37,24 @@ namespace TaskMaker {
         public override Vector<float> ToVector() => Vector<float>.Build.DenseOfArray(Motors.Select(m => (float)m.position.Value).ToArray());
 
         public override void FromVector(Vector<float> vector) {
+            short[] targets = new short[Services.Boards.NMotor];
+
+            // Update interpolated motor values
             for (int i = 0; i < vector.Count; ++i) {
                 var result = (int)vector[i] < -500 ? -500 : (int)vector[i];
                 result = (int)vector[i] > 30000 ? 30000 : (int)vector[i];
                 Motors[i].position.Value = result;
             }
+
+            // Enqueue
+            for (int i = 0; i < Services.Motors.Count; ++i) {
+                var motor = Services.Motors[i];
+                targets[i] = (short)(motor.position.Value);
+            }
+
+            // TODO: May cause exception
+            //if (Services.MotorValueQueue.Count == Services.MotorValueQueue.)
+            Services.MotorValueQueue.Enqueue(targets);
         }
 
         public override IMemento Save() {

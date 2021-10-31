@@ -299,20 +299,28 @@ namespace TaskMaker {
         }
 
         private void UpdateMotorPosition(bool returnZero) {
-            short[] targets = new short[Services.Boards.NMotor];
+            //short[] targets = new short[Services.Boards.NMotor];
 
-            for (int i = 0; i < Services.Motors.Count; ++i) {
-                if (returnZero) {
-                    targets[i] = 0;
-                }
-                else {
-                    var motor = Services.Motors[i];
-                    targets[i] = (short)(motor.position.Value);
-                    //targets[i] = (short)this.Services.Motors[i].position.Value;
-                }
+            //for (int i = 0; i < Services.Motors.Count; ++i) {
+            //    if (returnZero) {
+            //        targets[i] = 0;
+            //    }
+            //    else {
+            //        var motor = Services.Motors[i];
+            //        targets[i] = (short)(motor.position.Value);
+            //        //targets[i] = (short)this.Services.Motors[i].position.Value;
+            //    }
+            //}
+
+            var queue = Services.MotorValueQueue;
+
+            if (queue.Count != 0) {
+                var values = queue.Dequeue();
+
+                Services.Boards.SendPosDirect(values);
             }
 
-            Services.Boards.SendPosDirect(targets);
+            //Services.Boards.SendPosDirect(targets);
         }
 
         private void InitializeSkControl() {
@@ -576,7 +584,9 @@ namespace TaskMaker {
 
         private void button14_Click(object sender, EventArgs e) {
             if (Services.Motors.Count != 0) {
-                UpdateMotorPosition(true);
+                var targets = new short[Services.Boards.NMotor];
+
+                Services.Boards.SendPosDirect(targets);
             }
         }
 
