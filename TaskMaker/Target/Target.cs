@@ -42,7 +42,7 @@ namespace TaskMaker {
             // Update interpolated motor values
             for (int i = 0; i < vector.Count; ++i) {
                 var result = (int)vector[i] < -500 ? -500 : (int)vector[i];
-                result = (int)vector[i] > 30000 ? 30000 : (int)vector[i];
+                result = (int)vector[i] > 30000 ? 30000 : result;
                 Motors[i].position.Value = result;
             }
 

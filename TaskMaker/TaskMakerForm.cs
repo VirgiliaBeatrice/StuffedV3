@@ -30,7 +30,7 @@ namespace TaskMaker {
 
         private Layer SelectedLayer => Services.Canvas.SelectedLayer;
         private bool _isDebugMode => Services.IsDebug;
-
+        private bool _isDirect = false;
         public delegate void InvalidateDelgate(bool invalidateChildren);
 
 
@@ -289,7 +289,7 @@ namespace TaskMaker {
         }
 
         private void Timer_Tick(object sender, EventArgs e) {
-            UpdateMotorPosition(false);
+            UpdateMotorPosition(_isDirect);
 
             // Get latest pos from boards
             //for (int i = 0; i < boards.NMotor; ++i) {
@@ -299,29 +299,29 @@ namespace TaskMaker {
             // Pos ==Output Bary.==> Lambdas ==Input Bary.==> Controller
         }
 
-        private void UpdateMotorPosition(bool returnZero) {
-            //short[] targets = new short[Services.Boards.NMotor];
+        private void UpdateMotorPosition(bool isDirect) {
+            if (isDirect) {
+                short[] targets = new short[Services.Boards.NMotor];
 
-            //for (int i = 0; i < Services.Motors.Count; ++i) {
-            //    if (returnZero) {
-            //        targets[i] = 0;
-            //    }
-            //    else {
-            //        var motor = Services.Motors[i];
-            //        targets[i] = (short)(motor.position.Value);
-            //        //targets[i] = (short)this.Services.Motors[i].position.Value;
-            //    }
-            //}
+                for (int i = 0; i < Services.Motors.Count; ++i) {
+                    var motor = Services.Motors[i];
+                    targets[i] = (short)(motor.position.Value);
+                }
 
-            var queue = Services.MotorValueQueue;
+                Services.Boards.SendPosDirect(targets);
+            }
+            else {
+                var queue = Services.MotorValueQueue;
 
-            if (queue.Count != 0) {
-                var values = queue.Dequeue();
+                if (queue.Count != 0) {
+                    var values = queue.Dequeue();
 
-                Services.Boards.SendPosDirect(values);
+                    Services.Boards.SendPosDirect(values);
+                }
+
+                //Services.Boards.SendPosDirect(targets);
             }
 
-            //Services.Boards.SendPosDirect(targets);
         }
 
         private void InitializeSkControl() {
@@ -452,6 +452,10 @@ namespace TaskMaker {
 
         // Manipulate
         private void button3_Click(object sender, EventArgs e) {
+            _isDirect = false;
+            Services.MotorTimer.Stop();
+            Services.MotorTimer.Interval = 10;
+            Services.MotorTimer.Start();
             canvasControl1.BeginManipulateMode();
         }
 
@@ -579,7 +583,12 @@ namespace TaskMaker {
         }
 
         private void button11_Click(object sender, EventArgs e) {
+            _isDirect = true;
+            Services.MotorTimer.Stop();
+            Services.MotorTimer.Interval = 100;
+            Services.MotorTimer.Start();
             SelectedLayer.ShowTargetControlForm();
+
         }
 
         private void button13_Click(object sender, EventArgs e) {

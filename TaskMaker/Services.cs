@@ -11,7 +11,7 @@ namespace TaskMaker {
         static public Caretaker Caretaker { get; set; }
         static public Boards Boards { get; set; } = new Boards();
         static public Motors Motors { get; set; } = new Motors();
-        static public Timer MotorTimer { get; set; } = new Timer() { Interval = 10 };
+        static public Timer MotorTimer { get; set; } = new Timer() { Interval = 100 };
         static public TreeNode LayerTree { get; set; }
         static public Triangulation TriHandler { get; set; } = new Triangulation();
         static public Canvas Canvas { get; set; } = new Canvas();
