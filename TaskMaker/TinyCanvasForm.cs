@@ -8,9 +8,9 @@ using MathNet.Numerics.LinearAlgebra;
 namespace TaskMaker {
     public partial class TinyCanvasForm : Form {
 
-        public Canvas Canvas { get; set; }
+        public ViewWidget Canvas { get; set; }
         private SKGLControl sKControl;
-        private Layer _layer;
+        private ControlUIWidget _layer;
         private CrossPointer pointer;
         private Timer timer;
         private SKRect _viewport;
@@ -18,7 +18,7 @@ namespace TaskMaker {
         private SKPoint _panCenterInView;
         private SKPoint _panStartInWorld;
         private Controller _controller;
-        public TinyCanvasForm(Layer layer) {
+        public TinyCanvasForm(ControlUIWidget layer) {
             InitializeComponent();
 
             _layer = layer;

@@ -23,7 +23,7 @@ namespace TaskMaker {
         [JsonInclude]
         public IList<LayerState> Layers { get; private set; }
 
-        public CanvasState(Canvas c) {
+        public CanvasState(ViewWidget c) {
             Layers = new List<LayerState>(c.Layers.Select(l => l.Save() as LayerState)).AsReadOnly();
         }
 
@@ -35,20 +35,20 @@ namespace TaskMaker {
         public override object GetState() => (Layers);
     }
 
-    public partial class Canvas : IOriginator {
+    public partial class ViewWidget : IOriginator {
         public SKRect Bounds { get; set; }
         public bool IsShownPointer { get; set; } = false;
         public bool IsShownPointerTrace { get; set; } = false;
 
-        public List<Layer> Layers { get; set; } = new List<Layer>();
-        public Layer SelectedLayer => Layers.Find(l => l.IsSelected);
+        public List<ControlUIWidget> Layers { get; set; } = new List<ControlUIWidget>();
+        public ControlUIWidget SelectedControlUI => Layers.Find(l => l.IsSelected);
         public ISelectionTool SelectionTool { get; set; }
         public PointerTrace PointerTrace { get; set; }
         public CrossPointer Pointer { get; set; }
 
 
-        public Canvas() {
-            Layers.Add(new Layer("New Layer") { IsSelected = true });
+        public ViewWidget() {
+            Layers.Add(new ControlUIWidget("New Layer") { IsSelected = true });
 
             Pointer = new CrossPointer();
         }
@@ -62,7 +62,7 @@ namespace TaskMaker {
             Layers.Clear();
 
             foreach (var ls in state) {
-                var item = new Layer("New Layer");
+                var item = new ControlUIWidget("New Layer");
 
                 item.Restore(ls);
                 Layers.Add(item);
@@ -85,7 +85,7 @@ namespace TaskMaker {
             //    l.Draw(sKCanvas);
             //}
             //}
-            SelectedLayer.Draw(sKCanvas);
+            SelectedControlUI.Draw(sKCanvas);
 
             if (SelectionTool != null) {
                 SelectionTool.DrawThis(sKCanvas);
@@ -116,7 +116,7 @@ namespace TaskMaker {
         [JsonInclude]
         public SimplicialComplexState Complex { get; private set; }
 
-        public LayerState(Layer l) {
+        public LayerState(ControlUIWidget l) {
             Name = l.Name;
             Entities = l.Entities.Select(e => (EntityState)e.Save()).ToList().AsReadOnly();
             Complex = new SimplicialComplexState(l.Complex);
@@ -137,7 +137,7 @@ namespace TaskMaker {
 
     }
 
-    public partial class Layer : IOriginator {
+    public partial class ControlUIWidget : IOriginator {
         public string Name { get; set; }
         public bool IsVisible { get; set; } = true;
         //public bool IsShownPointer { get; set; } = false;
@@ -170,7 +170,7 @@ namespace TaskMaker {
             }
         }
 
-        public Layer(string name) {
+        public ControlUIWidget(string name) {
             Name = name;
 
             Complex = new SimplicialComplex();
@@ -432,7 +432,7 @@ namespace TaskMaker {
     }
 
     public class CompositeLayer {
-        public List<Layer> Layers { get; set; } = new List<Layer>();
+        public List<ControlUIWidget> Layers { get; set; } = new List<ControlUIWidget>();
 
         public void Tensor() {
             //var lambdasCollection = Layers.Select(l => l.)
@@ -863,7 +863,7 @@ namespace TaskMaker {
         public void Restore(IMemento m, object info = null) {
             var state = m as SimplexState;
             var vertexIdx = state.VertexIdx;
-            var layer = info as Layer;
+            var layer = info as ControlUIWidget;
 
             Vertices.Clear();
 
@@ -1044,7 +1044,7 @@ namespace TaskMaker {
 
         public void Restore(IMemento m, object info = null) {
             var simplices = (IList<SimplexState>)m.GetState();
-            var layer = info as Layer;
+            var layer = info as ControlUIWidget;
 
             Clear();
 

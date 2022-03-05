@@ -201,6 +201,11 @@
     <Compile Include="Canvas\Exterior_v2.cs" />
     <Compile Include="Canvas\Geometry.cs" />
     <Compile Include="Canvas\VoronoiRegion.cs" />
+    <Compile Include="Model\ControlUI\ControlUIUnit.cs" />
+    <Compile Include="Model\ControlUI\Core.cs" />
+    <Compile Include="Model\Core.cs" />
+    <Compile Include="ViewModel\ViewModel.cs" />
+    <Compile Include="View\Elements\Core.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="MathNetExtension.cs" />
     <Compile Include="Matrix\MapSelection.cs">
@@ -296,6 +301,7 @@
     <Compile Include="TinyCanvasForm.Designer.cs">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="View\Widgets\Core.cs" />
     <EmbeddedResource Include="Matrix\MapSelection.resx">
       <DependentUpon>MapSelection.cs</DependentUpon>
     </EmbeddedResource>
@@ -335,6 +341,7 @@
     <EmbeddedResource Include="TinyCanvasForm.resx">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="ClassDiagram1.cd" />
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

@@ -23,14 +23,14 @@ namespace TaskMaker {
                 selectedMode = value;
             }
         }
-        public Layer SelectedLayer => _canvas.SelectedLayer;
+        public ControlUIWidget SelectedControlUI => _view.SelectedControlUI;
         public event EventHandler<MessageEventArgs> Interpolated;
 
         private SKGLControl skControl;
         private SKImageInfo imageInfo;
         private Modes selectedMode;
         private Timer _refreshTimer;
-        private Canvas _canvas => Services.Canvas;
+        private ViewWidget _view => Services.ViewWidget;
         private EditPhase editPhase = EditPhase.None;
 
         private SKRect _viewport;
@@ -84,7 +84,7 @@ namespace TaskMaker {
 
         private void Worker_DoWork(object sender, DoWorkEventArgs e) {
             //if (!(sender as BackgroundWorker).IsBusy) {
-                var (layer, location) = ((Layer, SKPoint))e.Argument;
+                var (layer, location) = ((ControlUIWidget, SKPoint))e.Argument;
 
                 e.Result = (layer.Interpolate(location), layer);
             //}
@@ -103,27 +103,27 @@ namespace TaskMaker {
         }
 
         public void Reset() {
-            _canvas.Reset();
+            _view.Reset();
             selectedMode = Modes.None;
         }
 
         private void ResetViewport() {
             _window = new SKRect() { Location = new SKPoint(), Size = ClientSize.ToSKSize() };
             _viewport = new SKRect() { Location = new SKPoint(), Size = ClientSize.ToSKSize() };
-            Services.Canvas.Bounds = _viewport;
+            Services.ViewWidget.Bounds = _viewport;
         }
 
         public void BeginAddNodeMode() {
-            _canvas.IsShownPointer = true;
+            _view.IsShownPointer = true;
             SelectedMode = Modes.AddNode;
 
-            SelectedLayer.Complex.Clear();
-            SelectedLayer.Exterior = null;
+            SelectedControlUI.Complex.Clear();
+            SelectedControlUI.Exterior = null;
         }
 
         public void EndAddNodeMode() {
-            _canvas.Reset();
-            SelectedLayer.Invalidate();
+            _view.Reset();
+            SelectedControlUI.Invalidate();
         }
 
         public void BeginEditMode() {
@@ -132,8 +132,8 @@ namespace TaskMaker {
         }
 
         public void EndEditMode() {
-            _canvas.Reset();
-            SelectedLayer.Invalidate();
+            _view.Reset();
+            SelectedControlUI.Invalidate();
         }
 
         public void BeginNoneMode() {
@@ -147,33 +147,33 @@ namespace TaskMaker {
             SelectedMode = Modes.Manipulate;
 
             // Show controllers in complexes
-            SelectedLayer.ShowController();
+            SelectedControlUI.ShowController();
         }
 
         public void BeginSelectionMode() {
             SelectedMode = Modes.Selection;
 
-            SelectedLayer.HideController();
+            SelectedControlUI.HideController();
         }
 
         public void BeginPointerTrace(Point position) {
-            _canvas.PointerTrace = new PointerTrace(position.ToSKPoint());
-            _canvas.IsShownPointerTrace = true;
+            _view.PointerTrace = new PointerTrace(position.ToSKPoint());
+            _view.IsShownPointerTrace = true;
         }
 
         public void EndPointerTrace() {
-            _canvas.Reset();
+            _view.Reset();
         }
 
-        public void AddLayer(Layer layer) {
-            _canvas.Layers.Add(layer);
+        public void AddLayer(ControlUIWidget layer) {
+            _view.Layers.Add(layer);
         }
 
-        public void RemoveLayer(Layer layer) {
-            _canvas.Layers.Remove(layer);
+        public void RemoveLayer(ControlUIWidget layer) {
+            _view.Layers.Remove(layer);
             
-            if (_canvas.Layers.Count != 0)
-                _canvas.Layers[0].IsSelected = true;
+            if (_view.Layers.Count != 0)
+                _view.Layers[0].IsSelected = true;
 
             //if (SelectedLayer == canvas.Layers[0]) {
             //    MessageBox.Show("Root layer could not be deleted.");
@@ -190,19 +190,19 @@ namespace TaskMaker {
         }
 
         public void RemoveSelectedNodes() {
-            var selectedEntities = SelectedLayer.Entities.Where(e => e.IsSelected);
+            var selectedEntities = SelectedControlUI.Entities.Where(e => e.IsSelected);
 
             foreach (var entity in selectedEntities.ToArray()) {
-                SelectedLayer.Entities.Remove(entity);
-                SelectedLayer.Complex.Clear();
+                SelectedControlUI.Entities.Remove(entity);
+                SelectedControlUI.Complex.Clear();
             }
         }
 
-        public void ChooseLayer(Layer layer) {
-            _canvas.Layers.ForEach(l => l.IsSelected = false);
+        public void ChooseLayer(ControlUIWidget layer) {
+            _view.Layers.ForEach(l => l.IsSelected = false);
             layer.IsSelected = true;
 
-            SelectedLayer.Invalidate();
+            SelectedControlUI.Invalidate();
         }
 
         public bool PairingStart = true;
@@ -257,7 +257,7 @@ namespace TaskMaker {
         //}
 
         public void PairAll() {
-            if (SelectedLayer.BindedTarget == null) {
+            if (SelectedControlUI.BindedTarget == null) {
                 MessageBox.Show("Layer without target.",
                     "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -304,14 +304,14 @@ namespace TaskMaker {
         }
 
         public void Pair() {
-            if (SelectedLayer.BindedTarget == null) {
+            if (SelectedControlUI.BindedTarget == null) {
                 MessageBox.Show("Layer without target.",
                     "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            var selectedEntities = SelectedLayer.Entities.FindAll(e => e.IsSelected);
+            var selectedEntities = SelectedControlUI.Entities.FindAll(e => e.IsSelected);
 
             if (selectedEntities.Count > 1) {
                 MessageBox.Show("More than one entity are selected.",
@@ -319,20 +319,20 @@ namespace TaskMaker {
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             else if (selectedEntities.Count == 1) {
-                selectedEntities[0].TargetState = SelectedLayer.BindedTarget.CreateTargetState();
+                selectedEntities[0].TargetState = SelectedControlUI.BindedTarget.CreateTargetState();
 
-                SelectedLayer.Invalidate();
+                SelectedControlUI.Invalidate();
             }
             else { }
         }
 
 
         public void Unpair() {
-            var selectedEnities = _canvas.SelectedLayer.Entities.FindAll(e => e.IsSelected);
+            var selectedEnities = _view.SelectedControlUI.Entities.FindAll(e => e.IsSelected);
 
             selectedEnities.ForEach(e => e.TargetState = null);
             //selectedEnities.ForEach(e => e.Pair.RemovePair());
-            SelectedLayer.Invalidate();
+            SelectedControlUI.Invalidate();
         }
 
         private void SkControl_MouseDown(object sender, MouseEventArgs e) {
@@ -377,7 +377,7 @@ namespace TaskMaker {
                         break;
                 }
 
-                _canvas.Pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
+                _view.Pointer.Location = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
             }
         }
 
@@ -421,7 +421,7 @@ namespace TaskMaker {
         private void ProcessEditNodeMouseUpEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 if (editPhase == EditPhase.Select) {
-                    var entities = SelectedLayer.Entities;
+                    var entities = SelectedControlUI.Entities;
                     var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
 
                     foreach (var entity in entities) {
@@ -434,7 +434,7 @@ namespace TaskMaker {
                     editPhase = EditPhase.Edit;
                 }
                 else if (editPhase == EditPhase.Edit) {
-                    _canvas.Reset();
+                    _view.Reset();
 
                     editPhase = EditPhase.Select;
                 }
@@ -443,7 +443,7 @@ namespace TaskMaker {
 
         private void ProcessEditNodeMouseMoveEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                var selectedEntities = SelectedLayer.Entities.FindAll(e => e.IsSelected);
+                var selectedEntities = SelectedControlUI.Entities.FindAll(e => e.IsSelected);
 
                 if (selectedEntities.Count != 0) {
                     selectedEntities[0].Location = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
@@ -455,7 +455,7 @@ namespace TaskMaker {
         private void ProcessEditNodeMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 if (editPhase == EditPhase.Select) {
-                    var entities = SelectedLayer.Entities;
+                    var entities = SelectedControlUI.Entities;
                     var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
 
                     foreach (var entity in entities) {
@@ -468,12 +468,12 @@ namespace TaskMaker {
                     editPhase = EditPhase.Edit;
                 }
                 else if (editPhase == EditPhase.Edit) {
-                    var selectedEntities = SelectedLayer.Entities.FindAll(e => e.IsSelected);
+                    var selectedEntities = SelectedControlUI.Entities.FindAll(e => e.IsSelected);
                     var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
 
                     if (selectedEntities.Count != 0) {
                         if (!selectedEntities[0].ContainsPoint(wLocation)) {
-                            _canvas.Reset();
+                            _view.Reset();
 
                             editPhase = EditPhase.Select;
                         }
@@ -507,7 +507,7 @@ namespace TaskMaker {
                 if (worker.IsBusy)
                     return;
     
-                worker.RunWorkerAsync((SelectedLayer, wLocation));
+                worker.RunWorkerAsync((SelectedControlUI, wLocation));
 
                 //var result = SelectedLayer.Interpolate(wLocation);
 
@@ -560,14 +560,14 @@ namespace TaskMaker {
                 canvas.Clear(SKColors.White);
 
                 Draw(canvas);
-                canvas.Translate(SelectedLayer.Bounds.MidX, SelectedLayer.Bounds.MidY);
+                canvas.Translate(SelectedControlUI.Bounds.MidX, SelectedControlUI.Bounds.MidY);
                 //canvas.ClipRect(SelectedLayer.Bounds);
 
                 using (var image = SKImage.FromBitmap(bitmap)) {
                     var path = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)}\\TaskMaker\\";
 
                     Directory.CreateDirectory(path);
-                    var fileName = $"Canvas_{SelectedLayer.Name.Replace(" ", "")}";
+                    var fileName = $"Canvas_{SelectedControlUI.Name.Replace(" ", "")}";
                     fileName = File.Exists(path + fileName + ".png") ? fileName + "_d" : fileName;
 
                     using (var stream = File.Create(path + fileName + ".png")) {
@@ -583,21 +583,21 @@ namespace TaskMaker {
         protected virtual void Draw(SKCanvas sKCanvas) {
             sKCanvas.Clear(SKColors.White);
 
-            _canvas.Draw(sKCanvas);
+            _view.Draw(sKCanvas);
         }
 
         private void ProcessSelectionMouseDownEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                _canvas.Reset();
+                _view.Reset();
 
                 var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                _canvas.SelectionTool = new LassoSelectionTool(wP);
+                _view.SelectionTool = new LassoSelectionTool(wP);
             }
             else if (ev.Button == MouseButtons.Right) {
-                _canvas.Reset();
+                _view.Reset();
 
                 var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                _canvas.SelectionTool = new RectSelectionTool(wP);
+                _view.SelectionTool = new RectSelectionTool(wP);
             }
 
             // Disable Context Menu
@@ -606,40 +606,40 @@ namespace TaskMaker {
         private void ProcessSelectionMouseMoveEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
                 var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                _canvas.SelectionTool.Trace(wLocation);
+                _view.SelectionTool.Trace(wLocation);
             }
             else if (ev.Button == MouseButtons.Right) {
                 var wLocation = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
-                _canvas.SelectionTool.Trace(wLocation);
+                _view.SelectionTool.Trace(wLocation);
             }
         }
 
         private void ProcessSelectionMouseUpEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                foreach (var e in _canvas.SelectedLayer.Entities) {
-                    if (_canvas.SelectionTool.Contains(e.Location)) {
+                foreach (var e in _view.SelectedControlUI.Entities) {
+                    if (_view.SelectionTool.Contains(e.Location)) {
                         e.IsSelected = true;
                     }
                 }
 
-                _canvas.SelectionTool.End();
+                _view.SelectionTool.End();
             }
             else if (ev.Button == MouseButtons.Right) {
-                foreach (var e in _canvas.SelectedLayer.Entities) {
-                    if (_canvas.SelectionTool.Contains(e.Location)) {
+                foreach (var e in _view.SelectedControlUI.Entities) {
+                    if (_view.SelectionTool.Contains(e.Location)) {
                         e.IsSelected = true;
                     }
                 }
 
-                _canvas.SelectionTool.End();
+                _view.SelectionTool.End();
             }
         }
 
         private void ProcessGeneralMouseClickEvent(MouseEventArgs ev) {
             if (ev.Button == MouseButtons.Left) {
-                _canvas.Reset();
+                _view.Reset();
 
-                foreach (var e in _canvas.SelectedLayer.Entities) {
+                foreach (var e in _view.SelectedControlUI.Entities) {
                     var wP = ViewportToWorld().MapPoint(ev.Location.ToSKPoint());
                     if (e.ContainsPoint(wP)) {
                         e.IsSelected = !e.IsSelected;
@@ -652,18 +652,18 @@ namespace TaskMaker {
         private void ProcessAddNodeMouseClickEvent(MouseEventArgs e) {
 
             if (e.Button == MouseButtons.Left) {
-                Services.Caretaker.Do(SelectedLayer);
+                Services.Caretaker.Do(SelectedControlUI);
 
                 var wP = ViewportToWorld().MapPoint(e.Location.ToSKPoint());
-                SelectedLayer.Entities.Add(new Entity(wP) {
-                    Index = SelectedLayer.Entities.Count,
+                SelectedControlUI.Entities.Add(new Entity(wP) {
+                    Index = SelectedControlUI.Entities.Count,
                 });
             }
 
             // Quit from current mode after adding one entity
             //this.SelectedMode = Modes.None;
 
-            _canvas.Reset();
+            _view.Reset();
         }
 
         private SKMatrix WorldToViewport() {
@@ -696,7 +696,7 @@ namespace TaskMaker {
 
     public class InterpolationWorker {
         public SKPoint Location { get; set; }
-        public Layer Layer { get; set; }
+        public ControlUIWidget Layer { get; set; }
     }
 }
 

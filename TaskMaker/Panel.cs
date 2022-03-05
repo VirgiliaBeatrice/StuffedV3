@@ -12,7 +12,7 @@ using SkiaSharp.Views.Desktop;
 
 namespace TaskMaker {
     public partial class ControlPanel : Form {
-        public List<Layer> Layers = new List<Layer>();
+        public List<ControlUIWidget> Layers = new List<ControlUIWidget>();
         public Timer timer;
         public List<SKGLControl> canvases = new List<SKGLControl>();
         private BackgroundWorker worker;
@@ -27,8 +27,8 @@ namespace TaskMaker {
             timer.Enabled = true;
 
             canvases.AddRange(Controls[0].Controls.OfType<SKGLControl>());
-            Layers.Add(Services.Canvas.Layers[2]);
-            Layers.Add(Services.Canvas.Layers[3]);
+            Layers.Add(Services.ViewWidget.Layers[2]);
+            Layers.Add(Services.ViewWidget.Layers[3]);
 
             foreach (var c in canvases) {
                 c.PaintSurface += C_PaintSurface;
@@ -127,7 +127,7 @@ namespace TaskMaker {
     }
 
     public class Payload {
-        public Layer Layer { get; set; }
+        public ControlUIWidget Layer { get; set; }
         public SKPoint Point { get; set; }
     }
 }

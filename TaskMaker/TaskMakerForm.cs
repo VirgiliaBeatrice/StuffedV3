@@ -28,7 +28,7 @@ namespace TaskMaker {
         public NLinearMap RToMotor;
         public NLinearMap BiToLR;
 
-        private Layer SelectedLayer => Services.Canvas.SelectedLayer;
+        private ControlUIWidget SelectedLayer => Services.ViewWidget.SelectedControlUI;
         private bool _isDebugMode => Services.IsDebug;
         private bool _isDirect = false;
         public delegate void InvalidateDelgate(bool invalidateChildren);
@@ -68,7 +68,7 @@ namespace TaskMaker {
             Services.LayerTree = _root;
 
             _root.Nodes.Clear();
-            _root.Nodes.Add(new TreeNode() { Text = Services.Canvas.Layers[0].Name, Tag = Services.Canvas.Layers[0] });
+            _root.Nodes.Add(new TreeNode() { Text = Services.ViewWidget.Layers[0].Name, Tag = Services.ViewWidget.Layers[0] });
 
             UpdateTreeview();
             Showcase();
@@ -85,10 +85,10 @@ namespace TaskMaker {
             button5_Click(null, null);
             button5_Click(null, null);
 
-            Services.Canvas.Layers[0].Name = "Left";
-            Services.Canvas.Layers[1].Name = "Right";
-            Services.Canvas.Layers[2].Name = "OpenClose";
-            Services.Canvas.Layers[3].Name = "Position";
+            Services.ViewWidget.Layers[0].Name = "Left";
+            Services.ViewWidget.Layers[1].Name = "Right";
+            Services.ViewWidget.Layers[2].Name = "OpenClose";
+            Services.ViewWidget.Layers[3].Name = "Position";
 
             LToMotor = new NLinearMap();
             RToMotor = new NLinearMap();
@@ -107,7 +107,7 @@ namespace TaskMaker {
                 Services.Motors.Add(new Motor());
         }
 
-        private void PrepareMap(Layer layer, bool force=false) {
+        private void PrepareMap(ControlUIWidget layer, bool force=false) {
             // 1. Triangulate complex and its bary
             // 2. Take complex bary and add it into corresponding map
             if (layer.BindedTarget == null) {
@@ -116,7 +116,7 @@ namespace TaskMaker {
             }
 
             if (layer.TargetMap == null) {
-                var idx = Services.Canvas.Layers.IndexOf(layer);
+                var idx = Services.ViewWidget.Layers.IndexOf(layer);
 
                 if (idx == 0)
                     layer.TargetMap = LToMotor;
@@ -154,7 +154,7 @@ namespace TaskMaker {
                 return;
             }
 
-            var layers = Services.Canvas.Layers;
+            var layers = Services.ViewWidget.Layers;
             var left = layers[0];
             var right = layers[1];
             var openClose = layers[2];
@@ -176,7 +176,7 @@ namespace TaskMaker {
             right.BindedTarget = new MotorTarget();
             (right.BindedTarget as MotorTarget).Motors.AddRange(motors);
 
-            var layerC = new Layer[] { left, right };
+            var layerC = new ControlUIWidget[] { left, right };
 
             openClose.BindedTarget = new LayerTarget();
             (openClose.BindedTarget as LayerTarget).Layers.AddRange(layerC);
@@ -356,7 +356,7 @@ namespace TaskMaker {
 
         private void InvalidateTreeView() {
             // Re-assign root layer into _root from current canvas.
-            var layers = Services.Canvas.Layers;
+            var layers = Services.ViewWidget.Layers;
             var nodes = layers.Select(l => new TreeNode() { Text = l.Name, Tag = l });
 
             _root.Nodes.Clear();
@@ -486,7 +486,7 @@ namespace TaskMaker {
             if (node.Parent != null) {
                 var layerName = $"New Layer {node.Level} {node.Parent.GetNodeCount(false) + 1}";
 
-                var newLayer = new Layer(layerName);
+                var newLayer = new ControlUIWidget(layerName);
                 var newNode = new TreeNode() { Tag = newLayer, Text = layerName };
 
                 node.Parent.Nodes.Add(newNode);
@@ -495,7 +495,7 @@ namespace TaskMaker {
             else {
                 var layerName = $"New Layer {node.Level + 1} {node.GetNodeCount(false) + 1}";
 
-                var newLayer = new Layer(layerName);
+                var newLayer = new ControlUIWidget(layerName);
                 var newNode = new TreeNode() { Tag = newLayer, Text = layerName };
 
                 node.Nodes.Add(newNode);
@@ -533,7 +533,7 @@ namespace TaskMaker {
                 node.Remove();
                 parent.Nodes.AddRange(children);
 
-                canvasControl1.RemoveLayer(node.Tag as Layer);
+                canvasControl1.RemoveLayer(node.Tag as ControlUIWidget);
 
                 treeView1.EndUpdate();
                 treeView1.ExpandAll();
@@ -608,7 +608,7 @@ namespace TaskMaker {
                 return;
             }
 
-            var layer = e.Node.Tag as Layer;
+            var layer = e.Node.Tag as ControlUIWidget;
 
             canvasControl1.ChooseLayer(layer);
 
@@ -618,7 +618,7 @@ namespace TaskMaker {
 
         private void treeView1_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
             e.Node.Text = e.Label;
-            (e.Node.Tag as Layer).Name = e.Label;
+            (e.Node.Tag as ControlUIWidget).Name = e.Label;
 
             groupBox2.Text = $"Canvas - [{e.Node.Text}]";
             toolStripStatusLabel4.Text = $"{SelectedLayer.Name} - {SelectedLayer.LayerStatus}";
@@ -660,7 +660,7 @@ namespace TaskMaker {
 
             if (dialog.FileName != "") {
                 using (var fs = dialog.OpenFile()) {
-                    var entities = Services.Canvas.Layers.Select(l => l.Entities.Select(e => e.Location).ToArray()).ToArray();
+                    var entities = Services.ViewWidget.Layers.Select(l => l.Entities.Select(e => e.Location).ToArray()).ToArray();
                     var options = new JsonSerializerOptions {
                         WriteIndented = true,
                         NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
@@ -724,7 +724,7 @@ namespace TaskMaker {
                         var entities = jsonObject.Entites;
                         var mapsState = jsonObject.Maps;
 
-                        var layers = Services.Canvas.Layers;
+                        var layers = Services.ViewWidget.Layers;
                         PrepareLayerProperties();
 
                         for (var i = 0; i < layers.Count; ++i) {

@@ -70,14 +70,14 @@ namespace TaskMaker {
     public class LayerTarget : Target {
         public override int Dimension => Layers.Count * 2;
 
-        public List<Layer> Layers { get; set; } = new List<Layer>();
+        public List<ControlUIWidget> Layers { get; set; } = new List<ControlUIWidget>();
         public LayerTarget() { }
 
-        public LayerTarget(IEnumerable<Layer> layers) {
+        public LayerTarget(IEnumerable<ControlUIWidget> layers) {
             Layers.AddRange(layers);
         }
 
-        public void Add(Layer layer) {
+        public void Add(ControlUIWidget layer) {
             Layers.Add(layer);
         }
 

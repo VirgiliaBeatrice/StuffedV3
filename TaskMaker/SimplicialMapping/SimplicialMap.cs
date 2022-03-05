@@ -70,17 +70,17 @@ namespace TaskMaker.SimplicialMapping {
         //public Exterior Exterior { get; set; }
         
         
-        public Layer Parent { get; set; }
+        public ControlUIWidget Parent { get; set; }
         public List<Entity> Basis => Parent.Entities;
         public List<Simplex> Complex => Parent.Complex;
         public Exterior Exterior => Parent.Exterior;
 
 
         public ComplexBary() { }
-        public ComplexBary(Layer parent) => Parent = parent;
+        public ComplexBary(ControlUIWidget parent) => Parent = parent;
 
 
-        public void BindLayer(Layer layer) {
+        public void BindLayer(ControlUIWidget layer) {
             Parent = layer;
         }
 
@@ -187,7 +187,7 @@ namespace TaskMaker.SimplicialMapping {
     public class NLinearMap {
         //public bool IsSet { get; set; } = false;
         public List<ComplexBary> Barys { get; set; }
-        public List<Layer> Layers { get; set; }
+        public List<ControlUIWidget> Layers { get; set; }
 
         private NDarray _wTensor;
         private int[] _shape;
@@ -202,10 +202,10 @@ namespace TaskMaker.SimplicialMapping {
 
         public NLinearMap() {
             Barys = new List<ComplexBary>();
-            Layers = new List<Layer>();
+            Layers = new List<ControlUIWidget>();
         }
 
-        public void AddBary(Layer layer, ComplexBary bary, int dim = 2) {
+        public void AddBary(ControlUIWidget layer, ComplexBary bary, int dim = 2) {
             Barys.Add(bary);
             Layers.Add(layer);
 

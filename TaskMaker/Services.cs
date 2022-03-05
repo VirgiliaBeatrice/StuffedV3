@@ -14,7 +14,7 @@ namespace TaskMaker {
         static public Timer MotorTimer { get; set; } = new Timer() { Interval = 100 };
         static public TreeNode LayerTree { get; set; }
         static public Triangulation TriHandler { get; set; } = new Triangulation();
-        static public Canvas Canvas { get; set; } = new Canvas();
+        static public ViewWidget ViewWidget { get; set; } = new ViewWidget();
         static public NLinearMap Map { get; set; }
         static public Dictionary<string, NLinearMap> Maps { get; set; } = new Dictionary<string, NLinearMap>();
         static public Graph Graph { get; set; }

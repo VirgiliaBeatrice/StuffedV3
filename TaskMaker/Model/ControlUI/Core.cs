@@ -1,0 +1,37 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TaskMaker.View.Elements;
+using TaskMaker.Model.Core;
+
+namespace TaskMaker.Model.ControlUI {
+    public class Unit : BaseModel {
+        public Unit Parent { get; set; }
+        public List<Unit> Children { get; set; }
+
+        public Func<object, object> UnitFunction { get; set; }
+
+        // Cache endpoint data structure
+        private object _cache;
+        private UnitElement _element;
+
+        public void Validate() {
+            // Do unit function
+            _cache = UnitFunction.Invoke(null);
+        }
+    }
+
+    public class GroupUnit : Unit {
+        private List<Unit> _units;
+
+        public GroupUnit() { }
+
+
+    }
+
+    public class MotorUnit: Unit {
+        public MotorUnit() { } 
+    }
+}

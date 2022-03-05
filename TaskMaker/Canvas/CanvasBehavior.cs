@@ -7,11 +7,11 @@ using MathNetExtension;
 using TaskMaker.Mapping;
 
 namespace TaskMaker {
-    public partial class Canvas {
+    public partial class ViewWidget {
 
     }
 
-    public partial class Layer {
+    public partial class ControlUIWidget {
         private readonly Triangulation _triHandler = Services.TriHandler;
 
         public void Triangulate() {

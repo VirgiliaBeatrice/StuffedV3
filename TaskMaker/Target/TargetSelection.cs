@@ -32,7 +32,7 @@ namespace TaskMaker {
             var selectableRoot = SelectableLayer.CreateSelectableLayer(Services.LayerTree);
 
             treeView1.BeginUpdate();
-            treeView2.Nodes.AddRange(selectableRoot.Nodes.OfType<SelectableLayer>().Where(l => l.Target != Services.Canvas.SelectedLayer).ToArray());
+            treeView2.Nodes.AddRange(selectableRoot.Nodes.OfType<SelectableLayer>().Where(l => l.Target != Services.ViewWidget.SelectedControlUI).ToArray());
 
             treeView1.EndUpdate();
             treeView1.ExpandAll();
@@ -142,7 +142,7 @@ namespace TaskMaker {
             if (radioButton1.Checked) {
                 //Services.SelectedLayer.InitializeMotorConfigs();
                 var target = new MotorTarget();
-                Services.Canvas.SelectedLayer.BindedTarget = target;
+                Services.ViewWidget.SelectedControlUI.BindedTarget = target;
 
                 foreach (SelectableMotor m in treeView1.Nodes) {
                     if (m.Checked) {
@@ -158,7 +158,7 @@ namespace TaskMaker {
             if (radioButton2.Checked) {
                 //Services.SelectedLayer.InitializeLayerConfigs();
                 var target = new LayerTarget();
-                Services.Canvas.SelectedLayer.BindedTarget = target;
+                Services.ViewWidget.SelectedControlUI.BindedTarget = target;
 
                 var topLayers = treeView2.Nodes.OfType<SelectableLayer>().ToList();
                 var checkedLayers = new List<SelectableLayer>();
@@ -202,7 +202,7 @@ namespace TaskMaker {
         }
     }
 
-    public class SelectableLayer : SelectableObject<Layer> {
+    public class SelectableLayer : SelectableObject<ControlUIWidget> {
         public SelectableLayer(string name) : base(name) { }
 
         //public Vector<float> ToVector() {
@@ -217,7 +217,7 @@ namespace TaskMaker {
             if (node.Parent == null)
                 selectableLayer = new SelectableLayer("Root");
             else {
-                var layer = node.Tag as Layer;
+                var layer = node.Tag as ControlUIWidget;
                 selectableLayer = new SelectableLayer(layer.Name) {
                     Target = layer
                 };

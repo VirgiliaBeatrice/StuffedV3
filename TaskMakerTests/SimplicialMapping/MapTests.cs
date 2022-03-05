@@ -16,7 +16,7 @@ namespace TaskMaker.SimplicialMapping.Tests {
         public MapTests() {
             _multiBary = new NLinearMap();
 
-            var layer = new Layer("Test");
+            var layer = new ControlUIWidget("Test");
             layer.Entities = GetEntities();
 
             layer.Entities.ForEach(e => e.IsSelected = true);
