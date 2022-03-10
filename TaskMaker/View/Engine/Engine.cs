@@ -45,16 +45,16 @@ namespace TaskMaker.View.Engine {
         //    }
         //}
         static private Stack<object> _ctx = new Stack<object>();
-        static public void DFSUtil(TreeElement curr, object ctx, Func<TreeElement,object, object> preAction, Func<TreeElement, object, object> action, Func<TreeElement, object, object> postAction) {
+        static public void DFSUtil(TreeElement curr, Func<TreeElement, object> preAction, Func<TreeElement, object, object> action, Func<TreeElement, object, object> postAction) {
             // Do something
-            ctx = preAction(curr, ctx);
+            object ctx = preAction(curr);
 
             // Recursively do
             foreach (var node in curr.GetAllChild()) {
                 // Push context into _ctx stack before going to next level recursively
                 _ctx.Push(ctx);
-                DFSUtil(node, ctx, preAction, action, postAction);
-                _ctx.Pop();
+                DFSUtil(node, preAction, action, postAction);
+                ctx = _ctx.Pop();
 
                 ctx = action(node, ctx);
             }

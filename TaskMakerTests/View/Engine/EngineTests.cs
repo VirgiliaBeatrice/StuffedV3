@@ -65,24 +65,24 @@ namespace TaskMaker.View.Engine.Tests {
 
             Engine.DFSUtil(
                 root,
-                "",
-                (node, ctx) => {
-                    Console.WriteLine($"PreAction-{node.Name}");
+                (node) => {
+                    object ctx = $"{node.Name}";
+                    //Console.WriteLine($"PreAction-{node.Name}");
                     Console.WriteLine($"PreAction-Context-{ctx}");
 
-                    return ctx + $"{node.Name}";
+                    return ctx;
                 },
                 (node, ctx) => {
-                    Console.WriteLine($"Action-{node.Name}");
+                    //Console.WriteLine($"Action-{node.Name}");
                     Console.WriteLine($"Action-Context-{ctx}");
 
-                    return ctx + $"{node.Name}";
+                    return ctx;
                 },
                 (node, ctx) => {
-                    Console.WriteLine($"PostAction-{node.Name}");
+                    //Console.WriteLine($"PostAction-{node.Name}");
                     Console.WriteLine($"PostAction-Context-{ctx}");
 
-                    return ctx + $"{node.Name}";
+                    return ctx;
                 }
             );
 
