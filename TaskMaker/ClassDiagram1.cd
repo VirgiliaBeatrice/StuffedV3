@@ -1,2 +1,1300 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ClassDiagram /> 
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="FullSignature">
+  <Class Name="TaskMaker.Exterior" Collapsed="true">
+    <Position X="42" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAAAAAAAgAAAIAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\Bend.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Bend" Collapsed="true">
+    <Position X="35" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAABAAAAAIgAAAAIAAAAAAAAAAAAIAAgAAAAAAAA=</HashCode>
+      <FileName>Canvas\Bend.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.ViewWidget" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="31.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIICIAAABgAAAAACAACIAgAAAAAEAAAAAAAAAgA=</HashCode>
+      <FileName>Canvas\CanvasBehavior.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.ControlUIWidget" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="42" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAEIKAUAQAAPgAAAKgCAAYAAJAIAAIAIAEAhCBAAgQ=</HashCode>
+      <FileName>Canvas\CanvasBehavior.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.CanvasControl" Collapsed="true">
+    <Position X="40.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABCAQAIGAuhQxjJAoBDgEAQCEAUSAAEDkCDHUk4EABA=</HashCode>
+      <FileName>Canvas\CanvasControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.MessageEventArgs" Collapsed="true">
+    <Position X="28" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.InterpolationWorker" Collapsed="true">
+    <Position X="35" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.CanvasState" Collapsed="true">
+    <Position X="16.5" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.LayerState" Collapsed="true">
+    <Position X="21" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAQAAAAAAAAAAAAAAQAAAAAAAAAAAEAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.CompositeLayer" Collapsed="true">
+    <Position X="31.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAACAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.CanvasObject_v2" Collapsed="true">
+    <Position X="18.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAgAAAAIAAAAAAAAAAAAAIAAAAAAAABA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.PointerTrace" Collapsed="true">
+    <Position X="12" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAACAgAAAAAAAAAAAAIAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Controller" Collapsed="true">
+    <Position X="16.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAkgAAAAQAAAIAAAAAAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.CrossPointer" Collapsed="true">
+    <Position X="18.75" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAAAgAAAEAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.LinearSlider" Collapsed="true">
+    <Position X="43.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEBAAAEgAAEAIAAABAAAgAACAAAAAAAAAQAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.EntityState" Collapsed="true">
+    <Position X="12" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAIAAAAAAAAAAAAAAAEAAAIAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Entity" Collapsed="true">
+    <Position X="21" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAAAAIBUAAAAkgAEAAICAAACAAAEAAAAAWEAAAIAABA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.SimplexState" Collapsed="true">
+    <Position X="14.25" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Simplex" Collapsed="true">
+    <Position X="43.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAIBEAAAAhAAEAAICAAAAAAAAAQAAEQAAAAAQAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SimplicialComplexState" Collapsed="true">
+    <Position X="18.75" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SimplicialComplex" Collapsed="true">
+    <Position X="6.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAEIAAAMAABgAAgIACAAAAQAAAAQAAAACAEAFAQAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.ArrowCap" Collapsed="true">
+    <Position X="28" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAggAAACIAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Edge_v2" Collapsed="true">
+    <Position X="28" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAgAAAAAAAAAAAAAAAAAIAAAAAABAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.ExteriorRay_v3" Collapsed="true">
+    <Position X="14.25" Y="6.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAABAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.GeometryLine" Collapsed="true">
+    <Position X="43.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAASAAAAAAAAACAACAAAAAAgAAAAgAQAAAAAEAAAAA=</HashCode>
+      <FileName>Canvas\Exterior_v2.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Ray_v3" Collapsed="true">
+    <Position X="14.25" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CABAAAAAQAAAIgAAACAEAAQAAAAAAAAAAAAAIAAAAAA=</HashCode>
+      <FileName>Canvas\Exterior_v2.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.CircularList&lt;T&gt;" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="43.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AGIAAEAAAAAAARAECEAAAAAAAAAAAAAACAACAABUABA=</HashCode>
+      <FileName>Canvas\Exterior_v2.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.CircularListNode&lt;T&gt;" Collapsed="true">
+    <Position X="28" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAAAAAAAEAAAAAAAAAAAAAEAAAAAgAAAAAAA=</HashCode>
+      <FileName>Canvas\Exterior_v2.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.RectSelectionTool" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="31.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAABEAAAAgQAAAAAAAAIAAAAAAFAAAAAAAAIQAAA=</HashCode>
+      <FileName>Canvas\SelectionTool.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.LassoSelectionTool" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="38.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAABEAAACgAAAAAAAAAIAAAAAAFAAAAAAAAAQAAA=</HashCode>
+      <FileName>Canvas\SelectionTool.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.VoronoiRegion" Collapsed="true">
+    <Position X="19.75" Y="13.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAgAADAAAAAAAAAAAAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.VoronoiRegion_Rect" Collapsed="true">
+    <Position X="18.5" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAQAAgAEDAAAIAAAAAAAAgAYAAgAAAAQAAA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.VoronoiRegion_Sector" Collapsed="true">
+    <Position X="20.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAAAQAAggEDAAAgABCAAAAAgAIAAgAAAAQAAA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.VoronoiRegions" Collapsed="true">
+    <Position X="11" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.VoronoiRegion_Type0" Collapsed="true">
+    <Position X="23.25" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAgAAAAAAAAAgABAAAAAAAAAAAAAAAIAAAAAAAABBA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.VoronoiRegion_Type1" Collapsed="true">
+    <Position X="25.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAgAAAAAAAAAgABAAAAAAAAAAAAAAAIAAAAAAAABBA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.VoronoiRegion_Type2" Collapsed="true">
+    <Position X="23.25" Y="6.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Extensions" Collapsed="true">
+    <Position X="38.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.MotorController" Collapsed="true">
+    <Position X="33.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgBACEAAUDgAgBAAGACAAIACQAAYAQAAgGAAAgAAiCA=</HashCode>
+      <FileName>MotorController.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.ControlPanel" Collapsed="true">
+    <Position X="38.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAACAACAQQARAABCIAAACACAAAAAUAAAAAAAAACA=</HashCode>
+      <FileName>Panel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Payload" Collapsed="true">
+    <Position X="40.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>Panel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Program" Collapsed="true">
+    <Position X="28" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>Program.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Services" Collapsed="true">
+    <Position X="36.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAKAABABBAAAAAAAAACABCAAAAgAAAAAACCAAAg=</HashCode>
+      <FileName>Services.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SettingsForm" Collapsed="true">
+    <Position X="40.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAAAAACAAABAQAACAAACCAAAIAAAAAEAABAAAACA=</HashCode>
+      <FileName>SettingsForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Line_v1" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="42" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAAAAAAAACAACAAAAAAAAAAAgAYAAAAAACAAAA=</HashCode>
+      <FileName>SkiaExtension.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.SkiaHelper" Collapsed="true">
+    <Position X="33.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAQAAAAAAAAACAAAAAAAAAQAAAAAAAAAAAAEAAAAA=</HashCode>
+      <FileName>SkiaHelper.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Target" Collapsed="true">
+    <Position X="14.75" Y="13.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAAAAAAAAAAAACAQAAAAAEQACAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.MotorTarget" Collapsed="true">
+    <Position X="13.5" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIIAAAAAAAAAAAACAQAAAAAEQAAAAAAEAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.LayerTarget" Collapsed="true">
+    <Position X="15.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAIAAAAAAAAAAAAACAQAAAAAEQAAEAAAAAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.TargetState" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="38.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAACAAQAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.Node&lt;T&gt;" Collapsed="true">
+    <Position X="33.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Link" Collapsed="true">
+    <Position X="31.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAgAIAAAAEAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.TargetSelection" Collapsed="true">
+    <Position X="36.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAACAAgBAQAACAAACCAAAYAAAAIGAABABAgCI=</HashCode>
+      <FileName>Target\TargetSelection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SelectableObject&lt;T&gt;" Collapsed="true">
+    <Position X="17.75" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\TargetSelection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SelectableMotor" Collapsed="true">
+    <Position X="16.5" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\TargetSelection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SelectableLayer" Collapsed="true">
+    <Position X="18.75" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\TargetSelection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.TaskMakerForm" Collapsed="true">
+    <Position X="40.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>LyAAhQkwRCAQggBDBoCBAYASQMw7gAhg9HCfY5IQxGE=</HashCode>
+      <FileName>TaskMakerForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.ProgramState" Collapsed="true">
+    <Position X="23.25" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAACAAAAAAAAAAAAgAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>TaskMakerForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.JsonFile" Collapsed="true">
+    <Position X="36.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAACAAAA=</HashCode>
+      <FileName>TaskMakerForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.MapState" Collapsed="true">
+    <Position X="38.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>TaskMakerForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.TinyCanvasForm" Collapsed="true">
+    <Position X="42" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AhQAgAAAAiACBgBAAAKAAAIGAAAAAAAEACAAAUYEAAI=</HashCode>
+      <FileName>TinyCanvasForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Motor" Collapsed="true">
+    <Position X="31.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAICAAAQAAAAAAAABIAAAAAkAAAAAAAAiBAAAgAQ=</HashCode>
+      <FileName>Canvas\CanvasControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Board" Collapsed="true">
+    <Position X="38.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>wEAAIAAAAABCAAABIACIABAAIQAEAIAAAAAAAABhABA=</HashCode>
+      <FileName>PCController\Board.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Boards" Collapsed="true">
+    <Position X="17.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gIzAAIBAAAMgDCABsCQAEIwgsJCEwIAgECCAAgEgABg=</HashCode>
+      <FileName>PCController\Boards.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.ControlExtensions" Collapsed="true">
+    <Position X="36.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA=</HashCode>
+      <FileName>PCController\Haptic.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Haptic" Collapsed="true">
+    <Position X="29.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAYMEIAA=</HashCode>
+      <FileName>PCController\Haptic.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Haptics" Collapsed="true">
+    <Position X="8.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEA=</HashCode>
+      <FileName>PCController\Haptic.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Magnet" Collapsed="true">
+    <Position X="35" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAICAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAAQAAE=</HashCode>
+      <FileName>PCController\Magnet.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.PCMainForm" Collapsed="true">
+    <Position X="42" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>tg7eQgiSOCDhEBnhBmuw0RS2DhGEaaZhMYKiAePq7Hg=</HashCode>
+      <FileName>PCController\Magnet.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.CurrentControl" Collapsed="true">
+    <Position X="43.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAACAQEAAAA=</HashCode>
+      <FileName>PCController\MainForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.SDEC" Collapsed="true">
+    <Position X="35" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAIAIAEAAAACAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.LDEC" Collapsed="true">
+    <Position X="40.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAIAIAEAAAACAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.MotorLimit" Collapsed="true">
+    <Position X="36.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAABCAAAQAAAAAAAAAAAAAAAAAEAAAAAACAQAAhAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.MotorPosition" Collapsed="true">
+    <Position X="40.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAACACAAAQAAAAAAACAAEAAgEQAAAAAACAiAQAAAAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.MotorTorque" Collapsed="true">
+    <Position X="42" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAABCAAAQAAAAAAAAAAAAAAAAAAAAAAAACAQAABAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.MotorPd" Collapsed="true">
+    <Position X="38.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAQACAAAAAAAAAAAAAAAAAAAAAACIYEAIAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.MotorHeat" Collapsed="true">
+    <Position X="35" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAEAAAQAKAAAAAAAAAAAAAgCAAAAAAACIQAAAAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Touch" Collapsed="true">
+    <Position X="43.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Motors" Collapsed="true">
+    <Position X="20" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAA=</HashCode>
+      <FileName>PCController\Motor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.MMTimer" Collapsed="true">
+    <Position X="29.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAgAECEACAggIIAAIKQABACAAAgAEAAAQAAAACAAEA=</HashCode>
+      <FileName>PCController\MultiMediaTimer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.Pose" Collapsed="true">
+    <Position X="3.5" Y="17.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAAAgAAAAIAAAAAAAAgAAAAAAAAAAAAgQA=</HashCode>
+      <FileName>PCController\Pose.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PCController.PoseData">
+    <Position X="1.75" Y="16" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAAAAAAAQAQAAAAAAAAAAEACAAAAAAAAAgAQA=</HashCode>
+      <FileName>PCController\PoseData.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.Geometry.LineSegment" Collapsed="true">
+    <Position X="28" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAAAAAAAgAACAACAEAAAAAACAAABAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\Geometry.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Geometry.BezierCurve" Collapsed="true">
+    <Position X="36.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\Geometry.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MathNetExtension.MyExtension" Collapsed="true">
+    <Position X="43.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAAAAAAAAAAAABAAAACABMAAAAAAKAABBQACQ=</HashCode>
+      <FileName>MathNetExtension.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Matrix.MapSelection" Collapsed="true">
+    <Position X="36.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACAAAAAQAACAAAACAAAIAAAAAAAAAAAAACA=</HashCode>
+      <FileName>Matrix\MapSelection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Matrix.MatrixForm" Collapsed="true">
+    <Position X="40.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAEAAAADAAgABAAACAAYACAAAAAAAQAAAAAAAAAAA=</HashCode>
+      <FileName>Matrix\MatrixForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Matrix.MatrixShape" Collapsed="true">
+    <Position X="42" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAgAEAAAAgwAAAAIQAAQAAAAAAAABAAAAAAAQAwA=</HashCode>
+      <FileName>Matrix\MatrixForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Matrix.ElementShape" Collapsed="true">
+    <Position X="35" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAIAAAEEAAAkgAAABIAAAQAAAAAAAABIAAAgAAQAgA=</HashCode>
+      <FileName>Matrix\MatrixForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.MementoPattern.BaseState" Collapsed="true">
+    <Position X="17.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAIAEAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAA=</HashCode>
+      <FileName>Memento\Memento.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.MementoPattern.Memento" Collapsed="true">
+    <Position X="43.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Memento\Memento.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.MementoPattern.Originator" Collapsed="true">
+    <Position X="36.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAAAAAAAAAAAACCAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Memento\Memento.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.MementoPattern.Caretaker" Collapsed="true">
+    <Position X="42" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAAAAAABAAAAAEAAAABCAAgAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Memento\Memento.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.ControlUI.ControlUIUnit">
+    <Position X="3.75" Y="8" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAgAAAQAIAAAAEAAAAAAAAAAAAAgAAAAAAAAAAIAAA=</HashCode>
+      <FileName>Model\ControlUI\ControlUIUnit.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="Complex" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="TaskMaker.Model.ControlUI.Node" Collapsed="true">
+    <Position X="31.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAAACAAAAAAAAAAABEAAAAAA=</HashCode>
+      <FileName>Model\ControlUI\ControlUIUnit.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.ControlUI.Unit">
+    <Position X="6" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABICAAAAAAAAEQAAAAAEAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\ControlUI\Core.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="Parent" />
+    </ShowAsAssociation>
+    <ShowAsCollectionAssociation>
+      <Property Name="Children" />
+    </ShowAsCollectionAssociation>
+  </Class>
+  <Class Name="TaskMaker.Model.ControlUI.GroupUnit">
+    <Position X="6" Y="8" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>Model\ControlUI\Core.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.ControlUI.MotorUnit">
+    <Position X="8.25" Y="8" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\ControlUI\Core.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.Core.BaseModel" Collapsed="true">
+    <Position X="6" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\Core.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.Graph" Collapsed="true">
+    <Position X="28" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAgAAAAAABAAAAAAAAAAAAABAAAAAAACAAAAAAIAAA=</HashCode>
+      <FileName>Node\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.Node" Collapsed="true">
+    <Position X="10" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAEAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.DummyNode" Collapsed="true">
+    <Position X="9" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.Link" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="29.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAgAAAgCAAAAAAAAAAAAgAACAAAAGAAAAAAAACAA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TaskMaker.Node.PointerNode" Collapsed="true">
+    <Position X="11.25" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIEAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.Node.MotorNode" Collapsed="true">
+    <Position X="13.5" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAACA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.Node.MapNode" Collapsed="true">
+    <Position X="6.75" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEABAAAAAAAAAAAAAAgAAAAAAAAAAgAAAAACA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.Node.NodeEditor" Collapsed="true">
+    <Position X="35" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAQAAAAQACgAAQAAMACAASACIEA4AAQQBHIAAAACACA=</HashCode>
+      <FileName>Node\NodeEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.EditorEventManager" Collapsed="true">
+    <Position X="31.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIgKgAAIIkAgiAAARIACACCCAAAACAAQAAAAAAQAAgA=</HashCode>
+      <FileName>Node\NodeEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.EditorMouseEventArgs" Collapsed="true">
+    <Position X="33.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAIAAAAAAAAAIAACAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Node\NodeEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.EditorDragEventArgs" Collapsed="true">
+    <Position X="29.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QEAAAAAAACAAAAAAAAAAACAAAAAAAEAAAAAAQAAAAAA=</HashCode>
+      <FileName>Node\NodeEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.Extension" Collapsed="true">
+    <Position X="36.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAA=</HashCode>
+      <FileName>Node\NodeEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.LinkShape" Collapsed="true">
+    <Position X="33.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAIAggAAAAAIQAAAAAAAAAACAAAAAAAAAgA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.PortShape" Collapsed="true">
+    <Position X="43.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAEIABAkoABAQIAQAAAAAIAAAAAAAAAAAAQAgA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.MotorNodeShape" Collapsed="true">
+    <Position X="3.5" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.MapNodeShape" Collapsed="true">
+    <Position X="5.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.Connector" Collapsed="true">
+    <Position X="35" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAIAQAAAAAAAAAAAAAAAAAAAAgA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Node.NodeBaseShape" Collapsed="true">
+    <Position X="4.75" Y="13.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAEGMABUkgAAAQIAQCABAAIAAAIJBAIAgAASAgA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.Node.IconButton" Collapsed="true">
+    <Position X="31.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAgAAAAIAAAAAAAAAAAAAAAAAiAAAAgA=</HashCode>
+      <FileName>Node\UIComponents.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Properties.Resources" Collapsed="true">
+    <Position X="33.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAABEAAAAQAAAAAAAAAAAAAAAIA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Properties.Settings" Collapsed="true">
+    <Position X="38.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAIAAAAAABAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Qhull.NativeMethods" Collapsed="true">
+    <Position X="28" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAAAQAAQAAAAAA=</HashCode>
+      <FileName>Qhull\QhullCSharp.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Qhull.QhullCSharp" Collapsed="true">
+    <Position X="29.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAAJAKACEAAAAIQAAAIAAAAAAQIAAAAAAIAAAAIAA=</HashCode>
+      <FileName>Qhull\QhullCSharp.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SimplicialMapping.SimplexBary" Collapsed="true">
+    <Position X="28" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAABAAAAAAABAAAAIAAAAIAAQAAAAAAAIAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\SimplicialMap.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SimplicialMapping.ComplexBary" Collapsed="true">
+    <Position X="29.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAQAAAAAAgAIAAAQAAAAIAAEAAAIAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\SimplicialMap.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SimplicialMapping.NLinearMap" Collapsed="true">
+    <Position X="29.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAggAAAAAAAAAgAAAAAACACCAAJAgEEAAAAAJAAAA=</HashCode>
+      <FileName>SimplicialMapping\SimplicialMap.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Triangulation" Collapsed="true">
+    <Position X="29.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIAICAAAAQIAAAAgwCIAIACAAAAIAAAAAGgAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.SimplicialComplex" Collapsed="true">
+    <Position X="29.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.SimplicialComplex" Collapsed="true">
+    <Position X="4.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.Simplex" Collapsed="true">
+    <Position X="22.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAQABAAAAAAAAEEAAAAAAAAAACAAQAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.BarycentricCoordinate2D" Collapsed="true">
+    <Position X="31.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAIAAAAABAQAAEAAAAAAAAAAEAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.Pair" Collapsed="true">
+    <Position X="38.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgAAAAAAAAACAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.ConfigurationVector" Collapsed="true">
+    <Position X="33.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAQAABAAAAAAAAAAAAAEAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.ConfigurationSpace" Collapsed="true">
+    <Position X="13.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.StateVector" Collapsed="true">
+    <Position X="35" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.StateSpace" Collapsed="true">
+    <Position X="15.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.BarycenterCoefficient" Collapsed="true">
+    <Position X="29.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAABaAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Mapping.Reparameterization.TriangleMath" Collapsed="true">
+    <Position X="28" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.SkiaExtension.SkiaHelper" Collapsed="true">
+    <Position X="31.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAIAAAAAAAA=</HashCode>
+      <FileName>SkiaExtension.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.View.Elements.Element" Collapsed="true">
+    <Position X="8.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>View\Elements\Core.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.View.Elements.UnitElement" Collapsed="true">
+    <Position X="8.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>View\Elements\Core.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.View.Widgets.BaseWidget" Collapsed="true">
+    <Position X="3.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>View\Widgets\Core.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.View.Widgets.ControlUIWidget" Collapsed="true">
+    <Position X="3.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>View\Widgets\Core.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.ViewModel.BaseViewModel" Collapsed="true">
+    <Position X="33.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAQAAAAAAAAAABAAgAAAAAAAA=</HashCode>
+      <FileName>ViewModel\ViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.ViewModel.ControlUIViewModel" Collapsed="true">
+    <Position X="40.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAIAAA=</HashCode>
+      <FileName>ViewModel\ViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="System.Collections.Generic.List&lt;T&gt;" Collapsed="true">
+    <Position X="13.25" Y="3.25" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="System.Collections.Generic.List&lt;T&gt;.Enumerator" Collapsed="true">
+        <TypeIdentifier />
+        <Lollipop Position="0.2" />
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="TaskMaker.Model.SimplicialMapping.VoronoiRegion" Collapsed="true">
+    <Position X="9.75" Y="13.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\SimplicialMapping\SimplicialMapping.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.SimplicialMapping.VoronoiRegion_Rect" Collapsed="true">
+    <Position X="8.5" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAABAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\SimplicialMapping\SimplicialMapping.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.SimplicialMapping.VoronoiRegion_Sector" Collapsed="true">
+    <Position X="10.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAABAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\SimplicialMapping\SimplicialMapping.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.SimplicialMapping.Exterior" Collapsed="true">
+    <Position X="40.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\SimplicialMapping\SimplicialMapping.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.SimplicialMapping.Interior" Collapsed="true">
+    <Position X="33.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\SimplicialMapping\SimplicialMapping.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.SimplicialMapping.Simplex" Collapsed="true">
+    <Position X="42" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAABAAAAAAAAAAAAAAAAAIAAQAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\SimplicialMapping\SimplicialMapping.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TaskMaker.Model.SimplicialMapping.Complex">
+    <Position X="0.75" Y="9" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAABAAAAAAAAAAAAAAAAACAAAAAAIAAAAAAAAAA=</HashCode>
+      <FileName>Model\SimplicialMapping\SimplicialMapping.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="TaskMaker.LineSegment" Collapsed="true">
+    <Position X="28" Y="10.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAACAAAAAAAACAAABAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="TaskMaker.Mapping.Reparameterization.Triangle" Collapsed="true">
+    <Position X="29.75" Y="10.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAABAAAAAAAAgAQAAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\Triangulation.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Interface Name="TaskMaker.ISelectionTool" Collapsed="true">
+    <Position X="29.75" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAgAAAAAAAAAAAAAAAAFAAAAAAAAAQAAA=</HashCode>
+      <FileName>Canvas\SelectionTool.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.IVoronoiRegion" Collapsed="true">
+    <Position X="35" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Canvas\VoronoiRegion.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.IInput" Collapsed="true">
+    <Position X="28" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.IOutput" Collapsed="true">
+    <Position X="40.25" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Target\Target.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.MementoPattern.IMemento" Collapsed="true">
+    <Position X="35" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Memento\Memento.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.MementoPattern.IOriginator" Collapsed="true">
+    <Position X="38.5" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Memento\Memento.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.Node.IInput" Collapsed="true">
+    <Position X="29.75" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.Node.IOutput" Collapsed="true">
+    <Position X="42" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.Node.ILink" Collapsed="true">
+    <Position X="33.25" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAgCAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAA=</HashCode>
+      <FileName>Node\Node.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.Node.INodeShape" Collapsed="true">
+    <Position X="36.75" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEABAAgAAAAIAQAAAAAAAAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.SimplicialMapping.IVectorizable" Collapsed="true">
+    <Position X="33.25" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\SimplicialMap.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.SimplicialMapping.IReflectable" Collapsed="true">
+    <Position X="28" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>SimplicialMapping\SimplicialMap.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.ShapeElements.ILine" Collapsed="true">
+    <Position X="31.5" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAAAAAAAAAAACAAAAAAAAAAAgAQAAAAAAAAAAA=</HashCode>
+      <FileName>SkiaExtension.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.ShapeElements.IPoint" Collapsed="true">
+    <Position X="43.75" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>SkiaExtension.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TaskMaker.ShapeElements.ITriangle" Collapsed="true">
+    <Position X="31.5" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAABAAAAAAAAgAQAAAAAAAAAAA=</HashCode>
+      <FileName>SkiaExtension.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="TaskMaker.EditPhase" Collapsed="true">
+    <Position X="38.5" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAQAEAAAA=</HashCode>
+      <FileName>Canvas\CanvasControl.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="TaskMaker.LayerStatus" Collapsed="true">
+    <Position X="40.25" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAQAAAAAAEAAAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="TaskMaker.Modes" Collapsed="true">
+    <Position X="42" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAABAAAAAGIQAA=</HashCode>
+      <FileName>Canvas\CanvasObjects.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="TaskMaker.Node.AnchorTypes" Collapsed="true">
+    <Position X="28" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAABEQAAAAAAgAAAAAAAAAQAAAAACEEAIAAA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="TaskMaker.Node.AnchorX" Collapsed="true">
+    <Position X="29.75" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAACACAAAAAAAA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="TaskMaker.Node.AnchorY" Collapsed="true">
+    <Position X="31.5" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAEAAQAAAAAAAIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Node\NodeShape.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="CommandId" Collapsed="true">
+    <Position X="33.25" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABCEAgCAAAoAAEQAkAAEgAAAEAAAgAUAEAAEAAAABA=</HashCode>
+      <FileName>PCController\CommandId.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="SetParamType" Collapsed="true">
+    <Position X="28" Y="14.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAAAAAAAAABBAAAAQAAAAAAAAQAAAQAgAAAAAA=</HashCode>
+      <FileName>PCController\CommandId.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ResetSensorFlags" Collapsed="true">
+    <Position X="43.75" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAABAAAAAAAAAIAAAAAAAgAAAAAAAAAAAAA=</HashCode>
+      <FileName>PCController\CommandId.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="CommandIdMovement" Collapsed="true">
+    <Position X="35" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAACBAAAACAAAAAAAAEJAAAQAAAEAAgAAAAAIAA=</HashCode>
+      <FileName>PCController\CommandId.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="CommandSource" Collapsed="true">
+    <Position X="36.75" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACAAAAAAQAAAABAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>PCController\CommandId.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Delegate Name="PCController.SendMessageHandler" Collapsed="true">
+    <Position X="28" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>PCController\MainForm.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

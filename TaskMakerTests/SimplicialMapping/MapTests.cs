@@ -42,9 +42,9 @@ namespace TaskMaker.SimplicialMapping.Tests {
         }
 
         private void SetTensor() {
-            while(_multiBary.SetComponent(np.arange(100.0f).reshape(1, 2).GetData<float>())){
+            //while(_multiBary.SetComponent(np.arange(100.0f).reshape(1, 2).GetData<float>())){
 
-            }
+            //}
         }
 
 

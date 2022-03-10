@@ -122,6 +122,9 @@
     <Reference Include="SkiaSharp, Version=2.80.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <HintPath>packages\SkiaSharp.2.80.3\lib\net462\SkiaSharp.dll</HintPath>
     </Reference>
+    <Reference Include="SkiaSharp.Extended, Version=1.60.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>packages\SkiaSharp.Extended.1.60.0\lib\netstandard2.0\SkiaSharp.Extended.dll</HintPath>
+    </Reference>
     <Reference Include="SkiaSharp.Views.Desktop, Version=2.80.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <HintPath>packages\SkiaSharp.Views.2.80.3\lib\net462\SkiaSharp.Views.Desktop.dll</HintPath>
     </Reference>
@@ -204,6 +207,8 @@
     <Compile Include="Model\ControlUI\ControlUIUnit.cs" />
     <Compile Include="Model\ControlUI\Core.cs" />
     <Compile Include="Model\Core.cs" />
+    <Compile Include="Model\SimplicialMapping\SimplicialMapping.cs" />
+    <Compile Include="Utilities\TreeElement.cs" />
     <Compile Include="ViewModel\ViewModel.cs" />
     <Compile Include="View\Elements\Core.cs" />
     <Compile Include="Extensions.cs" />
@@ -301,7 +306,9 @@
     <Compile Include="TinyCanvasForm.Designer.cs">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="View\Engine\Engine.cs" />
     <Compile Include="View\Widgets\Core.cs" />
+    <Compile Include="View\Widgets\Units\UnitWidget.cs" />
     <EmbeddedResource Include="Matrix\MapSelection.resx">
       <DependentUpon>MapSelection.cs</DependentUpon>
     </EmbeddedResource>
