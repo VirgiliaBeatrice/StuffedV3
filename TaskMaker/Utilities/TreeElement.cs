@@ -4,10 +4,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using TaskMaker.View.Engine;
+using TaskMaker.View;
+using TaskMaker.View.Widgets;
 
 namespace TaskMaker.Utilities {
-    public class TreeElement {
+    public partial class TreeElement {
+        static public TreeElement Create<T>(string name) where T : new() {
+            return new TreeElement {
+                Name = name,
+                Data = new T()
+            };
+        }
+    }
+
+    public partial class TreeElement {
         public string Name { get; set; } = "";
         public TreeElement Parent { get; set; } = null;
         protected virtual List<TreeElement> Children { get; set; } = new List<TreeElement>();
@@ -24,6 +34,14 @@ namespace TaskMaker.Utilities {
         public void AddChild(TreeElement child) {
             Children.Add(child);
             child.Parent = this;
+        }
+
+        public TreeElement AddChild<T>(string name) where T : new() {
+            var newChild = Create<T>(name);
+
+            AddChild(newChild);
+
+            return newChild;
         }
 
         public bool RemoveChild(TreeElement child) {

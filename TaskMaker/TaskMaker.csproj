@@ -307,6 +307,8 @@
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>
     </Compile>
     <Compile Include="View\Engine\Engine.cs" />
+    <Compile Include="View\Pages\Page.cs" />
+    <Compile Include="View\Widgets\Container\Core.cs" />
     <Compile Include="View\Widgets\Core.cs" />
     <Compile Include="View\Widgets\Units\UnitWidget.cs" />
     <EmbeddedResource Include="Matrix\MapSelection.resx">

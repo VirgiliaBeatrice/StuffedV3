@@ -4,12 +4,31 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SkiaSharp;
+using TaskMaker.View;
 
 namespace TaskMaker.View.Widgets.Units {
-    public class UnitWidget {
-        public SKRect Bound { get; set; }
+    public class UnitWidget : RenderWidget {
+        public override void CreateRenderObject() {
+            RenderObject = new UnitRenderObject(null);
+        }
+    }
 
+    public class UnitRenderObject : RenderObject {
+        public SKRect Bound { get; set; }
+        public override SKPicture Picture => _cachedPicture;
         private SKPicture _cachedPicture;
+
+        public UnitRenderObject(object renderState) {
+            Bound = new SKRect {
+                Size = new SKSize {
+                    Width = 100,
+                    Height = 24
+                }
+            };
+
+            // Initialize _cachedPicure
+            Render();
+        }
 
         public void Render() {
             var recorder = new SKPictureRecorder();
