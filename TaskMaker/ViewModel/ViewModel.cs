@@ -12,7 +12,7 @@ using Numpy;
 namespace TaskMaker.ViewModel {
     public class BaseViewModel {
         // View
-        public BaseWidget Widget { get; set; }
+        //public BaseWidget Widget { get; set; }
         // Model
         public BaseModel Model { get; set; }
 

@@ -208,7 +208,14 @@
     <Compile Include="Model\ControlUI\Core.cs" />
     <Compile Include="Model\Core.cs" />
     <Compile Include="Model\SimplicialMapping\SimplicialMapping.cs" />
+    <Compile Include="TestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TestForm.Designer.cs">
+      <DependentUpon>TestForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Utilities\TreeElement.cs" />
+    <Compile Include="ViewModel\MainPage\MainPageViewModel.cs" />
     <Compile Include="ViewModel\ViewModel.cs" />
     <Compile Include="View\Elements\Core.cs" />
     <Compile Include="Extensions.cs" />
@@ -308,8 +315,11 @@
     </Compile>
     <Compile Include="View\Engine\Engine.cs" />
     <Compile Include="View\Pages\Page.cs" />
-    <Compile Include="View\Widgets\Container\Core.cs" />
+    <Compile Include="View\Widgets\Container\FreeContainer.cs" />
+    <Compile Include="View\Widgets\Container\Grid.cs" />
+    <Compile Include="View\Widgets\Container\NodeCollection.cs" />
     <Compile Include="View\Widgets\Core.cs" />
+    <Compile Include="View\Widgets\Node\Node.cs" />
     <Compile Include="View\Widgets\Units\UnitWidget.cs" />
     <EmbeddedResource Include="Matrix\MapSelection.resx">
       <DependentUpon>MapSelection.cs</DependentUpon>
@@ -346,6 +356,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TaskMakerForm.resx">
       <DependentUpon>TaskMakerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TestForm.resx">
+      <DependentUpon>TestForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="TinyCanvasForm.resx">
       <DependentUpon>TinyCanvasForm.cs</DependentUpon>

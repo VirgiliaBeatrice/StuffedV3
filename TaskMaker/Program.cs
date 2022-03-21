@@ -13,7 +13,8 @@ namespace TaskMaker {
         static void Main() {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new TaskMakerForm());
+            //Application.Run(new TaskMakerForm());
+            Application.Run(new TestForm());
         }
     }
 }

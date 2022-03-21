@@ -28,52 +28,49 @@ namespace TaskMaker.View {
             //_ctx.Pop();
         }
 
-        static public void _Build(TreeElement element) {
-            (element.Data as Widget).CreateRenderObject();
+        static public void _Build(Widget element) {
+            element.Build();
 
             foreach (var child in element.GetAllChild()) {
                 _Build(child);
             }
         }
 
-        static public void Build(TreeElement root) {
+        static public void Build(Widget root) {
             _Build(root);
         }
 
-        static public void _Layout(TreeElement element) {
-            var widget = (element.Data as Widget);
+        static public void _Layout(Widget widget) {
 
-            if (typeof(ContainerWidget).IsInstanceOfType(widget)) {
+            if (widget is ContainerWidget) {
                 (widget as ContainerWidget).Layout();
             }
 
-            foreach (var child in element.GetAllChild()) {
+            foreach (var child in widget.GetAllChild()) {
                 _Layout(child);
             }
         }
 
-        static public void Layout(TreeElement root) {
+        static public void Layout(Widget root) {
             _Layout(root);
         }
 
-        static public void _Paint(TreeElement element, SKCanvas canvas) {
-            var widget = (element.Data as Widget);
-
-            if (typeof(ContainerWidget).IsInstanceOfType(widget))
+        static public void _Paint(Widget widget, SKCanvas canvas) {
+            if (widget is ContainerWidget)
                 (widget as ContainerWidget).OnPainting(canvas);
             else
-                (widget as RenderWidget).Paint(canvas);
+                (widget as RenderWidget<NodeWidgetState>).Paint(canvas);
 
 
-            foreach (var child in element.GetAllChild()) {
+            foreach (var child in widget.GetAllChild()) {
                 _Paint(child, canvas);
             }
 
-            if (typeof(ContainerWidget).IsInstanceOfType(widget))
+            if (widget is ContainerWidget)
                 (widget as ContainerWidget).OnPainted(canvas);
         }
 
-        static public void Paint(TreeElement root, SKCanvas canvas) {
+        static public void Paint(Widget root, SKCanvas canvas) {
             _Paint(root, canvas);
         }
     }
